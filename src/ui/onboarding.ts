@@ -1,6 +1,7 @@
 import { refresh } from '../cache'
 import { getSettings, type SourceSetting, updateSettings } from '../settings'
 import { sourceById } from '../sources/index'
+import { LIMIT } from '../sources/types'
 import { el } from './dom'
 import { createSourceList } from './source-list'
 
@@ -37,7 +38,7 @@ export function showOnboarding(): void {
 	const intro = el(
 		'p',
 		'onboarding-intro',
-		'tureel shows the top 20 entries of every source you switch on. Drag the handles to set the order. You can change both later.'
+		`tureel shows the top ${LIMIT} entries of every source you switch on. Drag the handles to set the order. You can change both later.`
 	)
 
 	const start = el('button', 'primary-btn', 'Start reading')

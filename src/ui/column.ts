@@ -4,7 +4,7 @@ import { describeError } from '../net'
 import { isRead } from '../read'
 import { getSettings, isBlocked } from '../settings'
 import type { FeedItem, SourceMeta } from '../sources/types'
-import { el, icon, prefersReducedMotion } from './dom'
+import { el, icon } from './dom'
 
 const SKELETON_ROWS = 8
 
@@ -139,10 +139,6 @@ export class Column {
 	/** Call when the reader is likely to open the column next. Fetches at low priority. */
 	prefetch(): Promise<void> {
 		return this.revalidate('low')
-	}
-
-	scrollToTop(): void {
-		this.el.scrollTo({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', top: 0 })
 	}
 
 	/** Re-applies the read and blocked marks after either list changed. */

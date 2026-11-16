@@ -1,4 +1,29 @@
+/* Registered as a length, so that scripts read its computed value in pixels. */
+@property --column-min {
+	syntax: "<length>";
+	inherits: true;
+	initial-value: 384px;
+}
+
 :root {
+	/* A column is never narrower than this. The deck shows as many columns as fit. */
+	--column-min: 24rem;
+	/* A column is never wider than this, so lines stay readable on wide screens. */
+	--column-max: 36rem;
+	--sheet-width: 30rem;
+	--onboarding-height: 50rem;
+	--sheet-radius: 20px;
+	/* Opacity levels */
+	--dim-blocked: 0.4;
+	--dim-read: 0.5;
+	--dim-disabled: 0.4;
+	--dim-separator: 0.6;
+	--dim-pulse: 0.5;
+	/* Durations */
+	--fast: var(--fast);
+	--sheet-move: var(--sheet-move);
+	--warning: light-dark(#c2410c, #fb923c);
+	--on-warning: light-dark(#ffffff, #1c1206);
 	--bg: light-dark(#ffffff, #0f1012);
 	--surface: light-dark(#f4f4f6, #1a1c20);
 	--surface-strong: light-dark(#e9e9ec, #24272c);
@@ -95,8 +120,8 @@ button {
 	border-radius: 50%;
 	color: var(--muted);
 	transition:
-		background-color 0.15s,
-		color 0.15s;
+		background-color var(--fast),
+		color var(--fast);
 }
 
 .link-btn {
@@ -114,16 +139,16 @@ button {
 }
 
 .primary-btn:disabled {
-	opacity: 0.4;
+	opacity: var(--dim-disabled);
 	cursor: not-allowed;
 }
 
 .dot {
 	color: var(--muted);
-	opacity: 0.6;
+	opacity: var(--dim-separator);
 }
 
-/* Bar. It sits at the bottom on phones and at the top on wide screens. */
+/* Bar. It is fixed to the bottom edge at every width. */
 
 .bar {
 	position: fixed;
@@ -137,13 +162,6 @@ button {
 	padding: 0 8px var(--safe-bottom) 0;
 	background: var(--bg);
 	border-top: 1px solid var(--line);
-}
-
-.brand {
-	display: none;
-	font-weight: 800;
-	font-size: 1.125rem;
-	letter-spacing: -0.02em;
 }
 
 .tabs {
@@ -169,8 +187,13 @@ button {
 	padding: 6px 4px 10px;
 }
 
-.tab-name {
-	display: none;
+/* Auto margins centre the tabs. They resolve to zero when the strip overflows and scrolls. */
+.tab:first-child {
+	margin-inline-start: auto;
+}
+
+.tab:last-child {
+	margin-inline-end: auto;
 }
 
 .badge {
@@ -188,7 +211,7 @@ button {
 	font-weight: 800;
 	letter-spacing: -0.02em;
 	line-height: 1;
-	transition: transform 0.15s;
+	transition: transform var(--fast);
 }
 
 .tab:active .badge {
@@ -207,7 +230,7 @@ button {
 	background: var(--text);
 	opacity: 0;
 	translate: -50% 0;
-	transition: opacity 0.15s;
+	transition: opacity var(--fast);
 }
 
 .tab.is-visible::after {
@@ -216,20 +239,29 @@ button {
 
 /* Deck and columns */
 
+/*
+ * The grid fits as many columns as the width allows. A phone gets one column,
+ * a wide screen several. The script displays that many sources and hides the rest.
+ */
 .deck {
-	position: relative;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--column-min)), 1fr));
 }
 
 .column {
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: var(--column-max);
+	justify-self: center;
 	padding: 0 var(--gutter);
+	/* Nothing in a column may widen the page. */
+	overflow-x: clip;
 	--brand: light-dark(var(--brand-light), var(--brand-dark));
 }
 
-/* Phones show one source at a time. The other columns stay in the document, hidden. */
-@media (max-width: 759.98px) {
-	.column:not(.is-current) {
-		display: none;
-	}
+/* A line separates columns that sit side by side. */
+.column:not([hidden]) ~ .column:not([hidden]) {
+	border-inline-start: 1px solid var(--line);
 }
 
 .col-head {
@@ -305,12 +337,12 @@ button {
 }
 
 .is-read .rank {
-	opacity: 0.5;
+	opacity: var(--dim-read);
 }
 
 /* Entries that link to a blocked site stay in the list, dimmed. */
 .is-blocked > * {
-	opacity: 0.4;
+	opacity: var(--dim-blocked);
 }
 
 .title:focus-visible {
@@ -372,8 +404,9 @@ button {
 .site {
 	position: relative;
 	z-index: 1;
-	margin: -10px -6px;
-	padding: 10px 6px;
+	/* Enlarges the touch target. The row ends here, so the target does not grow past the right edge. */
+	margin: -10px 0 -10px -6px;
+	padding: 10px 0 10px 6px;
 	white-space: nowrap;
 	text-align: left;
 }
@@ -419,7 +452,7 @@ button {
 	place-content: center;
 	justify-items: center;
 	gap: 12px;
-	width: 100%;
+	grid-column: 1 / -1;
 	min-height: 70dvh;
 	padding: var(--gutter);
 	text-align: center;
@@ -462,22 +495,23 @@ button {
 .sheet {
 	display: none;
 	flex-direction: column;
-	width: 100%;
+	width: min(100%, var(--sheet-width));
 	max-width: 100%;
 	max-height: calc(100dvh - var(--safe-top) - 24px);
-	margin: auto 0 0;
+	/* Anchored to the bottom edge and centred when the screen is wider than the sheet. */
+	margin: auto auto 0;
 	padding: 0;
 	overflow: hidden;
 	color: var(--text);
 	background: var(--bg);
 	border: 0;
-	border-radius: 20px 20px 0 0;
+	border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
 	box-shadow: 0 -8px 40px rgb(0 0 0 / 0.2);
 	transition:
-		translate 0.22s ease,
-		opacity 0.22s ease,
-		overlay 0.22s allow-discrete,
-		display 0.22s allow-discrete;
+		translate var(--sheet-move) ease,
+		opacity var(--sheet-move) ease,
+		overlay var(--sheet-move) allow-discrete,
+		display var(--sheet-move) allow-discrete;
 }
 
 .sheet[open] {
@@ -589,7 +623,7 @@ button {
 	background: var(--surface-strong);
 	appearance: none;
 	cursor: pointer;
-	transition: background-color 0.15s;
+	transition: background-color var(--fast);
 }
 
 .check::after {
@@ -695,7 +729,7 @@ button {
 	background: var(--surface-strong);
 	appearance: none;
 	cursor: pointer;
-	transition: background-color 0.15s;
+	transition: background-color var(--fast);
 }
 
 .switch::after {
@@ -708,7 +742,7 @@ button {
 	border-radius: 50%;
 	background: #ffffff;
 	box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
-	transition: translate 0.15s;
+	transition: translate var(--fast);
 }
 
 .switch:checked {
@@ -717,6 +751,29 @@ button {
 
 .switch:checked::after {
 	translate: 20px 0;
+}
+
+.pref h3 {
+	margin: 0 0 6px;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.pref p {
+	margin-bottom: 14px;
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+
+/* Orange marks an action that deletes data. */
+.warning-btn {
+	width: 100%;
+	min-height: 48px;
+	padding: 12px 20px;
+	border-radius: 999px;
+	color: var(--on-warning);
+	background: var(--warning);
+	font-weight: 600;
 }
 
 .note {
@@ -754,15 +811,18 @@ button {
 .onboarding {
 	display: none;
 	flex-direction: column;
-	width: 100%;
+	width: min(100%, var(--sheet-width));
 	max-width: 100%;
-	height: 100dvh;
+	height: min(100dvh, var(--onboarding-height));
 	max-height: 100dvh;
-	margin: 0;
+	margin: auto;
 	padding: 0;
 	color: var(--text);
 	background: var(--bg);
 	border: 0;
+	/* The backdrop has the page colour, so the corners and the shadow only show when the screen is larger than the dialog. */
+	border-radius: var(--sheet-radius);
+	box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
 }
 
 .onboarding[open] {
@@ -835,155 +895,6 @@ button {
 	-webkit-user-select: text;
 }
 
-/* Wide screens. The bar moves to the top and several columns sit side by side. */
-
-@media (min-width: 760px) {
-	:root {
-		--bar-height: 56px;
-		--gutter: 24px;
-		--columns: 2;
-	}
-
-	/* The page itself does not scroll here. Each column scrolls on its own. */
-	html,
-	body {
-		height: 100%;
-		overflow: hidden;
-	}
-
-	body {
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
-		grid-template-areas: "bar" "deck";
-		height: 100dvh;
-		padding-bottom: 0;
-	}
-
-	.bar {
-		position: static;
-		grid-area: bar;
-		gap: 8px;
-		height: var(--bar-height);
-		padding: 0 12px 0 var(--gutter);
-		border-top: 0;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.brand {
-		display: block;
-		margin-right: 8px;
-	}
-
-	.tabs {
-		gap: 4px;
-		padding: 0 4px;
-	}
-
-	.tab {
-		padding: 5px 12px 5px 5px;
-		border-radius: 999px;
-		color: var(--muted);
-		font-size: 0.875rem;
-		font-weight: 600;
-	}
-
-	.tab::after {
-		display: none;
-	}
-
-	.tab-name {
-		display: block;
-	}
-
-	.tab.is-visible {
-		color: var(--text);
-		background: var(--surface);
-	}
-
-	.badge {
-		width: 28px;
-		height: 28px;
-		font-size: 0.5625rem;
-	}
-
-	.deck {
-		grid-area: deck;
-		display: flex;
-		min-height: 0;
-		overflow: auto hidden;
-		scroll-snap-type: x mandatory;
-		overscroll-behavior-x: contain;
-		scrollbar-width: thin;
-	}
-
-	.column {
-		flex: 0 0 calc(100% / var(--columns));
-		min-width: 0;
-		height: 100%;
-		overflow: hidden auto;
-		overscroll-behavior-y: contain;
-		border-right: 1px solid var(--line);
-		scroll-snap-align: start;
-		scrollbar-width: thin;
-	}
-
-	.empty {
-		min-height: 0;
-	}
-
-	/* Auto margins centre the deck when all columns fit. They resolve to zero when the columns overflow. */
-	.column:first-child {
-		margin-left: auto;
-	}
-
-	.column:last-child {
-		margin-right: auto;
-	}
-
-	.col-head {
-		padding-top: 28px;
-	}
-
-	.col-title {
-		font-size: 1.625rem;
-	}
-
-	.onboarding {
-		width: 480px;
-		height: auto;
-		max-height: min(780px, 100dvh - 48px);
-		margin: auto;
-		border-radius: 20px;
-		box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
-	}
-
-	.sheet {
-		width: 460px;
-		max-height: min(720px, 100dvh - 48px);
-		margin: auto;
-		border-radius: 20px;
-		box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
-	}
-}
-
-@media (min-width: 1140px) {
-	:root {
-		--columns: 3;
-	}
-}
-
-@media (min-width: 1520px) {
-	:root {
-		--columns: 4;
-	}
-}
-
-@media (min-width: 1900px) {
-	:root {
-		--columns: 5;
-	}
-}
-
 @media (hover: hover) {
 	.icon-btn:hover {
 		color: var(--text);
@@ -1017,7 +928,7 @@ button {
 
 @keyframes pulse {
 	to {
-		opacity: 0.5;
+		opacity: var(--dim-pulse);
 	}
 }
 

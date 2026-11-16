@@ -1,10 +1,14 @@
 import { safeUrl, utcDatePath } from '../format'
-import { getJson, HttpError } from '../net'
+import { getJson, HttpError, STATUS } from '../net'
+import { DAY } from '../time'
 import { type FeedItem, type FetchContext, LIMIT, type SourceAdapter } from './types'
 
 /** Wikimedia Feed API. It publishes one "most read" list per UTC day. */
 const FEED_URL = 'https://api.wikimedia.org/feed/v1/wikipedia/en/featured'
-const DAY_MS = 86_400_000
+
+/** Days before today, as the feed counts them. */
+const YESTERDAY = 1
+const DAY_BEFORE = 2
 
 interface Article {
 	pageid: number
@@ -37,21 +41,21 @@ export function parse(response: FeaturedResponse): FeedItem[] {
 }
 
 async function mostRead(daysAgo: number, ctx: FetchContext): Promise<FeedItem[]> {
-	const day = new Date(Date.now() - daysAgo * DAY_MS)
+	const day = new Date(Date.now() - daysAgo * DAY)
 	try {
 		return parse(await getJson<FeaturedResponse>(`${FEED_URL}/${utcDatePath(day)}`, ctx))
 	} catch (error) {
 		// The API answers 404 for a day it has not compiled yet. Treat that as an empty list.
-		if (error instanceof HttpError && error.status === 404) return []
+		if (error instanceof HttpError && error.status === STATUS.notFound) return []
 		throw error
 	}
 }
 
 const adapter: SourceAdapter = {
 	async fetch(ctx) {
-		const items = await mostRead(1, ctx)
+		const items = await mostRead(YESTERDAY, ctx)
 		// Shortly after midnight UTC yesterday's list may not exist yet.
-		return items.length > 0 ? items : mostRead(2, ctx)
+		return items.length > 0 ? items : mostRead(DAY_BEFORE, ctx)
 	},
 }
 

@@ -1,5 +1,6 @@
 import { decodeEntities, safeUrl } from '../format'
 import { getJson } from '../net'
+import { SECOND } from '../time'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
@@ -34,7 +35,7 @@ function toItem(question: Question): FeedItem | undefined {
 		comments: { count: question.answer_count, label: 'answer', url: `${url}#answers` },
 		score: { label: 'vote', value: question.score },
 	}
-	if (question.creation_date) item.time = question.creation_date * 1000
+	if (question.creation_date) item.time = question.creation_date * SECOND
 	const tag = question.tags?.[0]
 	if (tag) item.tag = tag
 	return item

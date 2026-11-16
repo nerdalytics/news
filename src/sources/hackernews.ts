@@ -1,5 +1,6 @@
 import { safeUrl } from '../format'
 import { getJson } from '../net'
+import { SECOND } from '../time'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
@@ -12,6 +13,8 @@ const SEARCH_URL = 'https://hn.algolia.com/api/v1/search'
 const FIELDS = 'title,url,points,num_comments,created_at_i'
 /** Compare more ids than needed, because the search index lacks job posts. */
 const CANDIDATES = 30
+/** The front page holds 30 stories. Asking for more costs nothing if it ever grows. */
+const FRONT_PAGE_HITS = 50
 
 interface Hit {
 	objectID: string
@@ -31,7 +34,7 @@ export function frontPageUrl(): string {
 	const params = new URLSearchParams({
 		attributesToHighlight: '[]',
 		attributesToRetrieve: FIELDS,
-		hitsPerPage: '50',
+		hitsPerPage: String(FRONT_PAGE_HITS),
 		tags: 'front_page',
 	})
 	return `${SEARCH_URL}?${params}`
@@ -59,7 +62,7 @@ function toItem(hit: Hit): FeedItem | undefined {
 		comments: { count: hit.num_comments ?? 0, label: 'comment', url: discussion },
 		score: { label: 'point', value: hit.points ?? 0 },
 	}
-	if (hit.created_at_i) item.time = hit.created_at_i * 1000
+	if (hit.created_at_i) item.time = hit.created_at_i * SECOND
 	return item
 }
 

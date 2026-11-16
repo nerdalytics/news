@@ -2,6 +2,7 @@ import { markRead } from '../read'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
+import { capacity, windowStart } from './layout'
 
 interface DeckOptions {
 	deck: HTMLElement
@@ -13,8 +14,10 @@ interface DeckOptions {
 	onSite: (site: string) => void
 }
 
-/** From this width on, several columns sit side by side and scroll on their own. */
-const WIDE = matchMedia('(min-width: 760px)')
+/** The CSS custom property that holds the smallest width of a column. */
+const COLUMN_MIN = '--column-min'
+/** Space kept on both sides of the current tab when the strip scrolls it into view. */
+const TAB_MARGIN_PX = 12
 
 function savesData(): boolean {
 	const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
@@ -26,42 +29,38 @@ function scrollBehavior(): ScrollBehavior {
 }
 
 /**
- * The columns and their tab bar. It has two layouts.
+ * The columns and their tab bar.
  *
- * On phones only the current source is displayed and the document scrolls, so
- * the browser's own page scrolling does all the work. Switching sources swaps
- * the displayed column and restores its scroll position.
+ * The deck is a CSS grid that fits as many columns as the width allows, with
+ * no breakpoints. The deck displays that many consecutive sources, starting at
+ * the one the reader chose, and hides the others. A phone fits one column, a
+ * wide screen several. The page itself scrolls in every case.
  *
- * On wide screens all columns sit in a horizontally scrolling row. An
- * IntersectionObserver reports which columns are in view.
- *
- * In both layouts the current source loads first. The other sources are then
- * fetched one after another at low priority.
+ * The displayed sources load first. The other sources are then fetched one
+ * after another at low priority.
  */
 export class Deck {
 	private readonly columns = new Map<string, Column>()
 	private readonly tabs = new Map<string, HTMLAnchorElement>()
-	/** Sources in view on wide screens. On phones this is the current source. */
-	private readonly visible = new Set<string>()
-	/** Where the reader left each source on phones. */
+	/** The sources that are displayed right now. */
+	private visible = new Set<string>()
+	/** The page scroll position the reader left, keyed by the first displayed source. */
 	private readonly scrollTops = new Map<string, number>()
-	private readonly viewObserver: IntersectionObserver
 	private order: string[] = []
+	/** The source the reader chose last. It is always displayed. */
 	private current: string | undefined
+	/** How many columns fit side by side. */
+	private size = 1
 	private settled = false
 	private prefetching = false
 	private prefetchAgain = false
 
 	constructor(private readonly options: DeckOptions) {
-		this.viewObserver = new IntersectionObserver((entries) => this.onView(entries), {
-			root: options.deck,
-			threshold: 0.5,
-		})
+		new ResizeObserver(() => this.onResize()).observe(options.deck)
 		options.tabs.addEventListener('click', (event) => this.onTabClick(event))
 		options.deck.addEventListener('click', (event) => this.onItemClick(event))
 		// A middle click opens the link in a new tab and fires `auxclick`, not `click`.
 		options.deck.addEventListener('auxclick', (event) => this.onItemClick(event))
-		WIDE.addEventListener('change', () => this.applyLayout())
 		addEventListener('hashchange', () => this.showFromHash())
 		document.addEventListener('visibilitychange', () => this.onResume())
 		addEventListener('pageshow', (event) => {
@@ -78,8 +77,9 @@ export class Deck {
 		this.renderTabs()
 		if (!this.current || !this.columns.has(this.current)) {
 			this.current = this.order[0]
-			if (!WIDE.matches) scrollTo({ behavior: 'instant', top: 0 })
+			scrollTo({ behavior: 'instant', top: 0 })
 		}
+		this.size = this.measure()
 		this.applyLayout()
 		if (this.settled) this.prefetchOthers()
 	}
@@ -110,13 +110,12 @@ export class Deck {
 	/** Opens the source named in the URL fragment, e.g. `#github`. */
 	showFromHash(): void {
 		const id = location.hash.slice(1)
-		if (this.columns.has(id)) this.show(id, 'instant')
+		if (this.columns.has(id)) this.show(id)
 	}
 
 	private removeStale(): void {
 		for (const [id, column] of this.columns) {
 			if (this.order.includes(id)) continue
-			this.viewObserver.unobserve(column.el)
 			column.el.remove()
 			this.columns.delete(id)
 			this.visible.delete(id)
@@ -129,7 +128,6 @@ export class Deck {
 		if (!source) return undefined
 		const column = new Column(source, () => this.onSettled())
 		this.columns.set(id, column)
-		this.viewObserver.observe(column.el)
 		return column
 	}
 
@@ -140,9 +138,7 @@ export class Deck {
 		if (!column) return
 		const reference = deck.children[index] ?? null
 		if (reference === column.el) return
-		// `moveBefore` keeps the scroll position of a column that changes place.
-		if (existing && 'moveBefore' in deck) deck.moveBefore(column.el, reference)
-		else deck.insertBefore(column.el, reference)
+		deck.insertBefore(column.el, reference)
 	}
 
 	private renderEmptyState(): void {
@@ -172,28 +168,42 @@ export class Deck {
 			const badge = el('span', 'badge', source.mark)
 			badge.style.setProperty('--badge-bg', source.badge[0])
 			badge.style.setProperty('--badge-fg', source.badge[1])
-			tab.append(badge, el('span', 'tab-name', source.name))
+			tab.append(badge, el('span', 'visually-hidden', source.name))
 			this.tabs.set(id, tab)
 			return [tab]
 		})
 		this.options.tabs.replaceChildren(...links)
 	}
 
-	/** Applies the current source to whichever layout is active. */
+	/** Reads the smallest column width from CSS and returns how many columns fit. */
+	private measure(): number {
+		const deck = this.options.deck
+		const value = getComputedStyle(deck).getPropertyValue(COLUMN_MIN)
+		// The property is registered as a length, so its computed value is in pixels.
+		const columnMin = value.endsWith('px') ? Number.parseFloat(value) : Number.NaN
+		return capacity(deck.getBoundingClientRect().width, columnMin)
+	}
+
+	private onResize(): void {
+		const size = this.measure()
+		if (size === this.size) return
+		this.size = size
+		this.applyLayout()
+	}
+
+	/** The sources to display: as many as fit, starting at the current one. */
+	private window(): string[] {
+		const index = this.current ? this.order.indexOf(this.current) : 0
+		const start = windowStart(index, this.order.length, this.size)
+		return this.order.slice(start, start + this.size)
+	}
+
+	/** Displays the window of sources, hides the others and loads what is displayed. */
 	private applyLayout(): void {
+		this.visible = new Set(this.window())
 		for (const [id, column] of this.columns) {
-			column.el.classList.toggle('is-current', id === this.current)
-		}
-		const column = this.current ? this.columns.get(this.current) : undefined
-		if (WIDE.matches) {
-			// The page does not scroll in this layout. Clear an offset left over from the phone layout.
-			scrollTo({ behavior: 'instant', top: 0 })
-			// The observer fills `visible` again once the columns are laid out.
-			if (column) this.options.deck.scrollTo({ behavior: 'instant', left: column.el.offsetLeft })
-		} else {
-			this.visible.clear()
-			if (this.current) this.visible.add(this.current)
-			void column?.activate()
+			column.el.hidden = !this.visible.has(id)
+			if (this.visible.has(id)) void column.activate()
 		}
 		this.markTabs()
 	}
@@ -203,44 +213,21 @@ export class Deck {
 		const id = tab?.dataset.id
 		if (!id || event.metaKey || event.ctrlKey || event.shiftKey) return
 		event.preventDefault()
-		// Tapping the tab of a source that is already in view scrolls it to the top.
-		if (this.visible.has(id)) this.scrollToTop(id)
-		else this.show(id, scrollBehavior())
+		// Tapping the tab of a source that is already displayed scrolls to the top.
+		if (this.visible.has(id)) scrollTo({ behavior: scrollBehavior(), top: 0 })
+		else this.show(id)
 		this.writeHash(id)
 	}
 
-	private scrollToTop(id: string): void {
-		if (WIDE.matches) this.columns.get(id)?.scrollToTop()
-		else scrollTo({ behavior: scrollBehavior(), top: 0 })
-	}
-
-	private show(id: string, behavior: ScrollBehavior): void {
-		const column = this.columns.get(id)
-		if (!column) return
-		if (WIDE.matches) {
-			this.options.deck.scrollTo({ behavior, left: column.el.offsetLeft })
-			return
-		}
-		if (this.current) this.scrollTops.set(this.current, scrollY)
+	/** Displays a source and restores the scroll position the reader left there. */
+	private show(id: string): void {
+		if (!this.columns.has(id)) return
+		const previous = this.window()[0]
+		if (previous) this.scrollTops.set(previous, scrollY)
 		this.current = id
 		this.applyLayout()
-		scrollTo({ behavior: 'instant', top: this.scrollTops.get(id) ?? 0 })
-	}
-
-	/** Wide screens only. Tracks which columns are in view and loads them. */
-	private onView(entries: IntersectionObserverEntry[]): void {
-		if (!WIDE.matches) return
-		for (const entry of entries) {
-			const id = entry.target.id.replace('source-', '')
-			if (!entry.isIntersecting) {
-				this.visible.delete(id)
-				continue
-			}
-			this.visible.add(id)
-			void this.columns.get(id)?.activate()
-		}
-		this.current = this.order.find((id) => this.visible.has(id)) ?? this.current
-		this.markTabs()
+		const first = this.window()[0]
+		scrollTo({ behavior: 'instant', top: (first && this.scrollTops.get(first)) || 0 })
 	}
 
 	private markTabs(): void {
@@ -256,8 +243,8 @@ export class Deck {
 	/** Scrolls the tab strip so the current tab is visible. It scrolls nothing else. */
 	private revealTab(tab: HTMLElement): void {
 		const strip = this.options.tabs
-		const start = tab.offsetLeft - 12
-		const end = tab.offsetLeft + tab.offsetWidth + 12
+		const start = tab.offsetLeft - TAB_MARGIN_PX
+		const end = tab.offsetLeft + tab.offsetWidth + TAB_MARGIN_PX
 		if (start < strip.scrollLeft) strip.scrollTo({ left: start })
 		else if (end > strip.scrollLeft + strip.clientWidth) {
 			strip.scrollTo({ left: end - strip.clientWidth })
@@ -276,7 +263,7 @@ export class Deck {
 		whenIdle(() => this.prefetchOthers())
 	}
 
-	/** Sources that are not in view, nearest to the current one first. */
+	/** Sources that are not displayed, nearest to the current one first. */
 	private othersByDistance(): string[] {
 		const origin = this.current ? this.order.indexOf(this.current) : 0
 		return this.order
@@ -288,7 +275,7 @@ export class Deck {
 	}
 
 	/**
-	 * Fetches the sources that are not in view, one at a time, so they are ready
+	 * Fetches the sources that are not displayed, one at a time, so they are ready
 	 * when the reader switches. A fresh cached feed costs no request.
 	 */
 	private async prefetchOthers(): Promise<void> {

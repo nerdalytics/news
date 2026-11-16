@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseCookies } from '../src/cookies'
-import {
-	parseBlocked,
-	parseSources,
-	parseTheme,
-	serializeBlocked,
-	serializeSources,
-} from '../src/settings'
+import { parseBlocked, parseSources, parseTheme, serializeSources } from '../src/settings'
 import { SOURCES } from '../src/sources/index'
 import type { SourceMeta } from '../src/sources/types'
 
@@ -79,27 +73,26 @@ describe('parseTheme', () => {
 })
 
 describe('blocked sites', () => {
-	it('round-trips a list of hosts', () => {
-		const hosts = ['slate.com', 'pub.cba.mit.edu']
-		expect(serializeBlocked(hosts)).toBe('slate.com~pub.cba.mit.edu')
-		expect(parseBlocked(serializeBlocked(hosts))).toEqual(hosts)
+	it('accepts a stored list of hosts', () => {
+		expect(parseBlocked(['slate.com', 'pub.cba.mit.edu'])).toEqual(['slate.com', 'pub.cba.mit.edu'])
 	})
 
-	it('is empty without a cookie', () => {
+	it('is empty for anything that is not a list', () => {
 		expect(parseBlocked(undefined)).toEqual([])
-		expect(parseBlocked('')).toEqual([])
+		expect(parseBlocked('slate.com')).toEqual([])
+		expect(parseBlocked({ host: 'slate.com' })).toEqual([])
 	})
 
-	it('drops duplicates and anything that is not a host name', () => {
-		expect(parseBlocked('a.com~a.com~<script>~b.org~Not A Host')).toEqual(['a.com', 'b.org'])
+	it('drops duplicates and entries that are not host names', () => {
+		expect(parseBlocked(['a.com', 'a.com', '<script>', 42, 'b.org', 'Not A Host'])).toEqual([
+			'a.com',
+			'b.org',
+		])
 	})
 
-	it('keeps the 100 most recent hosts', () => {
-		const hosts = Array.from({ length: 130 }, (_, index) => `site${index}.example`)
-		const kept = parseBlocked(serializeBlocked(hosts))
-		expect(kept).toHaveLength(100)
-		expect(kept[0]).toBe('site30.example')
-		expect(kept.at(-1)).toBe('site129.example')
+	it('has no size limit', () => {
+		const hosts = Array.from({ length: 1000 }, (_, index) => `site${index}.example`)
+		expect(parseBlocked(hosts)).toHaveLength(1000)
 	})
 })
 

@@ -30,8 +30,13 @@ export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** Runs a task when the browser is idle. Safari has no `requestIdleCallback`, so there the task runs after 200 ms. */
+/** The task runs after this long even if the browser never becomes idle. */
+const IDLE_TIMEOUT_MS = 1500
+/** Safari has no `requestIdleCallback`. There the task runs after this delay. */
+const IDLE_FALLBACK_MS = 200
+
+/** Runs a task when the browser is idle. */
 export function whenIdle(task: () => void): void {
-	if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: 1500 })
-	else setTimeout(task, 200)
+	if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: IDLE_TIMEOUT_MS })
+	else setTimeout(task, IDLE_FALLBACK_MS)
 }
