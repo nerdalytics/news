@@ -2,9 +2,11 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Lemmy HTTP API v3 on lemmy.world. The request asks for ten extra posts because `parse` filters some out. */
+/** Lemmy HTTP API v3 on lemmy.world. */
 const INSTANCE = 'https://lemmy.world'
-const ENDPOINT = `${INSTANCE}/api/v3/post/list?community_name=technology&sort=Hot&limit=${LIMIT + 10}`
+/** Posts requested beyond the limit, because `parse` filters some out. */
+const SPARE_POSTS = 10
+const ENDPOINT = `${INSTANCE}/api/v3/post/list?community_name=technology&sort=Hot&limit=${LIMIT + SPARE_POSTS}`
 
 interface PostView {
 	post: {

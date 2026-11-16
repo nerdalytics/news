@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseCookies } from '../src/cookies'
-import { parseSources, parseTheme, serializeSources } from '../src/settings'
+import { parseBlocked, parseSources, parseTheme, serializeSources } from '../src/settings'
 import { SOURCES } from '../src/sources/index'
 import type { SourceMeta } from '../src/sources/types'
 
@@ -69,6 +69,30 @@ describe('parseTheme', () => {
 		expect(parseTheme('dark')).toBe('dark')
 		expect(parseTheme(undefined)).toBe('auto')
 		expect(parseTheme('sepia')).toBe('auto')
+	})
+})
+
+describe('blocked sites', () => {
+	it('accepts a stored list of hosts', () => {
+		expect(parseBlocked(['slate.com', 'pub.cba.mit.edu'])).toEqual(['slate.com', 'pub.cba.mit.edu'])
+	})
+
+	it('is empty for anything that is not a list', () => {
+		expect(parseBlocked(undefined)).toEqual([])
+		expect(parseBlocked('slate.com')).toEqual([])
+		expect(parseBlocked({ host: 'slate.com' })).toEqual([])
+	})
+
+	it('drops duplicates and entries that are not host names', () => {
+		expect(parseBlocked(['a.com', 'a.com', '<script>', 42, 'b.org', 'Not A Host'])).toEqual([
+			'a.com',
+			'b.org',
+		])
+	})
+
+	it('has no size limit', () => {
+		const hosts = Array.from({ length: 1000 }, (_, index) => `site${index}.example`)
+		expect(parseBlocked(hosts)).toHaveLength(1000)
 	})
 })
 

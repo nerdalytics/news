@@ -15,9 +15,12 @@ interface TrendLink {
 	history?: Array<{ day: string; accounts: string; uses: string }>
 }
 
-/** Counts the posts that used the link today and yesterday. */
+/** The history lists one entry per day. The share count covers today and yesterday. */
+const SHARE_DAYS = 2
+
+/** Counts the posts that used the link on the most recent days. */
 function recentUses(link: TrendLink): number {
-	const days = link.history?.slice(0, 2) ?? []
+	const days = link.history?.slice(0, SHARE_DAYS) ?? []
 	return days.reduce((sum, day) => sum + (Number(day.uses) || 0), 0)
 }
 

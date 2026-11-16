@@ -1,5 +1,6 @@
 import { adapterFor } from './sources/index'
 import type { FeedItem, SourceMeta } from './sources/types'
+import { DAY, MINUTE } from './time'
 
 export interface Feed {
 	items: FeedItem[]
@@ -9,7 +10,7 @@ export interface Feed {
 
 const KEY_PREFIX = 'tureel:feed:v1:'
 /** The app discards cached feeds older than this. */
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+const MAX_AGE_MS = 7 * DAY
 
 const memory = new Map<string, Feed>()
 const inflight = new Map<string, Promise<Feed>>()
@@ -46,7 +47,7 @@ export function peek(id: string, now = Date.now()): Feed | undefined {
 }
 
 export function isFresh(feed: Feed, source: SourceMeta, now = Date.now()): boolean {
-	return now - feed.fetchedAt < source.ttl * 60_000
+	return now - feed.fetchedAt < source.ttl * MINUTE
 }
 
 async function fetchFeed(source: SourceMeta, priority: RequestPriority): Promise<Feed> {

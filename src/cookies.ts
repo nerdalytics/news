@@ -1,5 +1,8 @@
+import { DAY, SECOND } from './time'
+
 /** Chrome caps cookie lifetime at 400 days. */
-const MAX_AGE_SECONDS = 400 * 24 * 60 * 60
+const MAX_AGE_MS = 400 * DAY
+const MAX_AGE_SECONDS = MAX_AGE_MS / SECOND
 
 /** The directory the app is served from, e.g. `/tureel/` on GitHub Pages. */
 function cookiePath(): string {
@@ -38,13 +41,26 @@ export function writeCookie(name: string, value: string): void {
 	}
 	cookieStore
 		.set({
-			expires: Date.now() + MAX_AGE_SECONDS * 1000,
+			expires: Date.now() + MAX_AGE_MS,
 			name,
 			path: cookiePath(),
 			sameSite: 'lax',
 			value: encodeURIComponent(value),
 		})
 		.catch(() => writeLegacy(name, value))
+}
+
+function deleteLegacy(name: string): void {
+	// biome-ignore lint/suspicious/noDocumentCookie: fallback for browsers without the Cookie Store API
+	document.cookie = `${name}=; Max-Age=0; Path=${cookiePath()}`
+}
+
+export async function deleteCookie(name: string): Promise<void> {
+	if (!('cookieStore' in window)) {
+		deleteLegacy(name)
+		return
+	}
+	await cookieStore.delete({ name, path: cookiePath() }).catch(() => deleteLegacy(name))
 }
 
 /** Calls back when one of the named cookies changes, in this tab or in another. */

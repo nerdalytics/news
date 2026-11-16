@@ -2,8 +2,10 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
+/** The `top` parameter counts days. */
+const TOP_DAYS = 1
 /** Forem API. Returns the most popular articles of the last day. */
-const ENDPOINT = `https://dev.to/api/articles?top=1&per_page=${LIMIT}`
+const ENDPOINT = `https://dev.to/api/articles?top=${TOP_DAYS}&per_page=${LIMIT}`
 
 export interface Article {
 	id: number

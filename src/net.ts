@@ -1,6 +1,10 @@
 import type { FetchContext } from './sources/types'
+import { SECOND } from './time'
 
-const TIMEOUT_MS = 12_000
+const TIMEOUT_MS = 12 * SECOND
+
+/** HTTP status codes the app treats specially. */
+export const STATUS = { forbidden: 403, notFound: 404, tooManyRequests: 429 } as const
 
 export class HttpError extends Error {
 	constructor(
@@ -16,9 +20,9 @@ export class HttpError extends Error {
 /** Reads `Retry-After`, or GitHub's `X-RateLimit-Reset`, if the response exposes the header. */
 export function retryAtFrom(headers: Headers, now = Date.now()): number | undefined {
 	const retryAfter = Number(headers.get('retry-after'))
-	if (retryAfter > 0) return now + retryAfter * 1000
+	if (retryAfter > 0) return now + retryAfter * SECOND
 	const reset = Number(headers.get('x-ratelimit-reset'))
-	if (reset > 0 && headers.get('x-ratelimit-remaining') === '0') return reset * 1000
+	if (reset > 0 && headers.get('x-ratelimit-remaining') === '0') return reset * SECOND
 	return undefined
 }
 
@@ -51,7 +55,10 @@ function rateLimitMessage(retryAt: number | undefined): string {
 }
 
 function httpMessage(error: HttpError): string {
-	if (error.status === 403 || error.status === 429) return rateLimitMessage(error.retryAt)
+	// GitHub answers 403 when its rate limit is used up. Most other APIs answer 429.
+	if (error.status === STATUS.forbidden || error.status === STATUS.tooManyRequests) {
+		return rateLimitMessage(error.retryAt)
+	}
 	return `The source answered with an error (HTTP ${error.status}).`
 }
 

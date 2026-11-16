@@ -1,5 +1,6 @@
-import { safeUrl } from '../format'
+import { safeUrl, utcDate } from '../format'
 import { getJson } from '../net'
+import { DAY } from '../time'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
@@ -24,7 +25,7 @@ export interface SearchResponse {
 }
 
 export function searchUrl(now = new Date()): string {
-	const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
+	const since = utcDate(new Date(now.getTime() - WINDOW_DAYS * DAY))
 	const params = new URLSearchParams({
 		order: 'desc',
 		per_page: String(LIMIT),

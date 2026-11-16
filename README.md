@@ -9,6 +9,10 @@ source's public API, so tureel has no backend and no accounts.
 - Clicking a row opens the item. Clicking the comment count opens the item's
   discussion on the source.
 - Readers can switch sources on and off and drag them into any order.
+- tureel dims the entries the reader has opened.
+- Tapping the name of a linked site, such as `slate.com`, offers to block that
+  site. Entries that link to a blocked site stay in the list, dimmed, with the
+  site name crossed out. Tapping the name again offers to unblock it.
 - The theme follows the system or stays fixed on light or dark.
 - tureel stores settings in browser cookies.
 
@@ -92,11 +96,17 @@ site.
 
 ## Layout
 
-- Below 760 px width, tureel displays one source at a time and the page itself
-  scrolls. Tapping a tab swaps the source and restores its scroll position.
-  Tapping the current tab scrolls to the top.
-- From 760 px width, 2 to 5 columns sit side by side and each column scrolls on
-  its own.
+The layout has no width breakpoints. The deck is a CSS grid with
+`repeat(auto-fit, minmax(min(100%, var(--column-min)), 1fr))`, so it fits as
+many columns of at least `--column-min` (24rem) as the width allows. A script
+reads how many fit and displays that many consecutive sources, starting at the
+one the reader chose. A phone shows one source, a 1440 px window three.
+
+- The page itself scrolls at every width. No column has its own scrollbar.
+- The tab bar is fixed to the bottom edge at every width. A dot marks each
+  displayed source.
+- Tapping a tab displays that source first and restores the scroll position.
+  Tapping the tab of a displayed source scrolls to the top.
 
 ## Debugging on a phone
 
@@ -113,6 +123,27 @@ and they expire after 400 days.
 | `tureel_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
 | `tureel_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
 | `tureel_newtab` | `1` opens links in a new tab. |
+
+tureel keeps three more things in `localStorage`, because they are not
+settings or can outgrow the 4096 bytes of a cookie.
+
+| Key | Value |
+| --- | --- |
+| `tureel:blocked:v1` | The hosts of blocked sites. The list has no size limit. |
+| `tureel:read:v1` | The 500 most recently opened links. |
+| `tureel:feed:v1:<source>` | The cached feed of a source. |
+
+The browser's own `:visited` state also dims a link, but it does not cover
+every case. A web app on the home screen opens links in a separate browser
+view, and private windows keep no history.
+
+"Start fresh" at the end of the settings sheet deletes the three cookies and
+every `tureel:` key, then shows the first-run screen. The button asks for a
+second tap before it deletes anything.
+
+A site can be blocked when an entry links away from its source, as entries on
+Hacker News, Lemmy and Mastodon do. tureel matches the exact host without a
+leading `www.`, so blocking `example.com` does not block `news.example.com`.
 
 tureel writes cookies with the Cookie Store API and falls back to
 `document.cookie` in browsers without it. In browsers with the Cookie Store
