@@ -30,15 +30,6 @@ export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** Runs a DOM change inside a cross-fade in browsers that support View Transitions. */
-export function withTransition(change: () => void): void {
-	if (!document.startViewTransition || prefersReducedMotion()) {
-		change()
-		return
-	}
-	document.startViewTransition(change)
-}
-
 /** Runs a task when the browser is idle. Safari has no `requestIdleCallback`, so there the task runs after 200 ms. */
 export function whenIdle(task: () => void): void {
 	if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: 1500 })

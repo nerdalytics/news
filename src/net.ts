@@ -65,17 +65,3 @@ export function describeError(error: unknown, online = navigator.onLine): string
 	if (error instanceof TypeError) return 'tureel could not reach the source.'
 	return 'tureel could not read the response of the source.'
 }
-
-const preconnected = new Set<string>()
-
-/** Opens a connection to an origin that a later request will use. */
-export function preconnect(origin: string): void {
-	if (preconnected.has(origin)) return
-	preconnected.add(origin)
-	const link = document.createElement('link')
-	link.rel = 'preconnect'
-	link.href = origin
-	// The app sends requests without credentials, so the connection must be anonymous as well.
-	link.crossOrigin = 'anonymous'
-	document.head.append(link)
-}

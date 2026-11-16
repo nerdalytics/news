@@ -47,7 +47,6 @@ export interface SourceMeta {
 	accent: readonly [light: string, dark: string]
 	home: string
 	comments: boolean
-	enabledByDefault: boolean
 	/** Minutes a fetched feed counts as fresh. */
 	ttl: number
 }

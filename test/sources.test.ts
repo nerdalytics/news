@@ -60,7 +60,13 @@ describe('Hacker News', () => {
 		expect(hackernews.parse(ids, { hits: many })).toHaveLength(LIMIT)
 	})
 
-	it('asks for all stories in one batched search', () => {
+	it('asks for the front page in one search', () => {
+		const url = new URL(hackernews.frontPageUrl())
+		expect(url.origin + url.pathname).toBe('https://hn.algolia.com/api/v1/search')
+		expect(url.searchParams.get('tags')).toBe('front_page')
+	})
+
+	it('can look up specific stories in one batched search', () => {
 		const url = new URL(hackernews.searchUrl([7, 8]))
 		expect(url.origin + url.pathname).toBe('https://hn.algolia.com/api/v1/search')
 		expect(url.searchParams.get('tags')).toBe('(story,poll),(story_7,story_8)')

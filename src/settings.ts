@@ -20,8 +20,8 @@ const COOKIE = { newTab: 'tureel_newtab', sources: 'tureel_sources', theme: 'tur
 const DISABLED_PREFIX = '-'
 const SEPARATOR = '.'
 
-function defaults(catalogue: readonly SourceMeta[]): SourceSetting[] {
-	return catalogue.map((source) => ({ enabled: source.enabledByDefault, id: source.id }))
+function allOff(catalogue: readonly SourceMeta[]): SourceSetting[] {
+	return catalogue.map((source) => ({ enabled: false, id: source.id }))
 }
 
 /**
@@ -34,7 +34,7 @@ export function parseSources(
 	raw: string | undefined,
 	catalogue: readonly SourceMeta[] = SOURCES
 ): SourceSetting[] {
-	if (raw === undefined) return defaults(catalogue)
+	if (raw === undefined) return allOff(catalogue)
 	const known = new Set(catalogue.map((source) => source.id))
 	const sources: SourceSetting[] = []
 	for (const token of raw.split(SEPARATOR)) {
@@ -62,6 +62,11 @@ function read(): Settings {
 		sources: parseSources(readCookie(COOKIE.sources)),
 		theme: parseTheme(readCookie(COOKIE.theme)),
 	}
+}
+
+/** True until the reader has chosen sources once, which creates the sources cookie. */
+export function isFirstVisit(): boolean {
+	return readCookie(COOKIE.sources) === undefined
 }
 
 type Listener = (settings: Settings) => void

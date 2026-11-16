@@ -1,4 +1,4 @@
-import { loadAdapter } from './sources/index'
+import { adapterFor } from './sources/index'
 import type { FeedItem, SourceMeta } from './sources/types'
 
 export interface Feed {
@@ -50,18 +50,40 @@ export function isFresh(feed: Feed, source: SourceMeta, now = Date.now()): boole
 }
 
 async function fetchFeed(source: SourceMeta, priority: RequestPriority): Promise<Feed> {
-	const adapter = await loadAdapter(source.id)
-	const feed: Feed = { fetchedAt: Date.now(), items: await adapter.fetch({ priority }) }
+	const items = await adapterFor(source.id).fetch({ priority })
+	const feed: Feed = { fetchedAt: Date.now(), items }
 	memory.set(source.id, feed)
 	writeStored(source.id, feed)
 	return feed
+}
+
+/** Reports the outcome of a fetch to the `?debug` panel. Nothing listens otherwise. */
+function report(id: string, startedAt: number, error?: unknown): void {
+	const detail = {
+		id,
+		ms: Math.round(performance.now() - startedAt),
+		...(error ? { error: String(error) } : {}),
+	}
+	dispatchEvent(new CustomEvent('tureel:fetch', { detail }))
+}
+
+async function timedFetch(source: SourceMeta, priority: RequestPriority): Promise<Feed> {
+	const startedAt = performance.now()
+	try {
+		const feed = await fetchFeed(source, priority)
+		report(source.id, startedAt)
+		return feed
+	} catch (error) {
+		report(source.id, startedAt, error)
+		throw error
+	}
 }
 
 /** Fetches a source. Concurrent calls for the same source share one request. */
 export function refresh(source: SourceMeta, priority: RequestPriority): Promise<Feed> {
 	const pending = inflight.get(source.id)
 	if (pending) return pending
-	const request = fetchFeed(source, priority).finally(() => inflight.delete(source.id))
+	const request = timedFetch(source, priority).finally(() => inflight.delete(source.id))
 	inflight.set(source.id, request)
 	return request
 }

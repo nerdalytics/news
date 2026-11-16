@@ -1,11 +1,6 @@
 import { sourceById } from '../sources/index'
 import { Column } from './column'
-import { el, prefersReducedMotion, whenIdle, withTransition } from './dom'
-
-/** A column fetches only after staying on screen this long, so scrolling past it sends no request. */
-const DWELL_MS = 150
-/** After a programmatic jump, the deck ignores scroll events for this long. */
-const QUIET_MS = 250
+import { el, prefersReducedMotion, whenIdle } from './dom'
 
 interface DeckOptions {
 	deck: HTMLElement
@@ -15,51 +10,52 @@ interface DeckOptions {
 	onManage: () => void
 }
 
+/** From this width on, several columns sit side by side and scroll on their own. */
+const WIDE = matchMedia('(min-width: 760px)')
+
 function savesData(): boolean {
 	const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
 	return connection?.saveData === true
 }
 
+function scrollBehavior(): ScrollBehavior {
+	return prefersReducedMotion() ? 'instant' : 'smooth'
+}
+
 /**
- * The horizontally scrolling row of columns and its tab bar.
+ * The columns and their tab bar. It has two layouts.
  *
- * Two IntersectionObservers on the scroll container decide when a column loads.
- * `viewObserver` activates a column that is at least half visible.
- * `rangeObserver` prefetches a column within half a viewport of the visible
- * area, once the reader has scrolled.
+ * On phones only the current source is displayed and the document scrolls, so
+ * the browser's own page scrolling does all the work. Switching sources swaps
+ * the displayed column and restores its scroll position.
+ *
+ * On wide screens all columns sit in a horizontally scrolling row. An
+ * IntersectionObserver reports which columns are in view.
+ *
+ * In both layouts the current source loads first. The other sources are then
+ * fetched one after another at low priority.
  */
 export class Deck {
 	private readonly columns = new Map<string, Column>()
 	private readonly tabs = new Map<string, HTMLAnchorElement>()
+	/** Sources in view on wide screens. On phones this is the current source. */
 	private readonly visible = new Set<string>()
-	private readonly inRange = new Set<string>()
+	/** Where the reader left each source on phones. */
+	private readonly scrollTops = new Map<string, number>()
 	private readonly viewObserver: IntersectionObserver
-	private readonly rangeObserver: IntersectionObserver
 	private order: string[] = []
-	private engaged = false
-	/** Scroll events before this time come from the app, not from the reader. */
-	private quietUntil = 0
+	private current: string | undefined
 	private settled = false
-	private firstView = true
+	private prefetching = false
+	private prefetchAgain = false
 
 	constructor(private readonly options: DeckOptions) {
-		const root = options.deck
 		this.viewObserver = new IntersectionObserver((entries) => this.onView(entries), {
-			root,
+			root: options.deck,
 			threshold: 0.5,
 		})
-		this.rangeObserver = new IntersectionObserver((entries) => this.onRange(entries), {
-			root,
-			rootMargin: '0px 50% 0px 50%',
-		})
-		// Scroll events do not bubble, but a capturing listener receives them. This
-		// one sees the horizontal scroll of the deck and the vertical scroll of
-		// every column.
-		root.addEventListener('scroll', () => this.engage(), { capture: true, passive: true })
 		options.tabs.addEventListener('click', (event) => this.onTabClick(event))
-		// Prefetch a source when the pointer or keyboard focus reaches its tab.
-		options.tabs.addEventListener('pointerover', (event) => this.onTabHint(event))
-		options.tabs.addEventListener('focusin', (event) => this.onTabHint(event))
+		WIDE.addEventListener('change', () => this.applyLayout())
 		addEventListener('hashchange', () => this.showFromHash())
 		document.addEventListener('visibilitychange', () => this.onResume())
 		addEventListener('pageshow', (event) => {
@@ -69,36 +65,37 @@ export class Deck {
 
 	/** Makes the deck show exactly these sources, in this order, reusing existing columns. */
 	sync(ids: readonly string[]): void {
-		const anchor = this.leftmost()
 		this.order = ids.filter((id) => sourceById(id))
 		this.removeStale()
 		for (const [index, id] of this.order.entries()) this.place(id, index)
-		this.options.deck.classList.toggle('is-empty', this.order.length === 0)
 		this.renderEmptyState()
 		this.renderTabs()
-		const column = anchor ? this.columns.get(anchor) : undefined
-		if (column) this.jumpTo(column.el.offsetLeft)
+		if (!this.current || !this.columns.has(this.current)) {
+			this.current = this.order[0]
+			if (!WIDE.matches) scrollTo({ behavior: 'instant', top: 0 })
+		}
+		this.applyLayout()
+		if (this.settled) this.prefetchOthers()
 	}
 
 	setNewTab(newTab: boolean): void {
 		for (const column of this.columns.values()) column.setNewTab(newTab)
 	}
 
-	/** Jumps to the source named in the URL fragment, e.g. `#github`. */
-	showFromHash(instant = false): void {
+	/** Opens the source named in the URL fragment, e.g. `#github`. */
+	showFromHash(): void {
 		const id = location.hash.slice(1)
-		if (this.columns.has(id)) this.show(id, instant)
+		if (this.columns.has(id)) this.show(id, 'instant')
 	}
 
 	private removeStale(): void {
 		for (const [id, column] of this.columns) {
 			if (this.order.includes(id)) continue
 			this.viewObserver.unobserve(column.el)
-			this.rangeObserver.unobserve(column.el)
 			column.el.remove()
 			this.columns.delete(id)
 			this.visible.delete(id)
-			this.inRange.delete(id)
+			this.scrollTops.delete(id)
 		}
 	}
 
@@ -108,7 +105,6 @@ export class Deck {
 		const column = new Column(source, () => this.onSettled())
 		this.columns.set(id, column)
 		this.viewObserver.observe(column.el)
-		this.rangeObserver.observe(column.el)
 		return column
 	}
 
@@ -156,53 +152,59 @@ export class Deck {
 			return [tab]
 		})
 		this.options.tabs.replaceChildren(...links)
+	}
+
+	/** Applies the current source to whichever layout is active. */
+	private applyLayout(): void {
+		for (const [id, column] of this.columns) {
+			column.el.classList.toggle('is-current', id === this.current)
+		}
+		const column = this.current ? this.columns.get(this.current) : undefined
+		if (WIDE.matches) {
+			// The page does not scroll in this layout. Clear an offset left over from the phone layout.
+			scrollTo({ behavior: 'instant', top: 0 })
+			// The observer fills `visible` again once the columns are laid out.
+			if (column) this.options.deck.scrollTo({ behavior: 'instant', left: column.el.offsetLeft })
+		} else {
+			this.visible.clear()
+			if (this.current) this.visible.add(this.current)
+			void column?.activate()
+		}
 		this.markTabs()
 	}
 
-	private tabId(event: Event): string | undefined {
-		const tab = (event.target as Element).closest<HTMLElement>('.tab')
-		return tab?.dataset.id
-	}
-
 	private onTabClick(event: MouseEvent): void {
-		const id = this.tabId(event)
+		const tab = (event.target as Element).closest<HTMLElement>('.tab')
+		const id = tab?.dataset.id
 		if (!id || event.metaKey || event.ctrlKey || event.shiftKey) return
 		event.preventDefault()
-		// Tapping the tab of a source that is already in view scrolls its column to the top.
-		if (this.visible.has(id)) this.columns.get(id)?.scrollToTop()
-		else this.show(id)
+		// Tapping the tab of a source that is already in view scrolls it to the top.
+		if (this.visible.has(id)) this.scrollToTop(id)
+		else this.show(id, scrollBehavior())
+		this.writeHash(id)
 	}
 
-	private onTabHint(event: Event): void {
-		const id = this.tabId(event)
-		if (id && !savesData()) this.columns.get(id)?.prefetch()
+	private scrollToTop(id: string): void {
+		if (WIDE.matches) this.columns.get(id)?.scrollToTop()
+		else scrollTo({ behavior: scrollBehavior(), top: 0 })
 	}
 
-	private show(id: string, instant = false): void {
+	private show(id: string, behavior: ScrollBehavior): void {
 		const column = this.columns.get(id)
 		if (!column) return
-		const deck = this.options.deck
-		const left = column.el.offsetLeft
-		const near = Math.abs(left - deck.scrollLeft) <= deck.clientWidth * 1.5
-		if (instant) this.jumpTo(left)
-		else if (near && !prefersReducedMotion()) deck.scrollTo({ behavior: 'smooth', left })
-		// A far jump cross-fades. A smooth scroll would pass through every column in between.
-		else withTransition(() => deck.scrollTo({ behavior: 'instant', left }))
+		if (WIDE.matches) {
+			this.options.deck.scrollTo({ behavior, left: column.el.offsetLeft })
+			return
+		}
+		if (this.current) this.scrollTops.set(this.current, scrollY)
+		this.current = id
+		this.applyLayout()
+		scrollTo({ behavior: 'instant', top: this.scrollTops.get(id) ?? 0 })
 	}
 
-	/** Moves the deck without animation. The scroll does not count as reader activity. */
-	private jumpTo(left: number): void {
-		this.quietUntil = performance.now() + QUIET_MS
-		this.options.deck.scrollTo({ behavior: 'instant', left })
-	}
-
-	private leftmost(): string | undefined {
-		return this.order.find((id) => this.visible.has(id))
-	}
-
+	/** Wide screens only. Tracks which columns are in view and loads them. */
 	private onView(entries: IntersectionObserverEntry[]): void {
-		const immediate = this.firstView
-		this.firstView = false
+		if (!WIDE.matches) return
 		for (const entry of entries) {
 			const id = entry.target.id.replace('source-', '')
 			if (!entry.isIntersecting) {
@@ -210,50 +212,19 @@ export class Deck {
 				continue
 			}
 			this.visible.add(id)
-			if (immediate) this.columns.get(id)?.activate()
-			else setTimeout(() => this.activateIfVisible(id), DWELL_MS)
+			void this.columns.get(id)?.activate()
 		}
+		this.current = this.order.find((id) => this.visible.has(id)) ?? this.current
 		this.markTabs()
-		this.syncHash()
-	}
-
-	private activateIfVisible(id: string): void {
-		if (this.visible.has(id)) this.columns.get(id)?.activate()
-	}
-
-	private onRange(entries: IntersectionObserverEntry[]): void {
-		for (const entry of entries) {
-			const id = entry.target.id.replace('source-', '')
-			if (entry.isIntersecting) this.inRange.add(id)
-			else this.inRange.delete(id)
-		}
-		if (this.engaged) this.prefetchInRange()
-	}
-
-	/** Runs on the reader's first scroll. From then on the deck prefetches columns close to the viewport. */
-	private engage(): void {
-		if (this.engaged || performance.now() < this.quietUntil) return
-		this.engaged = true
-		this.prefetchInRange()
-	}
-
-	private prefetchInRange(): void {
-		if (savesData()) return
-		whenIdle(() => {
-			for (const id of this.inRange) {
-				if (!this.visible.has(id)) this.columns.get(id)?.prefetch()
-			}
-		})
 	}
 
 	private markTabs(): void {
-		const current = this.leftmost()
 		for (const [id, tab] of this.tabs) {
 			tab.classList.toggle('is-visible', this.visible.has(id))
-			if (id === current) tab.setAttribute('aria-current', 'true')
+			if (id === this.current) tab.setAttribute('aria-current', 'true')
 			else tab.removeAttribute('aria-current')
 		}
-		const tab = current ? this.tabs.get(current) : undefined
+		const tab = this.current ? this.tabs.get(this.current) : undefined
 		if (tab) this.revealTab(tab)
 	}
 
@@ -268,22 +239,51 @@ export class Deck {
 		}
 	}
 
-	/** Writes the current source to the URL fragment, so a reload or a shared link opens the same source. */
-	private syncHash(): void {
-		const current = this.leftmost()
-		if (!current || !this.engaged) return
-		if (location.hash.slice(1) !== current) history.replaceState(null, '', `#${current}`)
+	/** Writes the source to the URL fragment, so a reload or a shared link opens it again. */
+	private writeHash(id: string): void {
+		if (location.hash.slice(1) !== id) history.replaceState(null, '', `#${id}`)
 	}
 
 	private onSettled(): void {
 		if (this.settled) return
 		this.settled = true
 		this.options.onFirstSettled()
+		whenIdle(() => this.prefetchOthers())
 	}
 
-	/** Refreshes the visible columns when the reader returns from another tab, another app or the back/forward cache. */
+	/** Sources that are not in view, nearest to the current one first. */
+	private othersByDistance(): string[] {
+		const origin = this.current ? this.order.indexOf(this.current) : 0
+		return this.order
+			.filter((id) => !this.visible.has(id))
+			.sort(
+				(a, b) =>
+					Math.abs(this.order.indexOf(a) - origin) - Math.abs(this.order.indexOf(b) - origin)
+			)
+	}
+
+	/**
+	 * Fetches the sources that are not in view, one at a time, so they are ready
+	 * when the reader switches. A fresh cached feed costs no request.
+	 */
+	private async prefetchOthers(): Promise<void> {
+		if (savesData()) return
+		if (this.prefetching) {
+			this.prefetchAgain = true
+			return
+		}
+		this.prefetching = true
+		for (const id of this.othersByDistance()) await this.columns.get(id)?.prefetch()
+		this.prefetching = false
+		if (!this.prefetchAgain) return
+		this.prefetchAgain = false
+		void this.prefetchOthers()
+	}
+
+	/** Refreshes the feeds when the reader returns from another tab, another app or the back/forward cache. */
 	private onResume(): void {
 		if (document.visibilityState !== 'visible') return
-		for (const id of this.visible) this.columns.get(id)?.activate()
+		for (const id of this.visible) void this.columns.get(id)?.activate()
+		void this.prefetchOthers()
 	}
 }
