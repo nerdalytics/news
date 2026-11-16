@@ -1,0 +1,20 @@
+{
+	"name": "tureel",
+	"short_name": "tureel",
+	"description": "Shows the top 20 entries of Hacker News, GitHub and other developer sources on one page.",
+	"start_url": "./",
+	"scope": "./",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#ffffff",
+	"icons": [
+		{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+		{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{
+			"src": "icon-maskable-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}
