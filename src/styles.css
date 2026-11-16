@@ -116,7 +116,7 @@ button {
 	opacity: 0.6;
 }
 
-/* ── Bar: bottom on phones, top on wide screens ─────────────────────────── */
+/* Bar. It sits at the bottom on phones and at the top on wide screens. */
 
 .bar {
 	grid-area: bar;
@@ -149,7 +149,7 @@ button {
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
 	scrollbar-width: none;
-	/* Fades the strip out where it runs under the settings button. */
+	/* Fades out the right end of the strip, next to the settings button. */
 	mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
 }
 
@@ -187,7 +187,7 @@ button {
 		transform 0.15s;
 }
 
-/* Phones: only the source on screen is at full strength. */
+/* On phones, dim the badges of sources that are not on screen. */
 @media (max-width: 759.98px) {
 	.tab {
 		--badge-opacity: 0.55;
@@ -202,7 +202,7 @@ button {
 	transform: scale(0.94);
 }
 
-/* The dot under the source that is on screen. */
+/* A dot marks the source that is on screen. */
 .tab::after {
 	content: "";
 	position: absolute;
@@ -221,7 +221,7 @@ button {
 	opacity: 1;
 }
 
-/* ── Deck and columns ───────────────────────────────────────────────────── */
+/* Deck and columns */
 
 .deck {
 	grid-area: deck;
@@ -305,7 +305,7 @@ button {
 	overflow-wrap: anywhere;
 }
 
-/* The whole row opens the item; the comments link sits above this layer. */
+/* This layer makes the whole row open the item. The comments link sits above it. */
 .title::after {
 	content: "";
 	position: absolute;
@@ -349,7 +349,7 @@ button {
 	white-space: nowrap;
 }
 
-/* One line: counts and age keep their width, the trailing tag gives way. */
+/* The meta row stays on one line. Counts and age keep their width, and the last entry truncates. */
 .meta > * {
 	flex: none;
 }
@@ -364,7 +364,7 @@ button {
 .comments {
 	position: relative;
 	z-index: 1;
-	/* A comfortable touch target without changing the layout. */
+	/* Enlarges the touch target without changing the layout. */
 	margin: -10px -6px;
 	padding: 10px 6px;
 	color: var(--text);
@@ -418,7 +418,7 @@ button {
 	color: var(--muted);
 }
 
-/* ── Skeleton ───────────────────────────────────────────────────────────── */
+/* Skeleton */
 
 .bone {
 	display: block;
@@ -445,7 +445,7 @@ button {
 	animation: pulse 1.2s ease-in-out infinite alternate;
 }
 
-/* ── Manage sources sheet ───────────────────────────────────────────────── */
+/* Manage sources sheet */
 
 .sheet {
 	display: none;
@@ -607,7 +607,7 @@ button {
 	height: 44px;
 	color: var(--muted);
 	cursor: grab;
-	/* The handle drags; everything else in the sheet scrolls. */
+	/* Touches on the handle drag the row. Touches elsewhere in the sheet scroll it. */
 	touch-action: none;
 }
 
@@ -713,7 +713,7 @@ button {
 	font-size: 0.8125rem;
 }
 
-/* ── Wide screens: bar on top, several columns side by side ─────────────── */
+/* Wide screens. The bar moves to the top and several columns sit side by side. */
 
 @media (min-width: 760px) {
 	:root {
@@ -783,7 +783,7 @@ button {
 		scrollbar-width: thin;
 	}
 
-	/* Centre the deck when all columns fit; auto margins collapse when they do not. */
+	/* Auto margins centre the deck when all columns fit. They resolve to zero when the columns overflow. */
 	.column:first-child {
 		margin-left: auto;
 	}
@@ -851,7 +851,7 @@ button {
 	}
 }
 
-/* ── Motion ─────────────────────────────────────────────────────────────── */
+/* Motion */
 
 ::view-transition-old(root),
 ::view-transition-new(root) {

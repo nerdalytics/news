@@ -3,13 +3,13 @@ import { getJson, preconnect } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
- * Two requests in total: the official Firebase API gives the front page order,
- * the Algolia HN Search API resolves all stories in one batch instead of one
- * request per story.
+ * Uses two requests. The official Firebase API returns the front page order as
+ * ids. The Algolia HN Search API then returns all those stories in one response.
+ * The official API would need one request per story.
  */
 const TOP_URL = 'https://hacker-news.firebaseio.com/v0/topstories.json'
 const SEARCH_URL = 'https://hn.algolia.com/api/v1/search'
-/** Ask for a few more than needed: job posts and just-submitted stories are not in the index. */
+/** Request more ids than needed, because the search index lacks job posts and stories submitted moments ago. */
 const CANDIDATES = 30
 
 interface Hit {
@@ -41,7 +41,7 @@ function toItem(hit: Hit): FeedItem | undefined {
 	const item: FeedItem = {
 		id: hit.objectID,
 		title: hit.title,
-		// Ask HN and other text posts have no URL: the discussion is the item.
+		// Ask HN and other text posts have no URL, so link to the discussion.
 		url: safeUrl(hit.url) ?? discussion,
 		comments: { count: hit.num_comments ?? 0, label: 'comment', url: discussion },
 		score: { label: 'point', value: hit.points ?? 0 },
@@ -64,7 +64,7 @@ export function parse(ids: readonly number[], response: SearchResponse): FeedIte
 
 const adapter: SourceAdapter = {
 	async fetch(ctx) {
-		// The second request can only start after the first: have its connection ready.
+		// The second request starts after the first returns. Open its connection now.
 		preconnect(new URL(SEARCH_URL).origin)
 		const top = await getJson<number[]>(TOP_URL, ctx)
 		const ids = top.slice(0, CANDIDATES)

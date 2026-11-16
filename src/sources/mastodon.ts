@@ -2,7 +2,7 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Mastodon trends API; `limit` is capped at 20 by the server. */
+/** Mastodon trends API. The server caps `limit` at 20. */
 const ENDPOINT = `https://mastodon.social/api/v1/trends/links?limit=${LIMIT}`
 
 interface TrendLink {
@@ -11,11 +11,11 @@ interface TrendLink {
 	description?: string | null
 	provider_name?: string | null
 	published_at?: string | null
-	/** Newest day first; the numbers are strings. */
+	/** The newest day comes first. The API sends the numbers as strings. */
 	history?: Array<{ day: string; accounts: string; uses: string }>
 }
 
-/** Posts that used the link today and yesterday. */
+/** Counts the posts that used the link today and yesterday. */
 function recentUses(link: TrendLink): number {
 	const days = link.history?.slice(0, 2) ?? []
 	return days.reduce((sum, day) => sum + (Number(day.uses) || 0), 0)

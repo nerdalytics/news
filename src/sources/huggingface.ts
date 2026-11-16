@@ -1,7 +1,7 @@
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Hugging Face Hub API: models ordered by the Hub's trending score. */
+/** Hugging Face Hub API. Returns models ordered by the Hub's trending score. */
 const ENDPOINT = `https://huggingface.co/api/models?sort=trendingScore&limit=${LIMIT}`
 
 interface Model {
@@ -15,7 +15,7 @@ function toItem(model: Model): FeedItem {
 	const item: FeedItem = {
 		id: model.id,
 		title: model.id,
-		// Model ids are `owner/name`; encode each part, keep the slash.
+		// A model id has the form `owner/name`. Encode both parts and keep the slash.
 		url: `https://huggingface.co/${model.id.split('/').map(encodeURIComponent).join('/')}`,
 		score: { label: 'like', value: model.likes ?? 0 },
 	}

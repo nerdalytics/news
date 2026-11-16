@@ -1,9 +1,9 @@
 interface ReorderOptions {
 	/** The element that scrolls when the list is taller than the screen. */
 	scroller: HTMLElement
-	/** A row moved by one position (drag or keyboard). */
+	/** Called when a drag or a key press moved a row by one position. */
 	onMove: (row: HTMLElement) => void
-	/** The order changed and the interaction is finished. */
+	/** Called when the interaction ended and the order changed. */
 	onChange: () => void
 }
 
@@ -16,17 +16,17 @@ function rowOf(target: EventTarget | null): HTMLElement | null {
 }
 
 /**
- * Drag-to-reorder for a list whose rows carry a `.handle` button.
+ * Adds drag-to-reorder to a list whose rows contain a `.handle` button.
  *
- * Pointer events cover mouse, touch and pen alike. The dragged row follows the
- * pointer through a transform; whenever it passes the middle of a neighbour the
- * neighbour is moved to its other side, so the dragged row itself never leaves
- * the document and keeps its pointer capture.
+ * Pointer events cover mouse, touch and pen. A transform moves the dragged row
+ * with the pointer. When the row passes the middle of a neighbour, the code
+ * moves the neighbour to the row's other side. The dragged row never leaves the
+ * document, so it keeps its pointer capture.
  */
 export function enableReorder(list: HTMLElement, options: ReorderOptions): void {
 	let row: HTMLElement | null = null
 	let pointerY = 0
-	/** Where the pointer would be if the row sat untransformed in its current slot. */
+	/** The pointer position at which the row sits in its current slot without a transform. */
 	let originY = 0
 	let moved = false
 	let frame = 0
@@ -59,7 +59,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		row.style.transform = `translateY(${position() - originY}px)`
 	}
 
-	/** Scrolls the sheet while the pointer rests near its top or bottom edge. */
+	/** Scrolls the sheet while the pointer is near its top or bottom edge. */
 	function autoScroll(): void {
 		if (!row) return
 		const bounds = options.scroller.getBoundingClientRect()
@@ -115,7 +115,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		event.preventDefault()
 		if (event.key === 'ArrowUp') sibling.before(target)
 		else sibling.after(target)
-		// Moving a node drops focus; put it back on the handle.
+		// Moving a node removes focus from it, so focus the handle again.
 		target.querySelector<HTMLElement>('.handle')?.focus()
 		options.onMove(target)
 		options.onChange()

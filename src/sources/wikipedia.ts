@@ -2,7 +2,7 @@ import { safeUrl, utcDatePath } from '../format'
 import { getJson, HttpError } from '../net'
 import { type FeedItem, type FetchContext, LIMIT, type SourceAdapter } from './types'
 
-/** Wikimedia Feed API: the "most read" list is published per UTC day. */
+/** Wikimedia Feed API. It publishes one "most read" list per UTC day. */
 const FEED_URL = 'https://api.wikimedia.org/feed/v1/wikipedia/en/featured'
 const DAY_MS = 86_400_000
 
@@ -41,7 +41,7 @@ async function mostRead(daysAgo: number, ctx: FetchContext): Promise<FeedItem[]>
 	try {
 		return parse(await getJson<FeaturedResponse>(`${FEED_URL}/${utcDatePath(day)}`, ctx))
 	} catch (error) {
-		// A day that has not been compiled yet answers 404: treat it as empty.
+		// The API answers 404 for a day it has not compiled yet. Treat that as an empty list.
 		if (error instanceof HttpError && error.status === 404) return []
 		throw error
 	}

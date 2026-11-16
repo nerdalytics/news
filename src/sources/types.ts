@@ -26,7 +26,7 @@ export interface FeedItem {
 }
 
 export interface FetchContext {
-	/** `high` for a column the user is looking at, `low` for prefetches. */
+	/** `high` for a column the reader is looking at, `low` for prefetches. */
 	priority: RequestPriority
 }
 
@@ -35,7 +35,7 @@ export interface SourceAdapter {
 }
 
 export interface SourceMeta {
-	/** Stable id, `[a-z0-9]+`. Stored in the settings cookie. */
+	/** Stable id matching `[a-z0-9]+`. The settings cookie stores it. */
 	id: string
 	name: string
 	tagline: string
@@ -43,7 +43,7 @@ export interface SourceMeta {
 	mark: string
 	/** Badge background and foreground. */
 	badge: readonly [background: string, foreground: string]
-	/** Accent for the column title and ranks: light theme, dark theme. */
+	/** Accent colours for the column title and ranks, one per theme. */
 	accent: readonly [light: string, dark: string]
 	home: string
 	comments: boolean

@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # A deployment that has started is allowed to finish.
+  # Let a running deployment finish. Cancel superseded pull request runs.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

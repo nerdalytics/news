@@ -6,7 +6,7 @@
 		<title>tureel</title>
 		<meta
 			name="description"
-			content="The top entries of Hacker News, GitHub and other developer sources in one fast, quiet reader."
+			content="tureel shows the top 20 entries of Hacker News, GitHub and other developer sources on one page."
 		/>
 		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
 		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1012" />
@@ -14,14 +14,14 @@
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<script>
-			// Apply a stored theme before the first paint to avoid a flash.
+			// Apply the stored theme before the first paint, so the page does not flash in the wrong theme.
 			;(() => {
 				const stored = /(?:^|; )tureel_theme=(light|dark)/.exec(document.cookie)
 				if (stored) document.documentElement.dataset.theme = stored[1]
 			})()
 		</script>
 		<style>
-			/* Critical: theme and splash render before the stylesheet arrives. */
+			/* Inline styles for the theme and the splash, which render before the stylesheet loads. */
 			:root {
 				color-scheme: light dark;
 			}
@@ -46,7 +46,7 @@
 					opacity 0.18s ease,
 					visibility 0.18s;
 			}
-			/* The mark only fades in if loading takes noticeably long. */
+			/* The mark fades in after 150 ms, so a fast load never shows it. */
 			#splash svg {
 				opacity: 0;
 				animation: splash-in 0.2s 0.15s ease forwards;
@@ -93,7 +93,7 @@
 		<main id="deck" class="deck"></main>
 		<noscript>
 			<p style="padding: 24px; font-family: system-ui, sans-serif">
-				tureel loads its feeds in your browser and needs JavaScript to do so.
+				tureel fetches its feeds in your browser, so it needs JavaScript.
 			</p>
 		</noscript>
 		<script type="module" src="/src/main.ts"></script>

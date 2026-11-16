@@ -10,8 +10,8 @@ import * as thenextweb from '../src/sources/thenextweb'
 import { LIMIT } from '../src/sources/types'
 import * as wikipedia from '../src/sources/wikipedia'
 
-// The fixtures mirror the field names of the live responses (checked 2026-11-15)
-// with made-up content.
+// The fixtures use the field names of the live responses, checked on 2026-11-15.
+// Their content is invented.
 
 describe('Hacker News', () => {
 	const hits = [
@@ -76,7 +76,7 @@ describe('GitHub', () => {
 		expect(url.searchParams.get('per_page')).toBe(String(LIMIT))
 	})
 
-	it('maps repositories; they have no comments', () => {
+	it('maps repositories without comments', () => {
 		const items = github.parse({
 			items: [
 				{

@@ -21,7 +21,7 @@ function timeElement(time: number): HTMLTimeElement {
 	return node
 }
 
-/** Publisher or topic; for link aggregators the linked site's host. */
+/** Returns the item's tag. Without one, it returns the host of the linked site, unless the link stays on the source. */
 function tagOf(item: FeedItem, source: SourceMeta): string | undefined {
 	if (item.tag) return item.tag
 	const host = hostOf(item.url)
@@ -78,7 +78,7 @@ function updatedLabel(fetchedAt: number): string {
 	return age === 'now' ? 'Updated just now' : `Updated ${age} ago`
 }
 
-/** One source: header, up to twenty rows, footer. Owns its loading and error states. */
+/** Renders one source as a header, up to twenty rows and a footer. It manages its own loading and error states. */
 export class Column {
 	readonly el: HTMLElement
 	private readonly body: HTMLElement
@@ -88,7 +88,7 @@ export class Column {
 
 	constructor(
 		readonly source: SourceMeta,
-		/** Called whenever the column finished showing content or an error. */
+		/** Called each time the column has shown content or an error. */
 		private readonly onSettled: () => void
 	) {
 		this.el = el('section', 'column')
@@ -99,17 +99,17 @@ export class Column {
 		this.foot = el('footer', 'col-foot')
 		this.el.append(this.renderHead(), this.body, this.foot)
 		this.el.setAttribute('aria-labelledby', `title-${source.id}`)
-		// Cached entries are shown at once, even for columns that are off screen.
+		// Show cached entries immediately, also in columns that are off screen.
 		const cached = peek(source.id)
 		if (cached) this.render(cached)
 	}
 
-	/** The column is on screen: show what we have, fetch if it is missing or stale. */
+	/** Call when the column is on screen. Shows the cached feed and fetches if it is missing or stale. */
 	activate(): void {
 		this.revalidate('high')
 	}
 
-	/** The column is likely next: fetch quietly so it is ready when it scrolls in. */
+	/** Call when the reader is likely to open the column next. Fetches at low priority. */
 	prefetch(): void {
 		this.revalidate('low')
 	}
@@ -166,7 +166,7 @@ export class Column {
 		this.shown = feed
 		this.el.dataset.state = 'ready'
 		if (feed.items.length === 0) {
-			this.body.replaceChildren(el('p', 'notice', 'Nothing to show right now.'))
+			this.body.replaceChildren(el('p', 'notice', 'This source returned no entries.'))
 		} else {
 			const list = el('ol', 'list')
 			list.append(...feed.items.map((item, index) => renderItem(item, index, this.source)))
@@ -202,7 +202,7 @@ export class Column {
 
 	private renderError(message: string): void {
 		this.el.dataset.state = 'error'
-		// Keep entries that are already on screen; only report the failed refresh.
+		// Keep the entries that are on screen and report the failed refresh in the footer.
 		if (this.shown) {
 			this.renderFoot(message)
 			return

@@ -3,8 +3,9 @@ import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
- * Stack Exchange API without a key: requests from one IP address share a daily
- * quota (reported as `quota_max: 300`). The feed cache keeps the app well below it.
+ * Stack Exchange API, used without a key. All keyless requests from one IP
+ * address share a daily quota, which the API reports as `quota_max: 300`. The
+ * 30 minute cache limits automatic refreshes to 48 a day for each reader.
  */
 const ENDPOINT = `https://api.stackexchange.com/2.3/questions?site=stackoverflow&sort=week&order=desc&pagesize=${LIMIT}`
 
@@ -27,7 +28,7 @@ function toItem(question: Question): FeedItem | undefined {
 	if (!url) return undefined
 	const item: FeedItem = {
 		id: String(question.question_id),
-		// Titles arrive HTML-encoded.
+		// The API HTML-encodes titles.
 		title: decodeEntities(question.title),
 		url,
 		comments: { count: question.answer_count, label: 'answer', url: `${url}#answers` },

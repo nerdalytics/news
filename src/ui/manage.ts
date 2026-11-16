@@ -14,7 +14,7 @@ let dialog: HTMLDialogElement | undefined
 let list: HTMLUListElement | undefined
 let live: HTMLElement | undefined
 
-/** The list in the dialog is the source of truth while it is open. */
+/** Reads order and state from the rows of the dialog. */
 function readList(): SourceSetting[] {
 	const rows = Array.from(list?.children ?? []) as HTMLElement[]
 	return rows.map((row) => ({
@@ -105,15 +105,16 @@ function renderNewTabSwitch(): HTMLElement {
 function build(): HTMLDialogElement {
 	const sheet = el('dialog', 'sheet')
 	sheet.setAttribute('aria-labelledby', 'manage-title')
-	// Light dismiss (click outside, Esc, Android back) where `closedby` is supported.
+	// In browsers that support `closedby`, a click outside, Esc or the Android
+	// back gesture closes the dialog.
 	sheet.setAttribute('closedby', 'any')
-	// Fallback: a click on the backdrop targets the dialog element itself.
+	// In other browsers, close on a backdrop click. Its event target is the dialog element.
 	sheet.addEventListener('click', (event) => {
 		if (event.target === sheet) sheet.close()
 	})
 
 	const head = el('header', 'sheet-head')
-	const title = el('h2', undefined, 'Manage Sources')
+	const title = el('h2', undefined, 'Manage sources')
 	title.id = 'manage-title'
 	const done = el('button', 'link-btn done', 'Done')
 	done.type = 'button'
@@ -137,7 +138,7 @@ function build(): HTMLDialogElement {
 		el(
 			'p',
 			'note',
-			'Your choices are saved in cookies in this browser. There is no account and nothing is sent to a tureel server.'
+			'tureel saves these settings in cookies in this browser. It has no accounts and no server of its own.'
 		)
 	)
 

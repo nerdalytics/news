@@ -2,7 +2,7 @@
 	"name": "tureel",
 	"version": "0.1.0",
 	"private": true,
-	"description": "A fast, client-only reader for the top entries of developer news sources.",
+	"description": "Shows the top 20 entries of Hacker News, GitHub and other developer sources on one page.",
 	"license": "MIT",
 	"type": "module",
 	"engines": {

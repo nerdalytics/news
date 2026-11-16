@@ -1,8 +1,8 @@
 import type { SourceAdapter, SourceMeta } from './types'
 
 /**
- * The catalogue. Only sources listed here can be enabled; each one talks to a
- * public, CORS-enabled endpoint, so the app needs no backend.
+ * The catalogue. Readers can enable only the sources listed here. Each one uses
+ * a public endpoint that sends CORS headers, so the app needs no backend.
  */
 export const SOURCES: readonly SourceMeta[] = [
 	{
@@ -123,7 +123,7 @@ export function sourceById(id: string): SourceMeta | undefined {
 
 type AdapterModule = { default: SourceAdapter }
 
-/** Each adapter is its own chunk and is only downloaded when its source is used. */
+/** Each adapter is a separate chunk. The browser downloads it the first time its source loads. */
 const LOADERS: Record<string, () => Promise<AdapterModule>> = {
 	devto: () => import('./devto'),
 	github: () => import('./github'),

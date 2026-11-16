@@ -2,15 +2,15 @@ import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle, withTransition } from './dom'
 
-/** A column must stay on screen this long before it fetches, so fly-bys cost nothing. */
+/** A column fetches only after staying on screen this long, so scrolling past it sends no request. */
 const DWELL_MS = 150
-/** How long after a programmatic jump scroll events are not taken as reader activity. */
+/** After a programmatic jump, the deck ignores scroll events for this long. */
 const QUIET_MS = 250
 
 interface DeckOptions {
 	deck: HTMLElement
 	tabs: HTMLElement
-	/** A column showed content or an error for the first time. */
+	/** Called when the first column shows content or an error. */
 	onFirstSettled: () => void
 	onManage: () => void
 }
@@ -21,12 +21,12 @@ function savesData(): boolean {
 }
 
 /**
- * The horizontally scrolling row of columns plus its tab bar.
+ * The horizontally scrolling row of columns and its tab bar.
  *
- * Loading is driven by two IntersectionObservers on the scroll container:
- * - `viewObserver`: a column that is at least half visible is active and loads.
- * - `rangeObserver`: a column within half a viewport of the visible area is
- *   prefetched once the reader has started scrolling.
+ * Two IntersectionObservers on the scroll container decide when a column loads.
+ * `viewObserver` activates a column that is at least half visible.
+ * `rangeObserver` prefetches a column within half a viewport of the visible
+ * area, once the reader has scrolled.
  */
 export class Deck {
 	private readonly columns = new Map<string, Column>()
@@ -37,7 +37,7 @@ export class Deck {
 	private readonly rangeObserver: IntersectionObserver
 	private order: string[] = []
 	private engaged = false
-	/** Scroll events before this moment come from the app itself, not from the reader. */
+	/** Scroll events before this time come from the app, not from the reader. */
 	private quietUntil = 0
 	private settled = false
 	private firstView = true
@@ -52,11 +52,12 @@ export class Deck {
 			root,
 			rootMargin: '0px 50% 0px 50%',
 		})
-		// Scroll events do not bubble, but they can be captured: this sees both the
-		// horizontal deck scroll and the vertical scroll of any column.
+		// Scroll events do not bubble, but a capturing listener receives them. This
+		// one sees the horizontal scroll of the deck and the vertical scroll of
+		// every column.
 		root.addEventListener('scroll', () => this.engage(), { capture: true, passive: true })
 		options.tabs.addEventListener('click', (event) => this.onTabClick(event))
-		// Desktop: pointing at or focusing a tab is a strong hint.
+		// Prefetch a source when the pointer or keyboard focus reaches its tab.
 		options.tabs.addEventListener('pointerover', (event) => this.onTabHint(event))
 		options.tabs.addEventListener('focusin', (event) => this.onTabHint(event))
 		addEventListener('hashchange', () => this.showFromHash())
@@ -132,7 +133,7 @@ export class Deck {
 		button.type = 'button'
 		button.addEventListener('click', () => this.options.onManage())
 		empty.append(
-			el('h2', undefined, 'No sources yet'),
+			el('h2', undefined, 'No sources enabled'),
 			el('p', undefined, 'Switch on at least one source to start reading.'),
 			button
 		)
@@ -167,7 +168,7 @@ export class Deck {
 		const id = this.tabId(event)
 		if (!id || event.metaKey || event.ctrlKey || event.shiftKey) return
 		event.preventDefault()
-		// A second tap on a source that is already in view scrolls it back to the top.
+		// Tapping the tab of a source that is already in view scrolls its column to the top.
 		if (this.visible.has(id)) this.columns.get(id)?.scrollToTop()
 		else this.show(id)
 	}
@@ -185,11 +186,11 @@ export class Deck {
 		const near = Math.abs(left - deck.scrollLeft) <= deck.clientWidth * 1.5
 		if (instant) this.jumpTo(left)
 		else if (near && !prefersReducedMotion()) deck.scrollTo({ behavior: 'smooth', left })
-		// Far jumps cross-fade instead of racing past every column in between.
+		// A far jump cross-fades. A smooth scroll would pass through every column in between.
 		else withTransition(() => deck.scrollTo({ behavior: 'instant', left }))
 	}
 
-	/** Repositions the deck without animation and without counting as reader activity. */
+	/** Moves the deck without animation. The scroll does not count as reader activity. */
 	private jumpTo(left: number): void {
 		this.quietUntil = performance.now() + QUIET_MS
 		this.options.deck.scrollTo({ behavior: 'instant', left })
@@ -229,7 +230,7 @@ export class Deck {
 		if (this.engaged) this.prefetchInRange()
 	}
 
-	/** First scroll of the session: from now on, columns close to the viewport are warmed up. */
+	/** Runs on the reader's first scroll. From then on the deck prefetches columns close to the viewport. */
 	private engage(): void {
 		if (this.engaged || performance.now() < this.quietUntil) return
 		this.engaged = true
@@ -256,7 +257,7 @@ export class Deck {
 		if (tab) this.revealTab(tab)
 	}
 
-	/** Keeps the current tab inside the scrolling tab strip without moving anything else. */
+	/** Scrolls the tab strip so the current tab is visible. It scrolls nothing else. */
 	private revealTab(tab: HTMLElement): void {
 		const strip = this.options.tabs
 		const start = tab.offsetLeft - 12
@@ -267,7 +268,7 @@ export class Deck {
 		}
 	}
 
-	/** Mirrors the current source into the fragment so a reload or shared link returns to it. */
+	/** Writes the current source to the URL fragment, so a reload or a shared link opens the same source. */
 	private syncHash(): void {
 		const current = this.leftmost()
 		if (!current || !this.engaged) return
@@ -280,7 +281,7 @@ export class Deck {
 		this.options.onFirstSettled()
 	}
 
-	/** Back from another tab, app or the back/forward cache: refresh what is on screen. */
+	/** Refreshes the visible columns when the reader returns from another tab, another app or the back/forward cache. */
 	private onResume(): void {
 		if (document.visibilityState !== 'visible') return
 		for (const id of this.visible) this.columns.get(id)?.activate()

@@ -2,7 +2,7 @@ import { safeUrl } from '../format'
 import { getText } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** The public RSS feed; it is served with CORS headers. */
+/** The public RSS feed. The server sends it with CORS headers. */
 const ENDPOINT = 'https://thenextweb.com/feed'
 
 function text(parent: Element, tag: string): string {

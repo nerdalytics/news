@@ -11,7 +11,7 @@ const AGE_UNITS: ReadonlyArray<readonly [size: number, suffix: string]> = [
 	[MINUTE, 'm'],
 ]
 
-/** `2h`, `3d`, `now` – the compact age used in feed rows. */
+/** Formats an age for feed rows, for example `2h`, `3d` or `now`. */
 export function timeAgo(time: number, now = Date.now()): string {
 	const age = now - time
 	for (const [size, suffix] of AGE_UNITS) {
@@ -22,17 +22,17 @@ export function timeAgo(time: number, now = Date.now()): string {
 
 const COMPACT = new Intl.NumberFormat('en', { maximumFractionDigits: 1, notation: 'compact' })
 
-/** `1234` → `1.2K`. */
+/** Formats `1234` as `1.2K`. */
 export function compact(value: number): string {
 	return COMPACT.format(value)
 }
 
-/** `count(1, 'point')` → `1 point`, `count(1234, 'star')` → `1.2K stars`. */
+/** Formats a count with its noun. `count(1, 'point')` returns `1 point` and `count(1234, 'star')` returns `1.2K stars`. */
 export function count(value: number, noun: string): string {
 	return `${compact(value)} ${noun}${value === 1 ? '' : 's'}`
 }
 
-/** Returns the URL only if it is an absolute http(s) URL; feeds are untrusted input. */
+/** Returns the URL if it is an absolute http or https URL. Feed content is untrusted input. */
 export function safeUrl(value: unknown): string | undefined {
 	if (typeof value !== 'string') return undefined
 	try {
@@ -65,12 +65,12 @@ function decodeEntity(match: string, body: string): string {
 	return NAMED_ENTITIES[body] ?? match
 }
 
-/** Decodes the HTML entities some APIs leave in plain-text fields (`&quot;`, `&#39;`). */
+/** Decodes HTML entities such as `&quot;` and `&#39;`, which some APIs leave in plain-text fields. */
 export function decodeEntities(text: string): string {
 	return text.replace(/&(#\d+|#[xX][0-9a-fA-F]+|[a-zA-Z]+);/g, decodeEntity)
 }
 
-/** `YYYY/MM/DD` in UTC, the form date-addressed APIs use in paths. */
+/** Formats the UTC date as `YYYY/MM/DD` for APIs that take the date in the URL path. */
 export function utcDatePath(date: Date): string {
 	return date.toISOString().slice(0, 10).replaceAll('-', '/')
 }

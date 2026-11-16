@@ -1,4 +1,4 @@
-/** Chrome caps cookie lifetime at 400 days; other browsers accept it too. */
+/** Chrome caps cookie lifetime at 400 days. */
 const MAX_AGE_SECONDS = 400 * 24 * 60 * 60
 
 /** The directory the app is served from, e.g. `/tureel/` on GitHub Pages. */
@@ -14,13 +14,13 @@ export function parseCookies(header: string): Map<string, string> {
 		try {
 			cookies.set(pair.slice(0, split), decodeURIComponent(pair.slice(split + 1)))
 		} catch {
-			// A malformed value from elsewhere on this origin is not ours to fix.
+			// Skip a malformed value. Another page on this origin may have set it.
 		}
 	}
 	return cookies
 }
 
-/** Synchronous on purpose: settings are needed before the first paint. */
+/** Reads synchronously, because the app needs the settings before the first paint. */
 export function readCookie(name: string): string | undefined {
 	return parseCookies(document.cookie).get(name)
 }
@@ -47,7 +47,7 @@ export function writeCookie(name: string, value: string): void {
 		.catch(() => writeLegacy(name, value))
 }
 
-/** Calls back when another tab changes one of the named cookies. */
+/** Calls back when one of the named cookies changes, in this tab or in another. */
 export function onCookieChange(names: readonly string[], callback: () => void): void {
 	if (!('cookieStore' in window)) return
 	cookieStore.addEventListener('change', (event) => {

@@ -5,7 +5,7 @@ const TIMEOUT_MS = 12_000
 export class HttpError extends Error {
 	constructor(
 		readonly status: number,
-		/** Epoch milliseconds after which the source accepts requests again, if it said so. */
+		/** Time in epoch milliseconds after which the source accepts requests again, if the response said so. */
 		readonly retryAt?: number
 	) {
 		super(`HTTP ${status}`)
@@ -13,7 +13,7 @@ export class HttpError extends Error {
 	}
 }
 
-/** Reads `Retry-After` or GitHub-style `X-RateLimit-Reset`, when the response exposes them. */
+/** Reads `Retry-After`, or GitHub's `X-RateLimit-Reset`, if the response exposes the header. */
 export function retryAtFrom(headers: Headers, now = Date.now()): number | undefined {
 	const retryAfter = Number(headers.get('retry-after'))
 	if (retryAfter > 0) return now + retryAfter * 1000
@@ -55,27 +55,27 @@ function httpMessage(error: HttpError): string {
 	return `The source answered with an error (HTTP ${error.status}).`
 }
 
-/** A short message that is safe to show to the reader. */
+/** Returns a short message to show to the reader. */
 export function describeError(error: unknown, online = navigator.onLine): string {
 	if (error instanceof HttpError) return httpMessage(error)
-	if (!online) return 'You appear to be offline.'
+	if (!online) return 'You are offline.'
 	if (error instanceof DOMException && error.name === 'TimeoutError') {
 		return 'The source took too long to answer.'
 	}
-	if (error instanceof TypeError) return 'The source could not be reached.'
-	return 'The response could not be read.'
+	if (error instanceof TypeError) return 'tureel could not reach the source.'
+	return 'tureel could not read the response of the source.'
 }
 
 const preconnected = new Set<string>()
 
-/** Opens the connection to an origin that a follow-up request is about to need. */
+/** Opens a connection to an origin that a later request will use. */
 export function preconnect(origin: string): void {
 	if (preconnected.has(origin)) return
 	preconnected.add(origin)
 	const link = document.createElement('link')
 	link.rel = 'preconnect'
 	link.href = origin
-	// Requests are made without credentials, so the connection must be anonymous too.
+	// The app sends requests without credentials, so the connection must be anonymous as well.
 	link.crossOrigin = 'anonymous'
 	document.head.append(link)
 }

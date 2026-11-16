@@ -8,7 +8,7 @@ export interface Feed {
 }
 
 const KEY_PREFIX = 'tureel:feed:v1:'
-/** Older copies are not shown any more, not even as a placeholder. */
+/** The app discards cached feeds older than this. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 const memory = new Map<string, Feed>()
@@ -24,7 +24,7 @@ function readStored(id: string): Feed | undefined {
 		const feed: unknown = JSON.parse(localStorage.getItem(KEY_PREFIX + id) ?? 'null')
 		return isFeed(feed) ? feed : undefined
 	} catch {
-		// Storage can be unavailable (private mode, blocked site data) or hold junk.
+		// Storage can be blocked, for example in private mode, and stored data can be invalid.
 		return undefined
 	}
 }
@@ -33,11 +33,11 @@ function writeStored(id: string, feed: Feed): void {
 	try {
 		localStorage.setItem(KEY_PREFIX + id, JSON.stringify(feed))
 	} catch {
-		// Quota exceeded or storage blocked: the in-memory copy still serves this visit.
+		// Writing fails when storage is full or blocked. The in-memory copy still serves this visit.
 	}
 }
 
-/** The last known feed of a source, without touching the network. */
+/** Returns the cached feed of a source without a network request. */
 export function peek(id: string, now = Date.now()): Feed | undefined {
 	const feed = memory.get(id) ?? readStored(id)
 	if (!feed || now - feed.fetchedAt > MAX_AGE_MS) return undefined
@@ -57,7 +57,7 @@ async function fetchFeed(source: SourceMeta, priority: RequestPriority): Promise
 	return feed
 }
 
-/** Fetches a source; concurrent calls for the same source share one request. */
+/** Fetches a source. Concurrent calls for the same source share one request. */
 export function refresh(source: SourceMeta, priority: RequestPriority): Promise<Feed> {
 	const pending = inflight.get(source.id)
 	if (pending) return pending

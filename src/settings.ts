@@ -25,9 +25,10 @@ function defaults(catalogue: readonly SourceMeta[]): SourceSetting[] {
 }
 
 /**
- * Cookie format: ids in display order joined by `.`, disabled ones prefixed with
- * `-`, e.g. `hn.github.-devto`. Ids the catalogue no longer knows are dropped;
- * sources added to the catalogue later are appended, switched off.
+ * The cookie lists ids in display order, joined by `.`. A `-` prefix marks a
+ * disabled source, as in `hn.github.-devto`. The parser drops ids that are no
+ * longer in the catalogue. It appends catalogue sources that the cookie does not
+ * mention and switches them off.
  */
 export function parseSources(
 	raw: string | undefined,
@@ -100,7 +101,7 @@ function sameSettings(a: Settings, b: Settings): boolean {
 	)
 }
 
-// Keep several open tabs in step with each other.
+// Apply settings that another tab changed.
 onCookieChange(Object.values(COOKIE), () => {
 	const next = read()
 	if (sameSettings(current, next)) return

@@ -2,7 +2,7 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Lemmy HTTP API v3 on lemmy.world. A few extra posts make up for filtered ones. */
+/** Lemmy HTTP API v3 on lemmy.world. The request asks for ten extra posts because `parse` filters some out. */
 const INSTANCE = 'https://lemmy.world'
 const ENDPOINT = `${INSTANCE}/api/v3/post/list?community_name=technology&sort=Hot&limit=${LIMIT + 10}`
 
@@ -15,7 +15,7 @@ interface PostView {
 		nsfw?: boolean
 		removed?: boolean
 		deleted?: boolean
-		/** Pinned by the community moderators. */
+		/** True when a community moderator pinned the post. */
 		featured_community?: boolean
 	}
 	counts: { comments: number; score: number }
@@ -30,7 +30,7 @@ function isListed({ post }: PostView): boolean {
 }
 
 function toItem({ post, counts }: PostView): FeedItem {
-	// The post page on this instance, not `ap_id`: that may point to another server.
+	// Link to the post page on this instance. `ap_id` can point to another server.
 	const discussion = `${INSTANCE}/post/${post.id}`
 	const item: FeedItem = {
 		id: String(post.id),
@@ -43,7 +43,7 @@ function toItem({ post, counts }: PostView): FeedItem {
 	return item
 }
 
-/** The same link is often cross-posted from several instances; keep the hottest one. */
+/** Several instances often cross-post the same link. Keeps the first one, which ranks highest. */
 function uniqueByUrl(items: FeedItem[]): FeedItem[] {
 	const seen = new Set<string>()
 	return items.filter((item) => !seen.has(item.url) && seen.add(item.url))
