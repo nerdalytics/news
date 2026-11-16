@@ -9,6 +9,10 @@ source's public API, so tureel has no backend and no accounts.
 - Clicking a row opens the item. Clicking the comment count opens the item's
   discussion on the source.
 - Readers can switch sources on and off and drag them into any order.
+- tureel dims the entries the reader has opened.
+- Tapping the name of a linked site, such as `slate.com`, offers to block that
+  site. Entries that link to a blocked site stay in the list, dimmed, with the
+  site name crossed out. Tapping the name again offers to unblock it.
 - The theme follows the system or stays fixed on light or dark.
 - tureel stores settings in browser cookies.
 
@@ -105,7 +109,7 @@ of every feed request in a panel at the top of the page.
 
 ## Settings
 
-tureel stores three cookies. Their path is the directory that serves the app,
+tureel stores four cookies. Their path is the directory that serves the app,
 and they expire after 400 days.
 
 | Cookie | Value |
@@ -113,6 +117,17 @@ and they expire after 400 days.
 | `tureel_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
 | `tureel_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
 | `tureel_newtab` | `1` opens links in a new tab. |
+| `tureel_blocked` | Hosts of blocked sites, joined by `~`, as in `slate.com~example.org`. tureel keeps the 100 most recent. |
+
+The list of opened links is not a setting. tureel keeps the 500 most recent
+URLs in `localStorage`, next to the cached feeds. The browser's own `:visited`
+state also dims a link, but it does not cover every case. A web app on the home
+screen opens links in a separate browser view, and private windows keep no
+history.
+
+A site can be blocked when an entry links away from its source, as entries on
+Hacker News, Lemmy and Mastodon do. tureel matches the exact host without a
+leading `www.`, so blocking `example.com` does not block `news.example.com`.
 
 tureel writes cookies with the Cookie Store API and falls back to
 `document.cookie` in browsers without it. In browsers with the Cookie Store

@@ -1,7 +1,8 @@
 import { type Feed, isFresh, peek, refresh } from '../cache'
 import { count, hostOf, timeAgo } from '../format'
 import { describeError } from '../net'
-import { getSettings } from '../settings'
+import { isRead } from '../read'
+import { getSettings, isBlocked } from '../settings'
 import type { FeedItem, SourceMeta } from '../sources/types'
 import { el, icon, prefersReducedMotion } from './dom'
 
@@ -21,11 +22,26 @@ function timeElement(time: number): HTMLTimeElement {
 	return node
 }
 
-/** Returns the item's tag. Without one, it returns the host of the linked site, unless the link stays on the source. */
-function tagOf(item: FeedItem, source: SourceMeta): string | undefined {
-	if (item.tag) return item.tag
+/** Returns the host an item links to, unless the link stays on the source's own site. */
+export function siteOf(item: FeedItem, source: SourceMeta): string | undefined {
 	const host = hostOf(item.url)
 	return host === hostOf(source.home) ? undefined : host
+}
+
+/** A button that opens the block and unblock option for a linked site. */
+function siteButton(site: string, label: string): HTMLButtonElement {
+	const button = el('button', 'site', label)
+	button.type = 'button'
+	button.dataset.site = site
+	button.setAttribute('aria-haspopup', 'dialog')
+	button.setAttribute('aria-label', `${label}, options for ${site}`)
+	return button
+}
+
+/** The last entry of the meta row. It is the item's tag, or the linked site as a button. */
+function tagOf(item: FeedItem, source: SourceMeta): Node | string | undefined {
+	const site = siteOf(item, source)
+	return site ? siteButton(site, item.tag ?? site) : item.tag
 }
 
 function metaParts(item: FeedItem, source: SourceMeta): Array<Node | string> {
@@ -50,8 +66,19 @@ function renderMeta(item: FeedItem, source: SourceMeta): HTMLElement {
 	return meta
 }
 
+/** Marks rows the reader has opened and rows that link to a blocked site. */
+function applyState(row: HTMLElement): void {
+	const { site, url } = row.dataset
+	row.classList.toggle('is-read', url !== undefined && isRead(url))
+	row.classList.toggle('is-blocked', site !== undefined && isBlocked(site))
+}
+
 function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIElement {
 	const row = el('li', 'item')
+	row.dataset.url = item.url
+	const site = siteOf(item, source)
+	if (site) row.dataset.site = site
+	applyState(row)
 	const content = el('div', 'item-body')
 	content.append(externalLink('title', item.url, item.title))
 	if (item.description) content.append(el('p', 'desc', item.description))
@@ -116,6 +143,11 @@ export class Column {
 
 	scrollToTop(): void {
 		this.el.scrollTo({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', top: 0 })
+	}
+
+	/** Re-applies the read and blocked marks after either list changed. */
+	restyle(): void {
+		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) applyState(row)
 	}
 
 	setNewTab(newTab: boolean): void {

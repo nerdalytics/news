@@ -14,11 +14,22 @@ export interface Settings {
 	sources: readonly SourceSetting[]
 	theme: Theme
 	newTab: boolean
+	/** Hosts of linked sites the reader blocked, oldest first. */
+	blocked: readonly string[]
 }
 
-const COOKIE = { newTab: 'tureel_newtab', sources: 'tureel_sources', theme: 'tureel_theme' }
+const COOKIE = {
+	blocked: 'tureel_blocked',
+	newTab: 'tureel_newtab',
+	sources: 'tureel_sources',
+	theme: 'tureel_theme',
+}
 const DISABLED_PREFIX = '-'
 const SEPARATOR = '.'
+/** `~` cannot occur in a host name and needs no encoding in a cookie. */
+const HOST_SEPARATOR = '~'
+/** Keeps the cookie well below the 4096 byte limit. */
+const MAX_BLOCKED = 100
 
 function allOff(catalogue: readonly SourceMeta[]): SourceSetting[] {
 	return catalogue.map((source) => ({ enabled: false, id: source.id }))
@@ -56,8 +67,19 @@ export function parseTheme(raw: string | undefined): Theme {
 	return raw === 'light' || raw === 'dark' ? raw : 'auto'
 }
 
+export function parseBlocked(raw: string | undefined): string[] {
+	const hosts = (raw ?? '').split(HOST_SEPARATOR).filter((host) => /^[a-z0-9.-]+$/.test(host))
+	return [...new Set(hosts)]
+}
+
+/** Keeps the most recent hosts when the list grows beyond the limit. */
+export function serializeBlocked(hosts: readonly string[]): string {
+	return hosts.slice(-MAX_BLOCKED).join(HOST_SEPARATOR)
+}
+
 function read(): Settings {
 	return {
+		blocked: parseBlocked(readCookie(COOKIE.blocked)),
 		newTab: readCookie(COOKIE.newTab) === '1',
 		sources: parseSources(readCookie(COOKIE.sources)),
 		theme: parseTheme(readCookie(COOKIE.theme)),
@@ -95,13 +117,25 @@ export function updateSettings(patch: Partial<Settings>): void {
 	if (patch.sources) writeCookie(COOKIE.sources, serializeSources(current.sources))
 	if (patch.theme) writeCookie(COOKIE.theme, current.theme)
 	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
+	if (patch.blocked) writeCookie(COOKIE.blocked, serializeBlocked(current.blocked))
 	emit()
+}
+
+export function isBlocked(host: string): boolean {
+	return current.blocked.includes(host)
+}
+
+/** Blocks or unblocks the host of a linked site. */
+export function setBlocked(host: string, blocked: boolean): void {
+	const others = current.blocked.filter((entry) => entry !== host)
+	updateSettings({ blocked: (blocked ? [...others, host] : others).slice(-MAX_BLOCKED) })
 }
 
 function sameSettings(a: Settings, b: Settings): boolean {
 	return (
 		a.theme === b.theme &&
 		a.newTab === b.newTab &&
+		serializeBlocked(a.blocked) === serializeBlocked(b.blocked) &&
 		serializeSources(a.sources) === serializeSources(b.sources)
 	)
 }

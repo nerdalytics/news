@@ -1,3 +1,4 @@
+import { markRead } from '../read'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
@@ -8,6 +9,8 @@ interface DeckOptions {
 	/** Called when the first column shows content or an error. */
 	onFirstSettled: () => void
 	onManage: () => void
+	/** The reader tapped the name of a linked site. */
+	onSite: (site: string) => void
 }
 
 /** From this width on, several columns sit side by side and scroll on their own. */
@@ -55,6 +58,9 @@ export class Deck {
 			threshold: 0.5,
 		})
 		options.tabs.addEventListener('click', (event) => this.onTabClick(event))
+		options.deck.addEventListener('click', (event) => this.onItemClick(event))
+		// A middle click opens the link in a new tab and fires `auxclick`, not `click`.
+		options.deck.addEventListener('auxclick', (event) => this.onItemClick(event))
 		WIDE.addEventListener('change', () => this.applyLayout())
 		addEventListener('hashchange', () => this.showFromHash())
 		document.addEventListener('visibilitychange', () => this.onResume())
@@ -80,6 +86,25 @@ export class Deck {
 
 	setNewTab(newTab: boolean): void {
 		for (const column of this.columns.values()) column.setNewTab(newTab)
+	}
+
+	/** Re-applies the read and blocked marks in every column. */
+	restyle(): void {
+		for (const column of this.columns.values()) column.restyle()
+	}
+
+	private onItemClick(event: MouseEvent): void {
+		const target = event.target as Element
+		const site = target.closest<HTMLElement>('.site')?.dataset.site
+		if (site) {
+			this.options.onSite(site)
+			return
+		}
+		const title = target.closest<HTMLAnchorElement>('a.title')
+		if (!title || event.button > 1) return
+		markRead(title.href)
+		// The same link can appear in several sources.
+		this.restyle()
 	}
 
 	/** Opens the source named in the URL fragment, e.g. `#github`. */

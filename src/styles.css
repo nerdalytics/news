@@ -298,8 +298,19 @@ button {
 	inset: 0;
 }
 
-.title:visited {
+/* Links the reader opened. `:visited` covers links opened outside tureel. */
+.title:visited,
+.is-read .title {
 	color: var(--text-visited);
+}
+
+.is-read .rank {
+	opacity: 0.5;
+}
+
+/* Entries that link to a blocked site stay in the list, dimmed. */
+.is-blocked > * {
+	opacity: 0.4;
 }
 
 .title:focus-visible {
@@ -355,6 +366,20 @@ button {
 	padding: 10px 6px;
 	color: var(--text);
 	font-weight: 500;
+}
+
+/* The name of the linked site. Tapping it opens the block option. */
+.site {
+	position: relative;
+	z-index: 1;
+	margin: -10px -6px;
+	padding: 10px 6px;
+	white-space: nowrap;
+	text-align: left;
+}
+
+.is-blocked .site {
+	text-decoration: line-through;
 }
 
 .notice {
@@ -698,6 +723,30 @@ button {
 	margin-top: 20px;
 	color: var(--muted);
 	font-size: 0.8125rem;
+}
+
+/* Block and unblock option for a linked site */
+
+.action-body {
+	display: grid;
+	gap: 12px;
+	padding: 24px var(--gutter) calc(var(--safe-bottom) + 16px);
+}
+
+.action-body h2 {
+	font-size: 1.375rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	overflow-wrap: anywhere;
+}
+
+.action-body p {
+	margin-bottom: 8px;
+	color: var(--muted);
+}
+
+.action-body .link-btn {
+	min-height: 44px;
 }
 
 /* First-run screen */

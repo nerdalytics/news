@@ -50,10 +50,16 @@ manageButton.addEventListener('click', () => void openManage())
 manageButton.addEventListener('pointerenter', () => void loadManage(), { once: true })
 manageButton.addEventListener('focus', () => void loadManage(), { once: true })
 
+async function openSite(site: string): Promise<void> {
+	const { openSiteDialog } = await import('./ui/site-dialog')
+	openSiteDialog(site)
+}
+
 const deck = new Deck({
 	deck: required<HTMLElement>('#deck'),
 	onFirstSettled: hideSplash,
 	onManage: () => void openManage(),
+	onSite: (site) => void openSite(site),
 	tabs: required<HTMLElement>('#tabs'),
 })
 
@@ -61,6 +67,7 @@ function apply(settings: Settings): void {
 	applyTheme(settings.theme)
 	deck.sync(enabledIds(settings))
 	deck.setNewTab(settings.newTab)
+	deck.restyle()
 }
 
 async function onboard(): Promise<void> {
