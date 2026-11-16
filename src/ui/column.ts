@@ -136,6 +136,11 @@ export class Column {
 		return this.revalidate('high')
 	}
 
+	/** Fetches the feed again, even if the cached copy is still fresh. */
+	refresh(): Promise<void> {
+		return this.load('high')
+	}
+
 	/** Call when the reader is likely to open the column next. Fetches at low priority. */
 	prefetch(): Promise<void> {
 		return this.revalidate('low')
@@ -162,7 +167,7 @@ export class Column {
 		reload.type = 'button'
 		reload.setAttribute('aria-label', `Refresh ${this.source.name}`)
 		reload.append(icon('refresh'))
-		reload.addEventListener('click', () => void this.load('high'))
+		reload.addEventListener('click', () => void this.refresh())
 		head.append(titles, reload)
 		return head
 	}

@@ -24,6 +24,16 @@ describe('read links', () => {
 		expect(second.isRead('https://example.com/b')).toBe(false)
 	})
 
+	it('forgets a link that is marked as unread', async () => {
+		const read = await load()
+		read.markRead('https://example.com/a')
+		read.markRead('https://example.com/b')
+		read.markUnread('https://example.com/a')
+		expect(read.isRead('https://example.com/a')).toBe(false)
+		expect(read.isRead('https://example.com/b')).toBe(true)
+		expect((await load()).isRead('https://example.com/a')).toBe(false)
+	})
+
 	it('keeps the 500 most recently opened links', async () => {
 		const read = await load()
 		for (let index = 0; index < 510; index++) read.markRead(`https://example.com/${index}`)

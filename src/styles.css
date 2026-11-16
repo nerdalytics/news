@@ -13,6 +13,8 @@
 	--sheet-width: 30rem;
 	--onboarding-height: 50rem;
 	--sheet-radius: 20px;
+	/* The smallest comfortable touch target. */
+	--tap: 44px;
 	/* Opacity levels */
 	--dim-blocked: 0.4;
 	--dim-read: 0.5;
@@ -50,6 +52,11 @@
 *::before,
 *::after {
 	box-sizing: border-box;
+}
+
+/* The app has its own pull to refresh, so the browser's reload gesture is switched off where CSS can do that. */
+html {
+	overscroll-behavior-y: contain;
 }
 
 /* A modal dialog does not stop the page behind it from scrolling on iOS. */
@@ -162,6 +169,48 @@ button {
 	padding: 0 8px var(--safe-bottom) 0;
 	background: var(--bg);
 	border-top: 1px solid var(--line);
+	transition: translate var(--sheet-move) ease;
+}
+
+/* Scrolling down moves the bar out of view. Scrolling up brings it back. */
+.bar.is-hidden {
+	translate: 0 100%;
+}
+
+/* Pull to refresh. The indicator rests above the top edge and comes down by --pull. */
+.pull {
+	position: fixed;
+	inset: 0 auto auto 50%;
+	z-index: 20;
+	display: grid;
+	place-items: center;
+	width: var(--tap);
+	height: var(--tap);
+	margin-top: var(--safe-top);
+	border-radius: 50%;
+	color: var(--muted);
+	background: var(--surface);
+	box-shadow: 0 2px 10px rgb(0 0 0 / 0.2);
+	translate: -50% calc(var(--pull, 0px) - 100% - var(--safe-top) - 12px);
+	rotate: calc(var(--pull, 0px) * 4deg);
+	transition:
+		translate var(--fast) ease,
+		color var(--fast);
+}
+
+/* The indicator follows the finger directly. */
+.pull.is-pulling {
+	transition: none;
+}
+
+.pull.is-ready {
+	color: var(--accent);
+}
+
+.pull.is-refreshing {
+	--pull: var(--pull-rest);
+	color: var(--accent);
+	animation: spin 0.8s linear infinite;
 }
 
 .tabs {
@@ -330,10 +379,24 @@ button {
 	inset: 0;
 }
 
-/* Links the reader opened. `:visited` covers links opened outside tureel. */
-.title:visited,
-.is-read .title {
+/* Entries the reader opened or marked as read. A swipe previews its result before the finger lifts. */
+.is-read .title,
+.item[data-swipe="read"] .title {
 	color: var(--text-visited);
+}
+
+.item[data-swipe="unread"] .title {
+	color: var(--text);
+}
+
+/* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
+.has-swipe .item {
+	touch-action: pan-y pinch-zoom;
+}
+
+/* A row follows the finger directly and eases back when released. */
+.item:not(.is-swiping) {
+	transition: translate var(--fast) ease;
 }
 
 .is-read .rank {
@@ -719,6 +782,10 @@ button {
 	cursor: pointer;
 }
 
+.switch-row + .switch-row {
+	margin-top: 14px;
+}
+
 .switch {
 	position: relative;
 	flex: none;
@@ -754,7 +821,7 @@ button {
 }
 
 .pref h3 {
-	margin: 0 0 6px;
+	margin: 0 0 12px;
 	font-size: 1rem;
 	font-weight: 600;
 }

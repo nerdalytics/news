@@ -23,13 +23,19 @@ function save(entries: Set<string>): void {
 }
 
 /**
- * Tracks which links the reader opened from tureel. The browser's own
- * `:visited` state is not enough. A web app on the home screen opens links in
- * a separate browser view, and private windows keep no history.
+ * Tracks which entries the reader opened or marked as read. The app does not
+ * use the browser's `:visited` state. That state misses links opened from a
+ * home screen web app or a private window, and a script cannot clear it when
+ * the reader marks an entry as unread.
  */
 export function isRead(url: string): boolean {
 	urls ??= load()
 	return urls.has(url)
+}
+
+export function markUnread(url: string): void {
+	urls ??= load()
+	if (urls.delete(url)) save(urls)
 }
 
 export function markRead(url: string): void {

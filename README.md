@@ -10,6 +10,10 @@ source's public API, so tureel has no backend and no accounts.
   discussion on the source.
 - Readers can switch sources on and off and drag them into any order.
 - tureel dims the entries the reader has opened.
+- Pulling down at the top of the page refreshes the source under the finger.
+- The tab bar hides while the reader scrolls down and returns on the way up.
+- Two optional swipe gestures mark an entry as read or unread. Both are off by
+  default.
 - Tapping the name of a linked site, such as `slate.com`, offers to block that
   site. Entries that link to a blocked site stay in the list, dimmed, with the
   site name crossed out. Tapping the name again offers to unblock it.
@@ -108,6 +112,24 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - Tapping a tab displays that source first and restores the scroll position.
   Tapping the tab of a displayed source scrolls to the top.
 
+## Touch gestures
+
+- Pull to refresh. A pull that starts at the top of the page brings down an
+  indicator. Releasing it after the indicator has travelled 64 px fetches the
+  feed of the column under the finger again, even if the cached copy is fresh.
+- Swipe from right to left on an entry to mark it as read, and from left to
+  right to mark it as unread. Each gesture has its own switch in the settings
+  sheet. A swipe counts after 72 px. A tap within 0.4 seconds after a swipe is
+  ignored, so that the swipe does not open the link.
+- The tab bar hides after the page has scrolled down by 8 px and shows again
+  after 8 px upwards. It is always shown within 64 px of the top.
+
+The numbers are constants in `src/ui/gestures.ts`.
+
+Scrolling stays with the browser. The swipe rows use `touch-action: pan-y`, and
+the one listener that can cancel a scroll, for pull to refresh, is attached
+only while a touch that started at the top of the page is down.
+
 ## Debugging on a phone
 
 Append `?debug` to the URL. tureel then shows uncaught errors and the duration
@@ -115,7 +137,7 @@ of every feed request in a panel at the top of the page.
 
 ## Settings
 
-tureel stores three cookies. Their path is the directory that serves the app,
+tureel stores four cookies. Their path is the directory that serves the app,
 and they expire after 400 days.
 
 | Cookie | Value |
@@ -123,6 +145,7 @@ and they expire after 400 days.
 | `tureel_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
 | `tureel_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
 | `tureel_newtab` | `1` opens links in a new tab. |
+| `tureel_swipe` | The swipe gestures that are on, joined by `.`, as in `read.unread`. Empty or absent means none. |
 
 tureel keeps three more things in `localStorage`, because they are not
 settings or can outgrow the 4096 bytes of a cookie.
@@ -133,11 +156,11 @@ settings or can outgrow the 4096 bytes of a cookie.
 | `tureel:read:v1` | The 500 most recently opened links. |
 | `tureel:feed:v1:<source>` | The cached feed of a source. |
 
-The browser's own `:visited` state also dims a link, but it does not cover
-every case. A web app on the home screen opens links in a separate browser
-view, and private windows keep no history.
+tureel does not use the browser's `:visited` state to dim links. That state
+misses links opened from a home screen web app or a private window, and a
+script cannot clear it when the reader marks an entry as unread.
 
-"Start fresh" at the end of the settings sheet deletes the three cookies and
+"Start fresh" at the end of the settings sheet deletes the cookies and
 every `tureel:` key, then shows the first-run screen. The button asks for a
 second tap before it deletes anything.
 
