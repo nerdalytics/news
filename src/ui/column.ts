@@ -83,7 +83,7 @@ export class Column {
 	readonly el: HTMLElement
 	private readonly body: HTMLElement
 	private readonly foot: HTMLElement
-	private busy = false
+	private pending: Promise<void> | undefined
 	private shown: Feed | undefined
 
 	constructor(
@@ -105,13 +105,13 @@ export class Column {
 	}
 
 	/** Call when the column is on screen. Shows the cached feed and fetches if it is missing or stale. */
-	activate(): void {
-		this.revalidate('high')
+	activate(): Promise<void> {
+		return this.revalidate('high')
 	}
 
 	/** Call when the reader is likely to open the column next. Fetches at low priority. */
-	prefetch(): void {
-		this.revalidate('low')
+	prefetch(): Promise<void> {
+		return this.revalidate('low')
 	}
 
 	scrollToTop(): void {
@@ -139,17 +139,24 @@ export class Column {
 		return head
 	}
 
-	private revalidate(priority: RequestPriority): void {
+	/** Resolves when the column shows a fresh feed or an error. It never rejects. */
+	private revalidate(priority: RequestPriority): Promise<void> {
 		const cached = peek(this.source.id)
 		if (cached && cached !== this.shown) this.render(cached)
 		else if (this.shown) this.renderFoot()
-		if (cached && isFresh(cached, this.source)) return
-		void this.load(priority)
+		if (cached && isFresh(cached, this.source)) return Promise.resolve()
+		return this.load(priority)
 	}
 
-	private async load(priority: RequestPriority): Promise<void> {
-		if (this.busy) return
-		this.busy = true
+	/** Concurrent calls share the request that is already running. */
+	private load(priority: RequestPriority): Promise<void> {
+		this.pending ??= this.fetch(priority).finally(() => {
+			this.pending = undefined
+		})
+		return this.pending
+	}
+
+	private async fetch(priority: RequestPriority): Promise<void> {
 		this.el.dataset.state = 'loading'
 		if (!this.shown) this.body.replaceChildren(renderSkeleton())
 		try {
@@ -157,7 +164,6 @@ export class Column {
 		} catch (error) {
 			this.renderError(describeError(error))
 		} finally {
-			this.busy = false
 			this.onSettled()
 		}
 	}

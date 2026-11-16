@@ -4,6 +4,7 @@ tureel shows the top 20 entries of Hacker News, GitHub and seven other sources
 on one page. It is a static site. The browser fetches every feed from the
 source's public API, so tureel has no backend and no accounts.
 
+- On the first visit the reader chooses the sources. No source is on by default.
 - Each source shows up to 20 entries.
 - Clicking a row opens the item. Clicking the comment count opens the item's
   discussion on the source.
@@ -29,14 +30,15 @@ headers. A page on GitHub Pages cannot read responses from other endpoints.
 | Hugging Face | Trending models | `huggingface.co/api/models?sort=trendingScore` | 1 | none |
 | Wikipedia | Most read articles of the previous UTC day | `api.wikimedia.org/feed/v1/wikipedia/en/featured/YYYY/MM/DD` | 1, or 2 just after midnight UTC | none |
 
-Stack Overflow, Hugging Face and Wikipedia are switched off by default.
-
 Notes on individual sources:
 
 - The official Hacker News API returns ids only and needs one request per
-  story. tureel takes the front page order from the official API and fetches
-  the top 30 stories in one Algolia HN Search request. That index does not
-  contain job posts, so tureel does not show them.
+  story. tureel takes the front page order from the official API and the
+  stories from one Algolia HN Search request. Both requests run in parallel.
+  That index does not contain job posts, so tureel does not show them.
+- GitHub counts unauthenticated requests per IP address. Readers who share an
+  address, for example behind a mobile carrier, share the limit. tureel then
+  shows a rate limit message with a retry button.
 - GitHub has no API for github.com/trending, so tureel uses the Search API.
   GitHub limits unauthenticated search to
   [10 requests per minute](https://docs.github.com/en/rest/search/search).
@@ -69,24 +71,37 @@ site.
 
 ## How it loads
 
-- The first load is one HTML file, one stylesheet and one script of about 8 kB
-  gzipped. Each source adapter and the settings dialog are separate chunks. The
-  browser downloads a chunk the first time it is needed.
+- The first load is one HTML file, one stylesheet and one script of about
+  10 kB gzipped. The first-run screen, the settings dialog and the debug panel
+  are separate chunks. The browser downloads a chunk the first time it is
+  needed.
 - tureel caches each feed in `localStorage`. A cached feed counts as fresh for
   5 to 60 minutes, depending on the source. A column renders its cached entries
-  immediately and refetches a stale feed when the column is on screen.
-- A column fetches only after it has been at least half visible for 150 ms.
-  Scrolling past a column sends no request.
-- Prefetching starts with the reader's first scroll. From then on, tureel
-  fetches columns within half a screen width of the visible area at low
-  priority while the browser is idle.
-- Hovering or focusing a tab prefetches that source.
+  in the first frame and refetches a stale feed in the background.
+- The source on screen loads first. tureel then fetches the other enabled
+  sources one after another at low priority, so a source is ready before the
+  reader switches to it. A fresh cached feed costs no request.
+- On the first-run screen, tureel starts fetching a source when the reader
+  switches it on.
 - tureel prefetches nothing when the browser reports data saver mode.
 - tureel removes the splash screen when the first column has content, and
-  after one second at the latest. Columns without data show placeholder rows
-  until the data arrives.
+  after three seconds at the latest. Columns without data show placeholder
+  rows until the data arrives.
 - When the reader returns to the tab or comes back with the back button,
-  tureel refetches stale columns that are on screen.
+  tureel refetches stale feeds.
+
+## Layout
+
+- Below 760 px width, tureel displays one source at a time and the page itself
+  scrolls. Tapping a tab swaps the source and restores its scroll position.
+  Tapping the current tab scrolls to the top.
+- From 760 px width, 2 to 5 columns sit side by side and each column scrolls on
+  its own.
+
+## Debugging on a phone
+
+Append `?debug` to the URL. tureel then shows uncaught errors and the duration
+of every feed request in a panel at the top of the page.
 
 ## Settings
 
@@ -102,6 +117,12 @@ and they expire after 400 days.
 tureel writes cookies with the Cookie Store API and falls back to
 `document.cookie` in browsers without it. In browsers with the Cookie Store
 API, a change in one tab updates the other open tabs.
+
+Safari deletes cookies created in JavaScript and `localStorage` after 7 days
+without a tap or click on the site, according to WebKit's
+[tracking prevention policy](https://webkit.org/tracking-prevention/). After
+that, tureel shows the first-run screen again. The policy exempts web apps
+added to the home screen.
 
 ## Development
 
@@ -125,8 +146,8 @@ npm run preview    # serve the production build
    `src/sources/index.ts`.
 4. Cover `parse` in `test/sources.test.ts`.
 
-Readers with a stored configuration see a new source at the end of their list,
-switched off.
+Readers who have already chosen their sources see a new source at the end of
+their list, switched off.
 
 ## Deployment
 

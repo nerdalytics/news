@@ -4,12 +4,11 @@ import { parseSources, parseTheme, serializeSources } from '../src/settings'
 import { SOURCES } from '../src/sources/index'
 import type { SourceMeta } from '../src/sources/types'
 
-function source(id: string, enabledByDefault: boolean): SourceMeta {
+function source(id: string): SourceMeta {
 	return {
 		accent: ['#000', '#fff'],
 		badge: ['#000', '#fff'],
 		comments: false,
-		enabledByDefault,
 		home: 'https://example.com/',
 		id,
 		mark: id,
@@ -19,14 +18,14 @@ function source(id: string, enabledByDefault: boolean): SourceMeta {
 	}
 }
 
-const CATALOGUE = [source('a', true), source('b', false), source('c', true)]
+const CATALOGUE = [source('a'), source('b'), source('c')]
 
 describe('parseSources', () => {
-	it('falls back to the catalogue defaults without a cookie', () => {
+	it('switches nothing on without a cookie', () => {
 		expect(parseSources(undefined, CATALOGUE)).toEqual([
-			{ enabled: true, id: 'a' },
+			{ enabled: false, id: 'a' },
 			{ enabled: false, id: 'b' },
-			{ enabled: true, id: 'c' },
+			{ enabled: false, id: 'c' },
 		])
 	})
 
@@ -93,9 +92,9 @@ describe('catalogue', () => {
 		expect(new Set(SOURCES.map((entry) => entry.id)).size).toBe(SOURCES.length)
 	})
 
-	it('includes the two required sources, on by default', () => {
-		const byId = new Map(SOURCES.map((entry) => [entry.id, entry]))
-		expect(byId.get('hn')?.enabledByDefault).toBe(true)
-		expect(byId.get('github')?.enabledByDefault).toBe(true)
+	it('includes the two required sources', () => {
+		const ids = SOURCES.map((entry) => entry.id)
+		expect(ids).toContain('hn')
+		expect(ids).toContain('github')
 	})
 })

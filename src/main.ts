@@ -1,8 +1,12 @@
-import { enabledIds, getSettings, type Settings, subscribe } from './settings'
+import { enabledIds, getSettings, isFirstVisit, type Settings, subscribe } from './settings'
 import { Deck } from './ui/deck'
 
-/** The app hides the splash at most this long after navigation starts. */
-const SPLASH_BUDGET_MS = 1000
+/**
+ * The app hides the splash when the first column has content, and at the latest
+ * this long after navigation starts. Cached feeds render in the first frame, so
+ * the limit only matters on a first load without a cache.
+ */
+const SPLASH_LIMIT_MS = 3000
 
 const THEME_COLOR = { dark: '#0f1012', light: '#ffffff' }
 
@@ -37,6 +41,9 @@ async function openManage(): Promise<void> {
 	openManageDialog()
 }
 
+// `?debug` shows errors and request timings on the page.
+if (new URLSearchParams(location.search).has('debug')) void import('./debug')
+
 const manageButton = required<HTMLButtonElement>('#manage')
 manageButton.addEventListener('click', () => void openManage())
 // Fetch the chunk when the pointer enters the button or the keyboard focuses it.
@@ -56,9 +63,16 @@ function apply(settings: Settings): void {
 	deck.setNewTab(settings.newTab)
 }
 
+async function onboard(): Promise<void> {
+	const { showOnboarding } = await import('./ui/onboarding')
+	showOnboarding()
+	hideSplash()
+}
+
 apply(getSettings())
-deck.showFromHash(true)
+deck.showFromHash()
 subscribe(apply)
 
-if (enabledIds().length === 0) hideSplash()
-setTimeout(hideSplash, Math.max(0, SPLASH_BUDGET_MS - performance.now()))
+if (isFirstVisit()) void onboard()
+else if (enabledIds().length === 0) hideSplash()
+setTimeout(hideSplash, Math.max(0, SPLASH_LIMIT_MS - performance.now()))

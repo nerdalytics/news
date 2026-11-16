@@ -9,6 +9,7 @@
 	--accent: light-dark(#2563eb, #7aa7ff);
 	--on-accent: light-dark(#ffffff, #0f1012);
 	--danger: light-dark(#b42318, #ff8a7a);
+	--bone: light-dark(#e4e4e9, #2b2e35);
 	--bar-height: 60px;
 	--gutter: 20px;
 	--safe-top: env(safe-area-inset-top, 0px);
@@ -26,23 +27,23 @@
 	box-sizing: border-box;
 }
 
-html,
-body {
-	height: 100%;
+/* A modal dialog does not stop the page behind it from scrolling on iOS. */
+html:has(dialog[open]) {
 	overflow: hidden;
 }
 
+/* On phones the document scrolls. The padding keeps content clear of the fixed bar. */
 body {
-	display: grid;
-	grid-template-rows: minmax(0, 1fr) auto;
-	grid-template-areas: "deck" "bar";
-	height: 100dvh;
+	min-height: 100dvh;
+	margin: 0;
+	padding-bottom: calc(var(--bar-height) + var(--safe-bottom));
 	color: var(--text);
 	background: var(--bg);
 	-webkit-font-smoothing: antialiased;
 	-webkit-tap-highlight-color: transparent;
 }
 
+h1,
 h2,
 p,
 ol,
@@ -104,11 +105,17 @@ button {
 }
 
 .primary-btn {
+	min-height: 48px;
 	padding: 12px 20px;
 	border-radius: 999px;
 	color: var(--on-accent);
 	background: var(--accent);
 	font-weight: 600;
+}
+
+.primary-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 
 .dot {
@@ -119,7 +126,9 @@ button {
 /* Bar. It sits at the bottom on phones and at the top on wide screens. */
 
 .bar {
-	grid-area: bar;
+	position: fixed;
+	inset: auto 0 0;
+	z-index: 10;
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -149,8 +158,6 @@ button {
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
 	scrollbar-width: none;
-	/* Fades out the right end of the strip, next to the settings button. */
-	mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
 }
 
 .tab {
@@ -181,21 +188,7 @@ button {
 	font-weight: 800;
 	letter-spacing: -0.02em;
 	line-height: 1;
-	opacity: var(--badge-opacity, 1);
-	transition:
-		opacity 0.15s,
-		transform 0.15s;
-}
-
-/* On phones, dim the badges of sources that are not on screen. */
-@media (max-width: 759.98px) {
-	.tab {
-		--badge-opacity: 0.55;
-	}
-
-	.tab.is-visible {
-		--badge-opacity: 1;
-	}
+	transition: transform 0.15s;
 }
 
 .tab:active .badge {
@@ -224,26 +217,19 @@ button {
 /* Deck and columns */
 
 .deck {
-	grid-area: deck;
 	position: relative;
-	display: flex;
-	min-height: 0;
-	overflow: auto hidden;
-	scroll-snap-type: x mandatory;
-	overscroll-behavior-x: contain;
-	scrollbar-width: none;
 }
 
 .column {
-	flex: 0 0 100%;
-	min-width: 0;
-	height: 100%;
 	padding: 0 var(--gutter);
-	overflow: hidden auto;
-	overscroll-behavior-y: contain;
-	scroll-snap-align: start;
-	scroll-snap-stop: always;
 	--brand: light-dark(var(--brand-light), var(--brand-dark));
+}
+
+/* Phones show one source at a time. The other columns stay in the document, hidden. */
+@media (max-width: 759.98px) {
+	.column:not(.is-current) {
+		display: none;
+	}
 }
 
 .col-head {
@@ -409,6 +395,7 @@ button {
 	justify-items: center;
 	gap: 12px;
 	width: 100%;
+	min-height: 70dvh;
 	padding: var(--gutter);
 	text-align: center;
 }
@@ -423,7 +410,7 @@ button {
 .bone {
 	display: block;
 	border-radius: 6px;
-	background: var(--surface);
+	background: var(--bone);
 }
 
 .bone-rank {
@@ -713,6 +700,92 @@ button {
 	font-size: 0.8125rem;
 }
 
+/* First-run screen */
+
+.onboarding {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	max-width: 100%;
+	height: 100dvh;
+	max-height: 100dvh;
+	margin: 0;
+	padding: 0;
+	color: var(--text);
+	background: var(--bg);
+	border: 0;
+}
+
+.onboarding[open] {
+	display: flex;
+}
+
+.onboarding::backdrop {
+	background: var(--bg);
+}
+
+.onboarding-body {
+	flex: 1;
+	min-height: 0;
+	padding: calc(var(--safe-top) + 32px) var(--gutter) 16px;
+	overflow: hidden auto;
+	overscroll-behavior: contain;
+}
+
+.onboarding-mark {
+	display: grid;
+}
+
+.onboarding h1 {
+	margin: 20px 0 8px;
+	font-size: 2rem;
+	font-weight: 800;
+	letter-spacing: -0.025em;
+	line-height: 1.1;
+}
+
+.onboarding-intro {
+	margin-bottom: 20px;
+	color: var(--muted);
+}
+
+.onboarding-foot {
+	display: grid;
+	flex: none;
+	gap: 10px;
+	padding: 12px var(--gutter) calc(var(--safe-bottom) + 16px);
+	border-top: 1px solid var(--line);
+}
+
+.onboarding-hint {
+	color: var(--muted);
+	font-size: 0.875rem;
+	text-align: center;
+}
+
+/* Panel of the `?debug` mode */
+
+.debug {
+	position: fixed;
+	inset: 0 0 auto;
+	z-index: 200;
+	max-height: 40dvh;
+	margin: 0;
+	padding: calc(var(--safe-top) + 8px) 8px 8px;
+	overflow: auto;
+	color: #7dff9b;
+	background: rgb(0 0 0 / 0.88);
+	font:
+		11px / 1.4 ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		monospace;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	user-select: text;
+	-webkit-user-select: text;
+}
+
 /* Wide screens. The bar moves to the top and several columns sit side by side. */
 
 @media (min-width: 760px) {
@@ -722,12 +795,24 @@ button {
 		--columns: 2;
 	}
 
+	/* The page itself does not scroll here. Each column scrolls on its own. */
+	html,
 	body {
+		height: 100%;
+		overflow: hidden;
+	}
+
+	body {
+		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
 		grid-template-areas: "bar" "deck";
+		height: 100dvh;
+		padding-bottom: 0;
 	}
 
 	.bar {
+		position: static;
+		grid-area: bar;
 		gap: 8px;
 		height: var(--bar-height);
 		padding: 0 12px 0 var(--gutter);
@@ -773,14 +858,28 @@ button {
 	}
 
 	.deck {
+		grid-area: deck;
+		display: flex;
+		min-height: 0;
+		overflow: auto hidden;
+		scroll-snap-type: x mandatory;
+		overscroll-behavior-x: contain;
 		scrollbar-width: thin;
 	}
 
 	.column {
-		flex-basis: calc(100% / var(--columns));
+		flex: 0 0 calc(100% / var(--columns));
+		min-width: 0;
+		height: 100%;
+		overflow: hidden auto;
+		overscroll-behavior-y: contain;
 		border-right: 1px solid var(--line);
-		scroll-snap-stop: normal;
+		scroll-snap-align: start;
 		scrollbar-width: thin;
+	}
+
+	.empty {
+		min-height: 0;
 	}
 
 	/* Auto margins centre the deck when all columns fit. They resolve to zero when the columns overflow. */
@@ -798,6 +897,15 @@ button {
 
 	.col-title {
 		font-size: 1.625rem;
+	}
+
+	.onboarding {
+		width: 480px;
+		height: auto;
+		max-height: min(780px, 100dvh - 48px);
+		margin: auto;
+		border-radius: 20px;
+		box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
 	}
 
 	.sheet {
@@ -846,17 +954,11 @@ button {
 	}
 
 	.tab:hover {
-		--badge-opacity: 1;
 		color: var(--text);
 	}
 }
 
 /* Motion */
-
-::view-transition-old(root),
-::view-transition-new(root) {
-	animation-duration: 0.16s;
-}
 
 @keyframes spin {
 	to {
@@ -866,7 +968,7 @@ button {
 
 @keyframes pulse {
 	to {
-		opacity: 0.45;
+		opacity: 0.5;
 	}
 }
 

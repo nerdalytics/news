@@ -1,15 +1,16 @@
 import { safeUrl } from '../format'
-import { getJson, preconnect } from '../net'
+import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
 /**
- * Uses two requests. The official Firebase API returns the front page order as
- * ids. The Algolia HN Search API then returns all those stories in one response.
- * The official API would need one request per story.
+ * Uses two requests that run in parallel. The official Firebase API returns the
+ * front page order as ids. The Algolia HN Search API returns the stories that
+ * are on the front page. The official API would need one request per story.
  */
 const TOP_URL = 'https://hacker-news.firebaseio.com/v0/topstories.json'
 const SEARCH_URL = 'https://hn.algolia.com/api/v1/search'
-/** Request more ids than needed, because the search index lacks job posts and stories submitted moments ago. */
+const FIELDS = 'title,url,points,num_comments,created_at_i'
+/** Compare more ids than needed, because the search index lacks job posts. */
 const CANDIDATES = 30
 
 interface Hit {
@@ -25,10 +26,22 @@ export interface SearchResponse {
 	hits: Hit[]
 }
 
+/** One search for every story that is on the front page right now. */
+export function frontPageUrl(): string {
+	const params = new URLSearchParams({
+		attributesToHighlight: '[]',
+		attributesToRetrieve: FIELDS,
+		hitsPerPage: '50',
+		tags: 'front_page',
+	})
+	return `${SEARCH_URL}?${params}`
+}
+
+/** A search for specific stories, used when the front page search misses too many. */
 export function searchUrl(ids: readonly number[]): string {
 	const params = new URLSearchParams({
 		attributesToHighlight: '[]',
-		attributesToRetrieve: 'title,url,points,num_comments,created_at_i',
+		attributesToRetrieve: FIELDS,
 		hitsPerPage: String(ids.length),
 		tags: `(story,poll),(${ids.map((id) => `story_${id}`).join(',')})`,
 	})
@@ -64,10 +77,14 @@ export function parse(ids: readonly number[], response: SearchResponse): FeedIte
 
 const adapter: SourceAdapter = {
 	async fetch(ctx) {
-		// The second request starts after the first returns. Open its connection now.
-		preconnect(new URL(SEARCH_URL).origin)
-		const top = await getJson<number[]>(TOP_URL, ctx)
+		const [top, frontPage] = await Promise.all([
+			getJson<number[]>(TOP_URL, ctx),
+			getJson<SearchResponse>(frontPageUrl(), ctx),
+		])
 		const ids = top.slice(0, CANDIDATES)
+		const items = parse(ids, frontPage)
+		if (items.length >= LIMIT) return items
+		// The two answers disagree on what is on the front page. Look the ids up directly.
 		return parse(ids, await getJson<SearchResponse>(searchUrl(ids), ctx))
 	},
 }

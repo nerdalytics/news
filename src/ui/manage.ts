@@ -1,8 +1,6 @@
-import { getSettings, type SourceSetting, type Theme, updateSettings } from '../settings'
-import { sourceById } from '../sources/index'
-import type { SourceMeta } from '../sources/types'
-import { el, icon } from './dom'
-import { enableReorder } from './reorder'
+import { getSettings, type Theme, updateSettings } from '../settings'
+import { el } from './dom'
+import { createSourceList, type SourceList } from './source-list'
 
 const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
 	['auto', 'Auto'],
@@ -11,66 +9,7 @@ const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
 ]
 
 let dialog: HTMLDialogElement | undefined
-let list: HTMLUListElement | undefined
-let live: HTMLElement | undefined
-
-/** Reads order and state from the rows of the dialog. */
-function readList(): SourceSetting[] {
-	const rows = Array.from(list?.children ?? []) as HTMLElement[]
-	return rows.map((row) => ({
-		enabled: row.querySelector<HTMLInputElement>('.check')?.checked === true,
-		id: row.dataset.id ?? '',
-	}))
-}
-
-function commit(): void {
-	updateSettings({ sources: readList() })
-}
-
-function announce(row: HTMLElement): void {
-	if (!live || !list) return
-	const position = Array.from(list.children).indexOf(row) + 1
-	const name = row.querySelector('.src-name')?.textContent ?? ''
-	live.textContent = `${name}, position ${position} of ${list.children.length}`
-}
-
-function describe(source: SourceMeta): string {
-	return source.comments ? `${source.tagline} · comments` : source.tagline
-}
-
-function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {
-	const row = el('li', 'src')
-	row.dataset.id = source.id
-
-	const main = el('label', 'src-main')
-	const check = el('input', 'check')
-	check.type = 'checkbox'
-	check.checked = enabled
-	check.addEventListener('change', commit)
-	const badge = el('span', 'badge', source.mark)
-	badge.style.setProperty('--badge-bg', source.badge[0])
-	badge.style.setProperty('--badge-fg', source.badge[1])
-	const text = el('span', 'src-text')
-	text.append(el('span', 'src-name', source.name), el('span', 'src-tag', describe(source)))
-	main.append(check, badge, text)
-
-	const handle = el('button', 'handle')
-	handle.type = 'button'
-	handle.setAttribute('aria-label', `Reorder ${source.name}. Drag, or use the arrow keys.`)
-	handle.append(icon('grip'))
-
-	row.append(main, handle)
-	return row
-}
-
-function renderList(): void {
-	if (!list) return
-	const rows = getSettings().sources.flatMap((setting) => {
-		const source = sourceById(setting.id)
-		return source ? [renderRow(source, setting.enabled)] : []
-	})
-	list.replaceChildren(...rows)
-}
+let sources: SourceList | undefined
 
 function renderThemePicker(): HTMLElement {
 	const group = el('fieldset', 'pref')
@@ -122,17 +61,12 @@ function build(): HTMLDialogElement {
 	head.append(title, done)
 
 	const body = el('div', 'sheet-body')
-	list = el('ul', 'src-list')
-	live = el('p', 'visually-hidden')
-	live.setAttribute('aria-live', 'polite')
-	enableReorder(list, {
-		onChange: commit,
-		onMove: announce,
+	sources = createSourceList({
+		onChange: (next) => updateSettings({ sources: next }),
 		scroller: body,
 	})
 	body.append(
-		list,
-		live,
+		...sources.nodes,
 		renderThemePicker(),
 		renderNewTabSwitch(),
 		el(
@@ -149,6 +83,6 @@ function build(): HTMLDialogElement {
 
 export function openManageDialog(): void {
 	dialog ??= build()
-	renderList()
+	sources?.render(getSettings().sources)
 	if (!dialog.open) dialog.showModal()
 }
