@@ -1,5 +1,8 @@
 import { enabledIds, getSettings, isFirstVisit, type Settings, subscribe } from './settings'
+import { autoHideBar } from './ui/bar'
 import { Deck } from './ui/deck'
+import { enablePullToRefresh } from './ui/pull'
+import { enableSwipe } from './ui/swipe'
 
 /**
  * The app hides the splash when the first column has content, and at the latest
@@ -55,16 +58,29 @@ async function openSite(site: string): Promise<void> {
 	openSiteDialog(site)
 }
 
+const deckElement = required<HTMLElement>('#deck')
+const bar = autoHideBar(required<HTMLElement>('.bar'))
+
 const deck = new Deck({
-	deck: required<HTMLElement>('#deck'),
+	deck: deckElement,
 	onFirstSettled: hideSplash,
+	onJump: () => bar.reset(),
 	onManage: () => void openManage(),
 	onSite: (site) => void openSite(site),
 	tabs: required<HTMLElement>('#tabs'),
 })
 
+enablePullToRefresh({ onRefresh: (column) => deck.refresh(column), root: deckElement })
+enableSwipe({
+	onAction: (row, action) => deck.swipe(row, action),
+	root: deckElement,
+	settings: () => getSettings().swipe,
+})
+
 function apply(settings: Settings): void {
 	applyTheme(settings.theme)
+	// Rows only give horizontal movement to the script while a swipe gesture is on.
+	deckElement.classList.toggle('has-swipe', settings.swipe.read || settings.swipe.unread)
 	deck.sync(enabledIds(settings))
 	deck.setNewTab(settings.newTab)
 	deck.restyle()

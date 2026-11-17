@@ -1,6 +1,7 @@
 import { onCookieChange, readCookie, writeCookie } from './cookies'
 import { SOURCES } from './sources/index'
 import type { SourceMeta } from './sources/types'
+import type { SwipeSettings } from './ui/gestures'
 
 export type Theme = 'auto' | 'light' | 'dark'
 
@@ -14,6 +15,8 @@ export interface Settings {
 	sources: readonly SourceSetting[]
 	theme: Theme
 	newTab: boolean
+	/** Which swipe gestures on an entry are switched on. Both are off by default. */
+	swipe: SwipeSettings
 	/**
 	 * Hosts of linked sites the reader blocked, oldest first. This list is kept
 	 * in `localStorage`, because it can outgrow the 4096 bytes of a cookie.
@@ -21,7 +24,12 @@ export interface Settings {
 	blocked: readonly string[]
 }
 
-const COOKIE = { newTab: 'tureel_newtab', sources: 'tureel_sources', theme: 'tureel_theme' }
+const COOKIE = {
+	newTab: 'tureel_newtab',
+	sources: 'tureel_sources',
+	swipe: 'tureel_swipe',
+	theme: 'tureel_theme',
+}
 export const COOKIE_NAMES: readonly string[] = Object.values(COOKIE)
 const BLOCKED_KEY = 'tureel:blocked:v1'
 const DISABLED_PREFIX = '-'
@@ -88,11 +96,23 @@ function writeBlocked(hosts: readonly string[]): void {
 	}
 }
 
+/** The cookie lists the gestures that are on, joined by `.`, as in `read.unread`. */
+export function parseSwipe(raw: string | undefined): SwipeSettings {
+	const gestures = (raw ?? '').split(SEPARATOR)
+	return { read: gestures.includes('read'), unread: gestures.includes('unread') }
+}
+
+export function serializeSwipe(swipe: SwipeSettings): string {
+	const gestures = [swipe.read ? 'read' : '', swipe.unread ? 'unread' : '']
+	return gestures.filter(Boolean).join(SEPARATOR)
+}
+
 function read(): Settings {
 	return {
 		blocked: readBlocked(),
 		newTab: readCookie(COOKIE.newTab) === '1',
 		sources: parseSources(readCookie(COOKIE.sources)),
+		swipe: parseSwipe(readCookie(COOKIE.swipe)),
 		theme: parseTheme(readCookie(COOKIE.theme)),
 	}
 }
@@ -128,6 +148,7 @@ export function updateSettings(patch: Partial<Settings>): void {
 	if (patch.sources) writeCookie(COOKIE.sources, serializeSources(current.sources))
 	if (patch.theme) writeCookie(COOKIE.theme, current.theme)
 	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
+	if (patch.swipe) writeCookie(COOKIE.swipe, serializeSwipe(current.swipe))
 	if (patch.blocked) writeBlocked(current.blocked)
 	emit()
 }
@@ -146,6 +167,7 @@ function sameSettings(a: Settings, b: Settings): boolean {
 	return (
 		a.theme === b.theme &&
 		a.newTab === b.newTab &&
+		serializeSwipe(a.swipe) === serializeSwipe(b.swipe) &&
 		a.blocked.join() === b.blocked.join() &&
 		serializeSources(a.sources) === serializeSources(b.sources)
 	)

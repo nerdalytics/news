@@ -1,7 +1,8 @@
-import { markRead } from '../read'
+import { markRead, markUnread } from '../read'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
+import type { SwipeAction } from './gestures'
 import { capacity, windowStart } from './layout'
 
 interface DeckOptions {
@@ -12,6 +13,8 @@ interface DeckOptions {
 	onManage: () => void
 	/** The reader tapped the name of a linked site. */
 	onSite: (site: string) => void
+	/** The deck scrolled the page itself, for example to restore a position. */
+	onJump: () => void
 }
 
 /** The CSS custom property that holds the smallest width of a column. */
@@ -91,6 +94,22 @@ export class Deck {
 	/** Re-applies the read and blocked marks in every column. */
 	restyle(): void {
 		for (const column of this.columns.values()) column.restyle()
+	}
+
+	/** Fetches the feed of the column behind a column element again. */
+	refresh(element: HTMLElement): Promise<void> {
+		const id = element.id.replace('source-', '')
+		return this.columns.get(id)?.refresh() ?? Promise.resolve()
+	}
+
+	/** Carries out a swipe on a row. */
+	swipe(row: HTMLElement, action: SwipeAction): void {
+		const url = row.dataset.url
+		if (!url) return
+		if (action === 'read') markRead(url)
+		else markUnread(url)
+		// The same link can appear in several sources.
+		this.restyle()
 	}
 
 	private onItemClick(event: MouseEvent): void {
@@ -228,6 +247,7 @@ export class Deck {
 		this.applyLayout()
 		const first = this.window()[0]
 		scrollTo({ behavior: 'instant', top: (first && this.scrollTops.get(first)) || 0 })
+		this.options.onJump()
 	}
 
 	private markTabs(): void {

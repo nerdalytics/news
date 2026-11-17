@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { parseCookies } from '../src/cookies'
-import { parseBlocked, parseSources, parseTheme, serializeSources } from '../src/settings'
+import {
+	parseBlocked,
+	parseSources,
+	parseSwipe,
+	parseTheme,
+	serializeSources,
+	serializeSwipe,
+} from '../src/settings'
 import { SOURCES } from '../src/sources/index'
 import type { SourceMeta } from '../src/sources/types'
 
@@ -93,6 +100,29 @@ describe('blocked sites', () => {
 	it('has no size limit', () => {
 		const hosts = Array.from({ length: 1000 }, (_, index) => `site${index}.example`)
 		expect(parseBlocked(hosts)).toHaveLength(1000)
+	})
+})
+
+describe('swipe gestures', () => {
+	it('switches both gestures off without a cookie', () => {
+		expect(parseSwipe(undefined)).toEqual({ read: false, unread: false })
+		expect(parseSwipe('')).toEqual({ read: false, unread: false })
+	})
+
+	it('reads each gesture on its own', () => {
+		expect(parseSwipe('read')).toEqual({ read: true, unread: false })
+		expect(parseSwipe('unread')).toEqual({ read: false, unread: true })
+		expect(parseSwipe('read.unread')).toEqual({ read: true, unread: true })
+	})
+
+	it('ignores unknown gestures', () => {
+		expect(parseSwipe('archive.read')).toEqual({ read: true, unread: false })
+	})
+
+	it('round-trips through serializeSwipe', () => {
+		for (const raw of ['', 'read', 'unread', 'read.unread']) {
+			expect(serializeSwipe(parseSwipe(raw))).toBe(raw)
+		}
 	})
 })
 

@@ -1,5 +1,6 @@
 import { getSettings, type Theme, updateSettings } from '../settings'
 import { el } from './dom'
+import type { SwipeSettings } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
 
 const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
@@ -30,15 +31,43 @@ function renderThemePicker(): HTMLElement {
 	return group
 }
 
-function renderNewTabSwitch(): HTMLElement {
-	const row = el('label', 'pref switch-row')
+function renderSwitch(
+	label: string,
+	checked: boolean,
+	onChange: (checked: boolean) => void
+): HTMLElement {
+	const row = el('label', 'switch-row')
 	const toggle = el('input', 'switch')
 	toggle.type = 'checkbox'
 	toggle.setAttribute('role', 'switch')
-	toggle.checked = getSettings().newTab
-	toggle.addEventListener('change', () => updateSettings({ newTab: toggle.checked }))
-	row.append(el('span', undefined, 'Open links in a new tab'), toggle)
+	toggle.checked = checked
+	toggle.addEventListener('change', () => onChange(toggle.checked))
+	row.append(el('span', undefined, label), toggle)
 	return row
+}
+
+function renderNewTabSwitch(): HTMLElement {
+	const section = el('section', 'pref')
+	section.append(
+		renderSwitch('Open links in a new tab', getSettings().newTab, (newTab) =>
+			updateSettings({ newTab })
+		)
+	)
+	return section
+}
+
+/** Both gestures are off until the reader switches them on. Each one works without the other. */
+function renderSwipeSwitches(): HTMLElement {
+	const section = el('section', 'pref')
+	const set = (patch: Partial<SwipeSettings>): void =>
+		updateSettings({ swipe: { ...getSettings().swipe, ...patch } })
+	const { read, unread } = getSettings().swipe
+	section.append(
+		el('h3', undefined, 'Swipe on an entry'),
+		renderSwitch('Swipe left to mark it as read', read, (value) => set({ read: value })),
+		renderSwitch('Swipe right to mark it as unread', unread, (value) => set({ unread: value }))
+	)
+	return section
 }
 
 /** The reader has this long to confirm before the button returns to its first label. */
@@ -108,6 +137,7 @@ function build(): HTMLDialogElement {
 		...sources.nodes,
 		renderThemePicker(),
 		renderNewTabSwitch(),
+		renderSwipeSwitches(),
 		el(
 			'p',
 			'note',
