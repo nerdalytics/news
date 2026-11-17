@@ -12,7 +12,7 @@ import { MINUTE } from './time'
 /** The app asks for `version.json` at most this often. */
 const CHECK_INTERVAL_MS = 10 * MINUTE
 /** Remembers the build a reload was made for, so a stale server copy cannot cause a reload loop. */
-const RELOADED_FOR_KEY = 'tureel:reloaded-for'
+const RELOADED_FOR_KEY = 'thenews:reloaded-for'
 
 let lastCheck = 0
 

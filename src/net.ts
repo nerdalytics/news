@@ -69,6 +69,6 @@ export function describeError(error: unknown, online = navigator.onLine): string
 	if (error instanceof DOMException && error.name === 'TimeoutError') {
 		return 'The source took too long to answer.'
 	}
-	if (error instanceof TypeError) return 'tureel could not reach the source.'
-	return 'tureel could not read the response of the source.'
+	if (error instanceof TypeError) return 'TheNews could not reach the source.'
+	return 'TheNews could not read the response of the source.'
 }

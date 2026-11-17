@@ -6,7 +6,7 @@ import { SECOND } from './time'
 
 const panel = document.createElement('pre')
 panel.className = 'debug'
-panel.textContent = `tureel debug\n${navigator.userAgent}\n`
+panel.textContent = `TheNews debug\n${navigator.userAgent}\n`
 document.body.append(panel)
 
 function log(line: string): void {
@@ -23,7 +23,7 @@ addEventListener('unhandledrejection', (event) => {
 	log(`REJECTION ${String(event.reason)}`)
 })
 
-addEventListener('tureel:fetch', (event) => {
+addEventListener('thenews:fetch', (event) => {
 	const { id, ms, error } = (event as CustomEvent<FetchReport>).detail
 	log(`${id} ${error ? `failed after ${ms} ms: ${error}` : `loaded in ${ms} ms`}`)
 })

@@ -1,6 +1,6 @@
 {
-	"name": "tureel",
-	"short_name": "tureel",
+	"name": "TheNews",
+	"short_name": "TheNews",
 	"description": "Shows the top 20 entries of Hacker News, GitHub and other developer sources on one page.",
 	"start_url": "./",
 	"scope": "./",

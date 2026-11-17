@@ -1,6 +1,6 @@
-# tureel
+# TheNews
 
-tureel shows the top 20 entries of Hacker News, GitHub and sixteen other
+TheNews shows the top 20 entries of Hacker News, GitHub and sixteen other
 sources on one page. It is a static site without accounts. The browser fetches
 most feeds from the source's public API. For sources a browser cannot read, a
 scheduled GitHub workflow fetches the feed and the browser reads the published
@@ -11,7 +11,7 @@ file.
 - Clicking a row opens the item. Clicking the comment count opens the item's
   discussion on the source.
 - Readers can switch sources on and off and drag them into any order.
-- tureel dims the entries the reader has opened.
+- TheNews dims the entries the reader has opened.
 - Pulling down at the top of the page refreshes the source under the finger.
 - The tab bar hides while the reader scrolls down and returns on the way up.
 - Four swipes on an entry, short and long in each direction, can each be given
@@ -21,7 +21,7 @@ file.
   site. Entries that link to a blocked site stay in the list, dimmed, with the
   site name crossed out. Tapping the name again offers to unblock it.
 - The theme follows the system or stays fixed on light or dark.
-- tureel stores settings in browser cookies.
+- TheNews stores settings in browser cookies.
 
 ## Sources
 
@@ -55,13 +55,13 @@ fetches it, see [Hosted sources](#hosted-sources).
 Notes on individual sources:
 
 - The official Hacker News API returns ids only and needs one request per
-  story. tureel takes the front page order from the official API and the
+  story. TheNews takes the front page order from the official API and the
   stories from one Algolia HN Search request. Both requests run in parallel.
-  That index does not contain job posts, so tureel does not show them.
+  That index does not contain job posts, so TheNews does not show them.
 - GitHub counts unauthenticated requests per IP address. Readers who share an
-  address, for example behind a mobile carrier, share the limit. tureel then
+  address, for example behind a mobile carrier, share the limit. TheNews then
   shows a rate limit message with a retry button.
-- GitHub has no API for github.com/trending, so tureel uses the Search API.
+- GitHub has no API for github.com/trending, so TheNews uses the Search API.
   GitHub limits unauthenticated search to
   [10 requests per minute](https://docs.github.com/en/rest/search/search).
 - Without a key, all Stack Exchange API requests from one IP address share a
@@ -84,7 +84,7 @@ Notes on individual sources:
 | DevHunt | This week's launches, ranks 41 to 60 | `devhunt.org/api/home/more-launches` | Every 3 hours | none |
 
 DevHunt's public route starts at rank 41. The top 40 are only in the page
-itself. tureel shows the real ranks, so the DevHunt column counts from 41.
+itself. TheNews shows the real ranks, so the DevHunt column counts from 41.
 
 How it works:
 
@@ -146,20 +146,20 @@ A further survey on 2026-11-16 covered 59 launch boards, 33 directories and
   14 kB gzipped. The first-run screen, the settings dialog and the debug panel
   are separate chunks. The browser downloads a chunk the first time it is
   needed.
-- tureel caches each feed in `localStorage`. A cached feed counts as fresh for
+- TheNews caches each feed in `localStorage`. A cached feed counts as fresh for
   5 to 60 minutes, depending on the source. A column renders its cached entries
   in the first frame and refetches a stale feed in the background.
-- The source on screen loads first. tureel then fetches the other enabled
+- The source on screen loads first. TheNews then fetches the other enabled
   sources one after another at low priority, so a source is ready before the
   reader switches to it. A fresh cached feed costs no request.
-- On the first-run screen, tureel starts fetching a source when the reader
+- On the first-run screen, TheNews starts fetching a source when the reader
   switches it on.
-- tureel prefetches nothing when the browser reports data saver mode.
-- tureel removes the splash screen when the first column has content, and
+- TheNews prefetches nothing when the browser reports data saver mode.
+- TheNews removes the splash screen when the first column has content, and
   after three seconds at the latest. Columns without data show placeholder
   rows until the data arrives.
 - When the reader returns to the tab or comes back with the back button,
-  tureel refetches stale feeds.
+  TheNews refetches stale feeds.
 
 ## Layout
 
@@ -189,7 +189,7 @@ one the reader chose. A phone shows one source, a 1440 px window three.
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
-  the settings sheet. tureel keeps the 500 most recently hidden entries.
+  the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it
   uses the `x-safari-https:` address to hand the link to Safari. Apple does
   not document that address, and it was not tested on a device.
@@ -207,52 +207,62 @@ only while a touch that started at the top of the page is down.
 
 ## Debugging on a phone
 
-Append `?debug` to the URL. tureel then shows uncaught errors and the duration
+Append `?debug` to the URL. TheNews then shows uncaught errors and the duration
 of every feed request in a panel at the top of the page.
 
 ## Settings
 
-tureel stores four cookies. Their path is the directory that serves the app,
+TheNews stores four cookies. Their path is the directory that serves the app,
 and they expire after 400 days.
 
 | Cookie | Value |
 | --- | --- |
-| `tureel_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
-| `tureel_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
-| `tureel_newtab` | `1` opens links in a new tab. |
-| `tureel_swipe` | The swipes that have an action, joined by `.`, as in `left_read.leftlong_hide.right_unread`. The swipes are `left`, `leftlong`, `right` and `rightlong`. |
+| `thenews_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
+| `thenews_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
+| `thenews_newtab` | `1` opens links in a new tab. |
+| `thenews_swipe` | The swipes that have an action, joined by `.`, as in `left_read.leftlong_hide.right_unread`. The swipes are `left`, `leftlong`, `right` and `rightlong`. |
 
-tureel keeps five more things in `localStorage`, because they are not
+TheNews keeps six more things in `localStorage`, because they are not
 settings or can outgrow the 4096 bytes of a cookie.
 
 | Key | Value |
 | --- | --- |
-| `tureel:blocked:v1` | The hosts of blocked sites. The list has no size limit. |
-| `tureel:read:v1` | The 500 most recently opened links. |
-| `tureel:hidden:v1` | The 500 most recently hidden entries. |
-| `tureel:hosted:v1` | When the feed of each hosted source was generated. |
-| `tureel:feed:v1:<source>` | The cached feed of a source. |
+| `thenews:blocked:v1` | The hosts of blocked sites. The list has no size limit. |
+| `thenews:read:v1` | The 500 most recently opened links. |
+| `thenews:hidden:v1` | The 500 most recently hidden entries. |
+| `thenews:hosted:v1` | When the feed of each hosted source was generated. |
+| `thenews:feed:v1:<source>` | The cached feed of a source. |
+| `thenews:settings:v1` | A copy of the four settings cookies, see below. |
 
-tureel does not use the browser's `:visited` state to dim links. That state
+Cookies are tied to the path of the site, and `localStorage` to its host. If
+the site moves to another path on the same host, as after a rename of the
+repository, the new path cannot see the old cookies. TheNews therefore keeps a
+copy of the settings cookies in `localStorage` and restores the cookies from it
+when it starts without them. A move to another host starts empty.
+
+The app was called tureel before. At startup it renames the cookies and stored
+keys that still carry that name.
+
+TheNews does not use the browser's `:visited` state to dim links. That state
 misses links opened from a home screen web app or a private window, and a
 script cannot clear it when the reader marks an entry as unread.
 
 "Start fresh" at the end of the settings sheet deletes the cookies and
-every `tureel:` key, then shows the first-run screen. The button asks for a
+every `thenews:` key, then shows the first-run screen. The button asks for a
 second tap before it deletes anything.
 
 A site can be blocked when an entry links away from its source, as entries on
-Hacker News, Lemmy and Mastodon do. tureel matches the exact host without a
+Hacker News, Lemmy and Mastodon do. TheNews matches the exact host without a
 leading `www.`, so blocking `example.com` does not block `news.example.com`.
 
-tureel writes cookies with the Cookie Store API and falls back to
+TheNews writes cookies with the Cookie Store API and falls back to
 `document.cookie` in browsers without it. In browsers with the Cookie Store
 API, a change in one tab updates the other open tabs.
 
 Safari deletes cookies created in JavaScript and `localStorage` after 7 days
 without a tap or click on the site, according to WebKit's
 [tracking prevention policy](https://webkit.org/tracking-prevention/). After
-that, tureel shows the first-run screen again. The policy exempts web apps
+that, TheNews shows the first-run screen again. The policy exempts web apps
 added to the home screen.
 
 ## Development
@@ -302,7 +312,7 @@ request and deploys `main` to GitHub Pages. Before the first deployment, open
 the repository settings, go to Pages, and set Source to GitHub Actions.
 
 The build uses relative asset URLs, so it works under
-`https://<owner>.github.io/tureel/` and on a custom domain.
+`https://<owner>.github.io/news/` and on a custom domain.
 
 ## License
 

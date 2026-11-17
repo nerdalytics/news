@@ -142,10 +142,10 @@ describe('swipe settings', () => {
 
 describe('parseCookies', () => {
 	it('reads name/value pairs and decodes values', () => {
-		const cookies = parseCookies('tureel_theme=dark; other=a%20b; tureel_sources=hn.-github')
-		expect(cookies.get('tureel_theme')).toBe('dark')
+		const cookies = parseCookies('thenews_theme=dark; other=a%20b; thenews_sources=hn.-github')
+		expect(cookies.get('thenews_theme')).toBe('dark')
 		expect(cookies.get('other')).toBe('a b')
-		expect(cookies.get('tureel_sources')).toBe('hn.-github')
+		expect(cookies.get('thenews_sources')).toBe('hn.-github')
 	})
 
 	it('ignores malformed pairs', () => {

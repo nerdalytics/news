@@ -4,7 +4,7 @@ import { DAY, SECOND } from './time'
 const MAX_AGE_MS = 400 * DAY
 const MAX_AGE_SECONDS = MAX_AGE_MS / SECOND
 
-/** The directory the app is served from, e.g. `/tureel/` on GitHub Pages. */
+/** The directory the app is served from, e.g. `/news/` on GitHub Pages. */
 function cookiePath(): string {
 	return new URL('.', document.baseURI).pathname
 }
@@ -32,6 +32,14 @@ function writeLegacy(name: string, value: string): void {
 	const secure = location.protocol === 'https:' ? '; Secure' : ''
 	// biome-ignore lint/suspicious/noDocumentCookie: fallback for browsers without the Cookie Store API
 	document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${MAX_AGE_SECONDS}; Path=${cookiePath()}; SameSite=Lax${secure}`
+}
+
+/**
+ * Writes a cookie that the next line of code can already read. The Cookie
+ * Store API writes asynchronously, so startup code uses this instead.
+ */
+export function writeCookieNow(name: string, value: string): void {
+	writeLegacy(name, value)
 }
 
 export function writeCookie(name: string, value: string): void {

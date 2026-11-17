@@ -8,7 +8,7 @@ export interface Feed {
 	fetchedAt: number
 }
 
-const KEY_PREFIX = 'tureel:feed:v1:'
+const KEY_PREFIX = 'thenews:feed:v1:'
 /** The app discards cached feeds older than this. */
 const MAX_AGE_MS = 7 * DAY
 
@@ -65,7 +65,7 @@ function report(id: string, startedAt: number, error?: unknown): void {
 		ms: Math.round(performance.now() - startedAt),
 		...(error ? { error: String(error) } : {}),
 	}
-	dispatchEvent(new CustomEvent('tureel:fetch', { detail }))
+	dispatchEvent(new CustomEvent('thenews:fetch', { detail }))
 }
 
 async function timedFetch(source: SourceMeta, priority: RequestPriority): Promise<Feed> {

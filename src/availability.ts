@@ -10,7 +10,7 @@ import { DAY } from './time'
  * than the limit below, is hidden from the tabs and from the settings.
  */
 
-const KEY = 'tureel:hosted:v1'
+const KEY = 'thenews:hosted:v1'
 /** A workflow that has not published for this long counts as broken. */
 export const HOSTED_MAX_AGE_MS = 3 * DAY
 

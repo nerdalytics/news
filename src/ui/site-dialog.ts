@@ -10,8 +10,8 @@ function render(): void {
 	const title = el('h2', undefined, site)
 	title.id = 'site-title'
 	const text = blocked
-		? 'You blocked this site. tureel dims its entries and crosses out its name.'
-		: 'Block this site if you cannot or do not want to open it. Its entries stay in the list. tureel dims them and crosses out the name of the site.'
+		? 'You blocked this site. TheNews dims its entries and crosses out its name.'
+		: 'Block this site if you cannot or do not want to open it. Its entries stay in the list. TheNews dims them and crosses out the name of the site.'
 	const toggle = el('button', 'primary-btn', blocked ? `Unblock ${site}` : `Block ${site}`)
 	toggle.type = 'button'
 	toggle.addEventListener('click', () => {
