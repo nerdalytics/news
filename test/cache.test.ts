@@ -34,7 +34,7 @@ describe('feed cache', () => {
 		expect(first).toBe(second)
 		expect(first.items[0]?.title).toBe('Cached post')
 		expect(peek('devto')).toBe(first)
-		expect(JSON.parse(localStorage.getItem('tureel:feed:v1:devto') ?? '{}').items).toHaveLength(1)
+		expect(JSON.parse(localStorage.getItem('thenews:feed:v1:devto') ?? '{}').items).toHaveLength(1)
 	})
 
 	it('sends requests without credentials and with the given priority', async () => {
@@ -64,15 +64,15 @@ describe('feed cache', () => {
 	})
 
 	it('ignores stored feeds that are malformed', () => {
-		localStorage.setItem('tureel:feed:v1:github', '{"items":"oops"}')
+		localStorage.setItem('thenews:feed:v1:github', '{"items":"oops"}')
 		expect(peek('github')).toBeUndefined()
-		localStorage.setItem('tureel:feed:v1:github', 'not json')
+		localStorage.setItem('thenews:feed:v1:github', 'not json')
 		expect(peek('github')).toBeUndefined()
 	})
 
 	it('ignores stored feeds older than a week', () => {
 		const old = { fetchedAt: Date.now() - 8 * 24 * 60 * 60 * 1000, items: [] }
-		localStorage.setItem('tureel:feed:v1:lemmy', JSON.stringify(old))
+		localStorage.setItem('thenews:feed:v1:lemmy', JSON.stringify(old))
 		expect(peek('lemmy')).toBeUndefined()
 	})
 })

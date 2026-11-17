@@ -3,10 +3,10 @@ import { defineConfig } from 'vitest/config'
 /** Changes with every build. The running page compares it with `version.json` to find out about updates. */
 const buildId = process.env.GITHUB_SHA?.slice(0, 12) ?? `local-${Date.now()}`
 /** The repository whose workflows publish the hosted feeds. A fork reads its own feeds. */
-const repository = process.env.GITHUB_REPOSITORY ?? 'nerdalytics/tureel'
+const repository = process.env.GITHUB_REPOSITORY ?? 'nerdalytics/news'
 
 export default defineConfig({
-	// A relative base lets the same build run under /tureel/ on GitHub Pages
+	// A relative base lets the same build run under /news/ on GitHub Pages
 	// and at the root of a custom domain.
 	base: './',
 	build: {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const KEY = 'tureel:read:v1'
+const KEY = 'thenews:read:v1'
 
 /** The module keeps its list in memory, so every test loads a fresh copy. */
 async function load(): Promise<typeof import('../src/read')> {

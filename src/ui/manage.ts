@@ -147,7 +147,7 @@ const CONFIRM_WINDOW_MS = 5000
 const RESET_LABEL = 'Start fresh'
 const CONFIRM_LABEL = 'Tap again to delete everything'
 
-/** Deletes everything tureel stored. The first tap arms the button, the second one confirms. */
+/** Deletes everything TheNews stored. The first tap arms the button, the second one confirms. */
 function renderReset(): HTMLElement {
 	const section = el('section', 'pref')
 	const button = el('button', 'warning-btn', RESET_LABEL)
@@ -174,7 +174,7 @@ function renderReset(): HTMLElement {
 		el(
 			'p',
 			undefined,
-			'Deletes your sources, blocked sites, opened links and cached feeds from this browser. tureel then shows the first-run screen.'
+			'Deletes your sources, blocked sites, opened links and cached feeds from this browser. TheNews then shows the first-run screen.'
 		),
 		button
 	)
@@ -213,7 +213,7 @@ function build(): HTMLDialogElement {
 		el(
 			'p',
 			'note',
-			'tureel saves these settings in this browser, in cookies and local storage. It has no accounts and no server of its own.'
+			'TheNews saves these settings in this browser, in cookies and local storage. It has no accounts and no server of its own.'
 		),
 		renderReset()
 	)

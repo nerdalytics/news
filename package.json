@@ -1,5 +1,5 @@
 {
-	"name": "tureel",
+	"name": "news",
 	"version": "0.1.0",
 	"private": true,
 	"description": "Shows the top 20 entries of Hacker News, GitHub and other developer sources on one page.",

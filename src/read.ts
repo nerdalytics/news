@@ -9,7 +9,7 @@ const MAX_ENTRIES = 500
  * home screen web app or a private window, and a script cannot clear it when
  * the reader marks an entry as unread.
  */
-const list = createUrlList('tureel:read:v1', MAX_ENTRIES)
+const list = createUrlList('thenews:read:v1', MAX_ENTRIES)
 
 export const isRead = (url: string): boolean => list.has(url)
 export const markRead = (url: string): void => list.add(url)

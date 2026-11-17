@@ -3,20 +3,21 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<title>tureel</title>
+		<title>TheNews</title>
 		<meta
 			name="description"
-			content="tureel shows the top 20 entries of Hacker News, GitHub and other developer sources on one page."
+			content="TheNews shows the top 20 entries of Hacker News, GitHub and other developer sources on one page."
 		/>
 		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
 		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1012" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-title" content="TheNews" />
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<script>
 			// Apply the stored theme before the first paint, so the page does not flash in the wrong theme.
 			;(() => {
-				const stored = /(?:^|; )tureel_theme=(light|dark)/.exec(document.cookie)
+				const stored = /(?:^|; )thenews_theme=(light|dark)/.exec(document.cookie)
 				if (stored) document.documentElement.dataset.theme = stored[1]
 			})()
 		</script>
@@ -92,7 +93,7 @@
 		<main id="deck" class="deck"></main>
 		<noscript>
 			<p style="padding: 24px; font-family: system-ui, sans-serif">
-				tureel fetches its feeds in your browser, so it needs JavaScript.
+				TheNews fetches its feeds in your browser, so it needs JavaScript.
 			</p>
 		</noscript>
 		<script type="module" src="/src/main.ts"></script>

@@ -31,13 +31,13 @@ export interface Settings {
 }
 
 const COOKIE = {
-	newTab: 'tureel_newtab',
-	sources: 'tureel_sources',
-	swipe: 'tureel_swipe',
-	theme: 'tureel_theme',
+	newTab: 'thenews_newtab',
+	sources: 'thenews_sources',
+	swipe: 'thenews_swipe',
+	theme: 'thenews_theme',
 }
 export const COOKIE_NAMES: readonly string[] = Object.values(COOKIE)
-const BLOCKED_KEY = 'tureel:blocked:v1'
+const BLOCKED_KEY = 'thenews:blocked:v1'
 const DISABLED_PREFIX = '-'
 const SEPARATOR = '.'
 const HOST_PATTERN = /^[a-z0-9.-]+$/
@@ -104,15 +104,7 @@ function writeBlocked(hosts: readonly string[]): void {
 
 /** Joins a swipe and its action inside the cookie, as in `left_read`. */
 const ASSIGNMENT = '_'
-/** The first release of swipes stored only these two words. They map to the short swipes. */
-const LEGACY_SWIPES: Record<string, [SwipeSlot, SwipeAction]> = {
-	read: ['left', 'read'],
-	unread: ['right', 'unread'],
-}
-
 function parseAssignment(token: string): [SwipeSlot, SwipeAction] | undefined {
-	const legacy = LEGACY_SWIPES[token]
-	if (legacy) return legacy
 	const [slot, action] = token.split(ASSIGNMENT)
 	const knownSlot = SWIPE_SLOTS.find((known) => known.toLowerCase() === slot)
 	const knownAction = SWIPE_ACTIONS.find((known) => known === action)

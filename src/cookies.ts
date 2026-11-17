@@ -4,7 +4,7 @@ import { DAY, SECOND } from './time'
 const MAX_AGE_MS = 400 * DAY
 const MAX_AGE_SECONDS = MAX_AGE_MS / SECOND
 
-/** The directory the app is served from, e.g. `/tureel/` on GitHub Pages. */
+/** The directory the app is served from, e.g. `/news/` on GitHub Pages. */
 function cookiePath(): string {
 	return new URL('.', document.baseURI).pathname
 }

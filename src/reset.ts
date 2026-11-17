@@ -2,7 +2,7 @@ import { deleteCookie } from './cookies'
 import { COOKIE_NAMES } from './settings'
 
 /** Every `localStorage` key of the app starts with this. */
-const STORAGE_PREFIX = 'tureel:'
+const STORAGE_PREFIX = 'thenews:'
 
 function clearStorage(): void {
 	try {
