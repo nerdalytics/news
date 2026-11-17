@@ -5,7 +5,7 @@ export interface AutoHideBar {
 	reset(): void
 }
 
-/** Hides the bar while the reader scrolls down and shows it again on the way up. */
+/** Hides the bar while the reader scrolls down. Shows it again on the way up and at the end of the page. */
 export function autoHideBar(bar: HTMLElement): AutoHideBar {
 	/** The scroll position at the last decision. */
 	let anchor = scrollY
@@ -18,7 +18,7 @@ export function autoHideBar(bar: HTMLElement): AutoHideBar {
 		// iOS reports positions beyond both ends while the page bounces. Ignore those.
 		const last = document.documentElement.scrollHeight - innerHeight
 		const y = Math.max(0, Math.min(scrollY, last))
-		const hides = barHides(y - anchor, y)
+		const hides = barHides(y - anchor, y, last - y)
 		if (hides === undefined) return
 		anchor = y
 		bar.classList.toggle('is-hidden', hides)

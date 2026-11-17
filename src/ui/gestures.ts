@@ -80,12 +80,17 @@ export function pullCommits(distance: number): boolean {
 export const BAR_TOLERANCE_PX = 8
 /** The bar is always shown this close to the top of the page. */
 export const BAR_TOP_ZONE_PX = 64
+/** The bar is shown again once the page is this close to its end. */
+export const BAR_BOTTOM_ZONE_PX = 24
 
 /**
  * Whether the tab bar hides after the page scrolled by `delta` pixels to the
- * position `y`. Returns nothing while the movement is too small to decide.
+ * position `y`, with `toBottom` pixels left below. Returns nothing while the
+ * movement is too small to decide.
  */
-export function barHides(delta: number, y: number): boolean | undefined {
+export function barHides(delta: number, y: number, toBottom: number): boolean | undefined {
+	// At the end of the page there is nothing left to read, so the bar comes back.
+	if (toBottom <= BAR_BOTTOM_ZONE_PX) return false
 	if (Math.abs(delta) < BAR_TOLERANCE_PX) return undefined
 	return delta > 0 && y > BAR_TOP_ZONE_PX
 }

@@ -196,7 +196,8 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - A tap within 0.4 seconds after a swipe is ignored, so that the swipe does not
   open the link.
 - The tab bar hides after the page has scrolled down by 8 px and shows again
-  after 8 px upwards. It is always shown within 64 px of the top.
+  after 8 px upwards. It is always shown within 64 px of the top and within
+  24 px of the end of the page.
 
 The numbers are constants in `src/ui/gestures.ts`.
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	BAR_BOTTOM_ZONE_PX,
 	BAR_TOLERANCE_PX,
 	BAR_TOP_ZONE_PX,
 	barHides,
@@ -98,19 +99,28 @@ describe('pull to refresh', () => {
 
 describe('tab bar', () => {
 	const below = BAR_TOP_ZONE_PX + 500
+	const farFromEnd = 2000
 
 	it('hides on the way down and shows on the way up', () => {
-		expect(barHides(BAR_TOLERANCE_PX, below)).toBe(true)
-		expect(barHides(-BAR_TOLERANCE_PX, below)).toBe(false)
+		expect(barHides(BAR_TOLERANCE_PX, below, farFromEnd)).toBe(true)
+		expect(barHides(-BAR_TOLERANCE_PX, below, farFromEnd)).toBe(false)
 	})
 
 	it('does not decide on a movement below the tolerance', () => {
-		expect(barHides(BAR_TOLERANCE_PX - 1, below)).toBeUndefined()
-		expect(barHides(-(BAR_TOLERANCE_PX - 1), below)).toBeUndefined()
+		expect(barHides(BAR_TOLERANCE_PX - 1, below, farFromEnd)).toBeUndefined()
+		expect(barHides(-(BAR_TOLERANCE_PX - 1), below, farFromEnd)).toBeUndefined()
 	})
 
 	it('stays visible near the top of the page', () => {
-		expect(barHides(40, BAR_TOP_ZONE_PX)).toBe(false)
-		expect(barHides(40, 20)).toBe(false)
+		expect(barHides(40, BAR_TOP_ZONE_PX, farFromEnd)).toBe(false)
+		expect(barHides(40, 20, farFromEnd)).toBe(false)
+	})
+
+	it('shows at the end of the page, even while scrolling down', () => {
+		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX)).toBe(false)
+		expect(barHides(40, below, 0)).toBe(false)
+		// The last few pixels arrive as a movement below the tolerance.
+		expect(barHides(2, below, 0)).toBe(false)
+		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX + 1)).toBe(true)
 	})
 })
