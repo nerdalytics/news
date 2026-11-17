@@ -202,6 +202,18 @@ export const SOURCES: readonly SourceMeta[] = [
 		ttl: 60,
 	},
 	{
+		id: 'devhunt',
+		name: 'DevHunt',
+		tagline: "This week's launches from rank 41",
+		mark: 'DH',
+		badge: ['#0f172a', '#ffffff'],
+		accent: ['#334155', '#cbd5e1'],
+		home: 'https://devhunt.org/',
+		comments: false,
+		hosted: true,
+		ttl: 60,
+	},
+	{
 		id: 'smollaunch',
 		name: 'Smol Launch',
 		tagline: "This week's ranking",

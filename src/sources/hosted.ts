@@ -29,6 +29,7 @@ function toItem(raw: unknown): FeedItem | undefined {
 	if (typeof entry.description === 'string') item.description = entry.description
 	if (typeof entry.tag === 'string') item.tag = entry.tag
 	if (typeof entry.time === 'number') item.time = entry.time
+	if (typeof entry.rank === 'number') item.rank = entry.rank
 	const score = entry.score as { label?: unknown } | undefined
 	const parsedScore = count(score, score?.label)
 	if (parsedScore) item.score = parsedScore

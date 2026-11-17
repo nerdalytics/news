@@ -426,6 +426,11 @@ describe('hosted feeds', () => {
 		expect(feed.items).toEqual([entry])
 	})
 
+	it('keeps the rank of a feed that does not start at 1', () => {
+		const feed = hosted.parse({ generatedAt: 1, items: [{ ...entry, rank: 41 }] })
+		expect(feed.items[0]?.rank).toBe(41)
+	})
+
 	it('drops entries without a title or with an unsafe link', () => {
 		const feed = hosted.parse({
 			generatedAt: 1,

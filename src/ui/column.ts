@@ -86,7 +86,7 @@ function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIEl
 	content.append(externalLink('title', item.url, item.title))
 	if (item.description) content.append(el('p', 'desc', item.description))
 	content.append(renderMeta(item, source))
-	row.append(el('span', 'rank', String(index + 1)), content)
+	row.append(el('span', 'rank', String(item.rank ?? index + 1)), content)
 	return row
 }
 

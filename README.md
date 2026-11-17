@@ -1,6 +1,6 @@
 # tureel
 
-tureel shows the top 20 entries of Hacker News, GitHub and fifteen other
+tureel shows the top 20 entries of Hacker News, GitHub and sixteen other
 sources on one page. It is a static site without accounts. The browser fetches
 most feeds from the source's public API. For sources a browser cannot read, a
 scheduled GitHub workflow fetches the feed and the browser reads the published
@@ -81,6 +81,10 @@ Notes on individual sources:
 | Product Hunt | Top products of the last 24 hours | Product Hunt's GraphQL API, with a token | Hourly | comments |
 | BetaList | Newest startups | `betalist.com/startups/feed_original` | Every 3 hours | none |
 | Smol Launch | This week's ranking | `smollaunch.com/api/v1` | Every 2 hours | comments |
+| DevHunt | This week's launches, ranks 41 to 60 | `devhunt.org/api/home/more-launches` | Every 3 hours | none |
+
+DevHunt's public route starts at rank 41. The top 40 are only in the page
+itself. tureel shows the real ranks, so the DevHunt column counts from 41.
 
 How it works:
 
@@ -134,7 +138,6 @@ A further survey on 2026-11-16 covered 59 launch boards, 33 directories and
   ScrollLaunch, Aback Launch.
 - Candidates for a hosted source: hot100, Glama, OpenAlternative, Firsto,
   Fazier, KittyLaunch, PitchWall, PeerPush.
-- DevHunt's public route returns ranks 41 and below only.
 - Reddit and Hashnode have closed their free access.
 
 ## How it loads
