@@ -103,24 +103,38 @@ describe('blocked sites', () => {
 	})
 })
 
-describe('swipe gestures', () => {
-	it('switches both gestures off without a cookie', () => {
-		expect(parseSwipe(undefined)).toEqual({ read: false, unread: false })
-		expect(parseSwipe('')).toEqual({ read: false, unread: false })
+describe('swipe settings', () => {
+	it('assigns no action without a cookie', () => {
+		expect(parseSwipe(undefined)).toEqual({})
+		expect(parseSwipe('')).toEqual({})
 	})
 
-	it('reads each gesture on its own', () => {
-		expect(parseSwipe('read')).toEqual({ read: true, unread: false })
-		expect(parseSwipe('unread')).toEqual({ read: false, unread: true })
-		expect(parseSwipe('read.unread')).toEqual({ read: true, unread: true })
+	it('reads one action per swipe', () => {
+		expect(parseSwipe('left_read.leftlong_hide.right_unread.rightlong_block')).toEqual({
+			left: 'read',
+			leftLong: 'hide',
+			right: 'unread',
+			rightLong: 'block',
+		})
+		expect(parseSwipe('rightlong_browser')).toEqual({ rightLong: 'browser' })
 	})
 
-	it('ignores unknown gestures', () => {
-		expect(parseSwipe('archive.read')).toEqual({ read: true, unread: false })
+	it('drops unknown swipes and actions', () => {
+		expect(parseSwipe('up_read.left_explode.left.right_comments')).toEqual({ right: 'comments' })
+	})
+
+	it('understands the cookie of the first release', () => {
+		expect(parseSwipe('read')).toEqual({ left: 'read' })
+		expect(parseSwipe('read.unread')).toEqual({ left: 'read', right: 'unread' })
 	})
 
 	it('round-trips through serializeSwipe', () => {
-		for (const raw of ['', 'read', 'unread', 'read.unread']) {
+		for (const raw of [
+			'',
+			'left_read',
+			'leftlong_hide.right_unread',
+			'left_comments.rightlong_browser',
+		]) {
 			expect(serializeSwipe(parseSwipe(raw))).toBe(raw)
 		}
 	})

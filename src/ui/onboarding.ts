@@ -1,5 +1,7 @@
+import { isAvailable, onAvailabilityChange } from '../availability'
 import { refresh } from '../cache'
-import { getSettings, type SourceSetting, updateSettings } from '../settings'
+import { checkHosted } from '../hosted-check'
+import { getSettings, type SourceSetting, updateSettings, withHiddenSources } from '../settings'
 import { sourceById } from '../sources/index'
 import { LIMIT } from '../sources/types'
 import { el } from './dom'
@@ -56,10 +58,21 @@ export function showOnboarding(): void {
 		},
 		scroller: body,
 	})
-	list.render(getSettings().sources)
+	/** A hosted source is offered only once its feed has been read. */
+	const offered = (sources: readonly SourceSetting[]): SourceSetting[] =>
+		sources.filter((setting) => {
+			const source = sourceById(setting.id)
+			return source !== undefined && isAvailable(source)
+		})
+	list.render(offered(getSettings().sources))
+	// Hosted sources join the list when their feeds arrive. The choices made so far are kept.
+	onAvailabilityChange(() => {
+		if (screen.isConnected) list.render(offered(withHiddenSources(list.read())))
+	})
+	void checkHosted()
 
 	start.addEventListener('click', () => {
-		updateSettings({ sources: list.read() })
+		updateSettings({ sources: withHiddenSources(list.read()) })
 		screen.close()
 		screen.remove()
 	})

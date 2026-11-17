@@ -1,0 +1,16 @@
+name: "Source: Lobsters"
+
+# Once an hour. Lobsters has no API and asks proxies to cache.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: lobsters

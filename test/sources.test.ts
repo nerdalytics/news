@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 import * as devto from '../src/sources/devto'
 import * as github from '../src/sources/github'
 import * as hackernews from '../src/sources/hackernews'
+import * as hosted from '../src/sources/hosted'
 import * as huggingface from '../src/sources/huggingface'
+import * as launchllama from '../src/sources/launchllama'
 import * as lemmy from '../src/sources/lemmy'
 import * as mastodon from '../src/sources/mastodon'
+import * as nicklaunches from '../src/sources/nicklaunches'
 import * as stackoverflow from '../src/sources/stackoverflow'
 import * as thenextweb from '../src/sources/thenextweb'
 import { LIMIT } from '../src/sources/types'
+import * as uneed from '../src/sources/uneed'
 import * as wikipedia from '../src/sources/wikipedia'
 
 // The fixtures use the field names of the live responses, checked on 2026-11-15.
@@ -309,5 +313,149 @@ describe('The Next Web', () => {
 				url: 'https://thenextweb.com/news/first',
 			},
 		])
+	})
+})
+
+describe('Uneed', () => {
+	it('links to the product and falls back to its Uneed page', () => {
+		const items = uneed.parse({
+			ranking: [
+				{
+					description: 'Does a thing',
+					name: 'Thing',
+					slug: 'thing',
+					uneed_url: 'https://www.uneed.best/tool/thing',
+					url: 'https://thing.example/',
+					vote_count: 33,
+				},
+				{ name: 'No site', slug: 'no-site', uneed_url: 'https://www.uneed.best/tool/no-site' },
+				{ name: 'No link at all', slug: 'none' },
+			],
+		})
+		expect(items).toEqual([
+			{
+				description: 'Does a thing',
+				id: 'thing',
+				score: { label: 'vote', value: 33 },
+				title: 'Thing',
+				url: 'https://thing.example/',
+			},
+			{
+				id: 'no-site',
+				score: { label: 'vote', value: 0 },
+				title: 'No site',
+				url: 'https://www.uneed.best/tool/no-site',
+			},
+		])
+	})
+})
+
+describe('Nick Launches', () => {
+	it('links the title to the product and the comments to its launch page', () => {
+		const [item] = nicklaunches.parse({
+			items: [
+				{
+					commentCount: 3,
+					name: 'PageThing',
+					productUrl: 'https://nicklaunches.com/products/pagething/',
+					slug: 'pagething',
+					tagline: 'See your site',
+					upvotes: 38,
+					url: 'https://pagething.example/',
+				},
+			],
+		})
+		expect(item).toEqual({
+			comments: { count: 3, label: 'comment', url: 'https://nicklaunches.com/products/pagething/' },
+			description: 'See your site',
+			id: 'pagething',
+			score: { label: 'upvote', value: 38 },
+			title: 'PageThing',
+			url: 'https://pagething.example/',
+		})
+	})
+
+	it('never returns more than the limit', () => {
+		const items = Array.from({ length: 93 }, (_, index) => ({
+			name: `Product ${index}`,
+			slug: `p${index}`,
+			url: `https://example.com/${index}`,
+		}))
+		expect(nicklaunches.parse({ items })).toHaveLength(LIMIT)
+	})
+})
+
+describe('Launch Llama', () => {
+	it('prefers the product site over the listing page', () => {
+		const [item] = launchllama.parse({
+			results: [
+				{
+					created_at: '2026-11-08T19:06:01.270767+00:00',
+					id: 'abc',
+					name: 'Formthing',
+					tagline: 'Data rooms',
+					upvotes: 15,
+					url: 'https://tools.launchllama.co/products/formthing',
+					website_url: 'https://formthing.example/?utm_source=directory',
+				},
+			],
+		})
+		expect(item?.url).toBe('https://formthing.example/?utm_source=directory')
+		expect(item?.score).toEqual({ label: 'upvote', value: 15 })
+		expect(item?.time).toBe(Date.parse('2026-11-08T19:06:01.270Z'))
+	})
+})
+
+describe('hosted feeds', () => {
+	const entry = {
+		comments: { count: 9, label: 'comment', url: 'https://lobste.rs/s/abc/story' },
+		id: 'abc',
+		score: { label: 'point', value: 45 },
+		time: 1_794_834_131_963,
+		title: 'A story',
+		url: 'https://example.com/story',
+	}
+
+	it('reads the file a workflow publishes', () => {
+		const feed = hosted.parse({
+			generatedAt: 1_794_874_500_000,
+			items: [entry],
+			source: 'lobsters',
+		})
+		expect(feed.generatedAt).toBe(1_794_874_500_000)
+		expect(feed.items).toEqual([entry])
+	})
+
+	it('keeps the rank of a feed that does not start at 1', () => {
+		const feed = hosted.parse({ generatedAt: 1, items: [{ ...entry, rank: 41 }] })
+		expect(feed.items[0]?.rank).toBe(41)
+	})
+
+	it('drops entries without a title or with an unsafe link', () => {
+		const feed = hosted.parse({
+			generatedAt: 1,
+			items: [entry, { title: 'No link' }, { title: 'Bad', url: 'javascript:alert(1)' }, null],
+		})
+		expect(feed.items).toHaveLength(1)
+	})
+
+	it('drops an unsafe comments link but keeps the entry', () => {
+		const feed = hosted.parse({
+			generatedAt: 1,
+			items: [{ ...entry, comments: { count: 1, url: 'javascript:alert(1)' } }],
+		})
+		expect(feed.items[0]?.comments).toBeUndefined()
+	})
+
+	it('rejects a file without a generation time or without entries', () => {
+		expect(() => hosted.parse({ items: [entry] })).toThrow(hosted.HostedFeedError)
+		expect(() => hosted.parse({ generatedAt: 1, items: [] })).toThrow(hosted.HostedFeedError)
+		expect(() => hosted.parse('nonsense')).toThrow(hosted.HostedFeedError)
+	})
+
+	it('reads each source from its own branch of the repository', () => {
+		expect(hosted.hostedUrl('lobsters')).toMatch(
+			/^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/data-lobsters\/feed\.json$/
+		)
 	})
 })

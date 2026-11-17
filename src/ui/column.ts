@@ -1,5 +1,7 @@
+import { generatedAt } from '../availability'
 import { type Feed, isFresh, peek, refresh } from '../cache'
 import { count, hostOf, timeAgo } from '../format'
+import { isHidden } from '../hidden'
 import { describeError } from '../net'
 import { isRead } from '../read'
 import { getSettings, isBlocked } from '../settings'
@@ -66,9 +68,10 @@ function renderMeta(item: FeedItem, source: SourceMeta): HTMLElement {
 	return meta
 }
 
-/** Marks rows the reader has opened and rows that link to a blocked site. */
+/** Marks rows the reader has opened and rows that link to a blocked site, and removes hidden rows. */
 function applyState(row: HTMLElement): void {
 	const { site, url } = row.dataset
+	row.hidden = url !== undefined && isHidden(url)
 	row.classList.toggle('is-read', url !== undefined && isRead(url))
 	row.classList.toggle('is-blocked', site !== undefined && isBlocked(site))
 }
@@ -83,7 +86,7 @@ function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIEl
 	content.append(externalLink('title', item.url, item.title))
 	if (item.description) content.append(el('p', 'desc', item.description))
 	content.append(renderMeta(item, source))
-	row.append(el('span', 'rank', String(index + 1)), content)
+	row.append(el('span', 'rank', String(item.rank ?? index + 1)), content)
 	return row
 }
 
@@ -227,7 +230,8 @@ export class Column {
 			this.foot.replaceChildren()
 			return
 		}
-		const updated = updatedLabel(this.shown.fetchedAt)
+		// A hosted feed is as old as the workflow run that produced it, not as the last download.
+		const updated = updatedLabel(generatedAt(this.source.id) ?? this.shown.fetchedAt)
 		const home = el('a', undefined, hostOf(this.source.home))
 		home.href = this.source.home
 		home.rel = 'noopener'

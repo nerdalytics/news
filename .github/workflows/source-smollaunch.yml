@@ -1,0 +1,16 @@
+name: "Source: Smol Launch"
+
+# Every two hours. The API documentation asks clients to cache for one hour.
+on:
+  schedule:
+    - cron: "29 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: smollaunch

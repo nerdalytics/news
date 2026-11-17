@@ -1,8 +1,10 @@
 # tureel
 
-tureel shows the top 20 entries of Hacker News, GitHub and seven other sources
-on one page. It is a static site. The browser fetches every feed from the
-source's public API, so tureel has no backend and no accounts.
+tureel shows the top 20 entries of Hacker News, GitHub and sixteen other
+sources on one page. It is a static site without accounts. The browser fetches
+most feeds from the source's public API. For sources a browser cannot read, a
+scheduled GitHub workflow fetches the feed and the browser reads the published
+file.
 
 - On the first visit the reader chooses the sources. No source is on by default.
 - Each source shows up to 20 entries.
@@ -12,8 +14,9 @@ source's public API, so tureel has no backend and no accounts.
 - tureel dims the entries the reader has opened.
 - Pulling down at the top of the page refreshes the source under the finger.
 - The tab bar hides while the reader scrolls down and returns on the way up.
-- Two optional swipe gestures mark an entry as read or unread. Both are off by
-  default.
+- Four swipes on an entry, short and long in each direction, can each be given
+  an action. No swipe has an action by default.
+- The page reloads itself after a new release.
 - Tapping the name of a linked site, such as `slate.com`, offers to block that
   site. Entries that link to a blocked site stay in the list, dimmed, with the
   site name crossed out. Tapping the name again offers to unblock it.
@@ -22,9 +25,16 @@ source's public API, so tureel has no backend and no accounts.
 
 ## Sources
 
-Readers can enable only the sources listed in `src/sources/index.ts`. A source
-qualifies if its endpoint is public, needs no key or login, and sends CORS
-headers. A page on GitHub Pages cannot read responses from other endpoints.
+Readers can enable only the sources listed in `src/sources/index.ts`. There are
+two kinds.
+
+A direct source has an endpoint that is public, needs no key or login, and
+sends CORS headers. The browser reads it itself.
+
+A hosted source lacks the CORS header or needs a key. Its own GitHub workflow
+fetches it, see [Hosted sources](#hosted-sources).
+
+### Direct sources
 
 | Source | Shows | Endpoint | Requests per load | Discussion link |
 | --- | --- | --- | --- | --- |
@@ -37,6 +47,10 @@ headers. A page on GitHub Pages cannot read responses from other endpoints.
 | Stack Overflow | Hot questions of the week | `api.stackexchange.com/2.3/questions?sort=week` | 1 | answers |
 | Hugging Face | Trending models | `huggingface.co/api/models?sort=trendingScore` | 1 | none |
 | Wikipedia | Most read articles of the previous UTC day | `api.wikimedia.org/feed/v1/wikipedia/en/featured/YYYY/MM/DD` | 1, or 2 just after midnight UTC | none |
+| Show HN | Show HN in page order | `hacker-news.firebaseio.com/v0/showstories.json`, then `hn.algolia.com/api/v1/search` | 2 | comments |
+| Uneed | Today's launch ranking | `mcp.uneed.best/v1/trending?period=daily` | 1 | none |
+| Nick Launches | This week's launches by upvotes | `nicklaunches.com/api/v1/feed/week/` | 1 | comments |
+| Launch Llama | Top products of the week | Launch Llama's API on `supabase.co` | 1 | none |
 
 Notes on individual sources:
 
@@ -59,28 +73,77 @@ Notes on individual sources:
   [20 links](https://docs.joinmastodon.org/methods/trends/). The "shares"
   number counts the posts that used the link today and yesterday.
 
+### Hosted sources
+
+| Source | Shows | Fetched from | Schedule | Discussion link |
+| --- | --- | --- | --- | --- |
+| Lobsters | Hottest stories | `lobste.rs/hottest.json` | Hourly | comments |
+| Product Hunt | Top products of the last 24 hours | Product Hunt's GraphQL API, with a token | Hourly | comments |
+| BetaList | Newest startups | `betalist.com/startups/feed_original` | Every 3 hours | none |
+| Smol Launch | This week's ranking | `smollaunch.com/api/v1` | Every 2 hours | comments |
+| DevHunt | This week's launches, ranks 41 to 60 | `devhunt.org/api/home/more-launches` | Every 3 hours | none |
+
+DevHunt's public route starts at rank 41. The top 40 are only in the page
+itself. tureel shows the real ranks, so the DevHunt column counts from 41.
+
+How it works:
+
+- Each source has its own workflow, `.github/workflows/source-<id>.yml`, with
+  its own schedule. The schedules follow what each source asks for or can
+  bear. None runs more often than hourly.
+- The workflow runs `scripts/hosted/run.mjs <id>`, which fetches the source and
+  writes `feed.json` in the app's entry format.
+- If that worked, the workflow replaces the single commit on the branch
+  `data-<id>` with the new file. The repository does not grow with every
+  update.
+- The app reads
+  `https://raw.githubusercontent.com/<owner>/<repo>/data-<id>/feed.json`.
+  GitHub serves that address with `Access-Control-Allow-Origin: *` and a five
+  minute cache.
+
+What happens when a workflow fails:
+
+- A failed run publishes nothing. The script exits with an error if the source
+  does not answer or returns fewer than 5 usable entries. The app keeps
+  reading the last good feed and shows its real age.
+- A source whose feed is older than 3 days counts as broken. The app removes
+  it from the tabs, the settings sheet and the first-run screen. The reader's
+  choice is kept, and the source returns when a new feed arrives.
+- A source whose workflow has never succeeded has no feed file. The app does
+  not list it at all. Product Hunt is in this state until the repository
+  secret `PRODUCTHUNT_TOKEN` holds a developer token from Product Hunt's API
+  dashboard.
+
+GitHub disables scheduled workflows in a public repository after 60 days
+without repository activity. The sources then age out as described above.
+
+The Product Hunt script has never run with a token. Its query follows
+Product Hunt's public schema, but the first real run is its first test.
+
 ### Evaluated and left out
 
 Results of requesting each endpoint with an `Origin` header on 2026-11-15:
 
 | Source | Result |
 | --- | --- |
-| Product Hunt | The GraphQL API answers `401 invalid_oauth_token` without a token. The Atom feed sends no CORS headers. |
 | Reddit | Unauthenticated JSON requests from the test machine got `403` and no CORS headers. |
-| Lobsters | `hottest.json` answers but sends no `Access-Control-Allow-Origin`. |
 | Echo JS | The API answers but sends no CORS headers. |
 | Smashing Magazine, Front-end Front, Slashdot, Tildes, arXiv | The feeds send no CORS headers. |
-| BetaList | `/feed` answers `404`. |
 | Designer News | The former API path `/api/v2/stories` answers `404`. No other endpoint was tried. |
 
-The sources that only lack CORS headers need a server-side step, for example a
-scheduled job that fetches the feeds and publishes them as JSON next to the
-site.
+A further survey on 2026-11-16 covered 59 launch boards, 33 directories and
+7 community sites. The results that matter for later work:
+
+- Usable directly but not added: Ask HN, ToolPilot, Awesome Indie, Founder.best,
+  ScrollLaunch, Aback Launch.
+- Candidates for a hosted source: hot100, Glama, OpenAlternative, Firsto,
+  Fazier, KittyLaunch, PitchWall, PeerPush.
+- Reddit and Hashnode have closed their free access.
 
 ## How it loads
 
 - The first load is one HTML file, one stylesheet and one script of about
-  10 kB gzipped. The first-run screen, the settings dialog and the debug panel
+  14 kB gzipped. The first-run screen, the settings dialog and the debug panel
   are separate chunks. The browser downloads a chunk the first time it is
   needed.
 - tureel caches each feed in `localStorage`. A cached feed counts as fresh for
@@ -117,12 +180,24 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - Pull to refresh. A pull that starts at the top of the page brings down an
   indicator. Releasing it after the indicator has travelled 64 px fetches the
   feed of the column under the finger again, even if the cached copy is fresh.
-- Swipe from right to left on an entry to mark it as read, and from left to
-  right to mark it as unread. Each gesture has its own switch in the settings
-  sheet. A swipe counts after 72 px. A tap within 0.4 seconds after a swipe is
-  ignored, so that the swipe does not open the link.
+- Swipes. An entry can be swiped left or right, and each direction has a short
+  swipe (64 px) and a long swipe (160 px). The settings sheet assigns one
+  action to each of the four. The actions are mark as read, mark as unread,
+  block or unblock the linked site, open the comments, hide the entry, and
+  open in the browser.
+- While the finger is down, a label behind the row names the action that
+  lifting the finger would carry out. A long movement falls back to the short
+  swipe if the long one has no action.
+- A hidden entry stays hidden until the reader chooses "Show them again" in
+  the settings sheet. tureel keeps the 500 most recently hidden entries.
+- "Open in the browser" opens a new tab. In a home screen web app on iOS it
+  uses the `x-safari-https:` address to hand the link to Safari. Apple does
+  not document that address, and it was not tested on a device.
+- A tap within 0.4 seconds after a swipe is ignored, so that the swipe does not
+  open the link.
 - The tab bar hides after the page has scrolled down by 8 px and shows again
-  after 8 px upwards. It is always shown within 64 px of the top.
+  after 8 px upwards. It is always shown within 64 px of the top and within
+  24 px of the end of the page.
 
 The numbers are constants in `src/ui/gestures.ts`.
 
@@ -145,15 +220,17 @@ and they expire after 400 days.
 | `tureel_sources` | Source ids in display order, joined by `.`. A `-` prefix marks a disabled source, as in `hn.github.-devto`. |
 | `tureel_theme` | `light` or `dark`. Without the cookie, or with `auto`, the theme follows the system. |
 | `tureel_newtab` | `1` opens links in a new tab. |
-| `tureel_swipe` | The swipe gestures that are on, joined by `.`, as in `read.unread`. Empty or absent means none. |
+| `tureel_swipe` | The swipes that have an action, joined by `.`, as in `left_read.leftlong_hide.right_unread`. The swipes are `left`, `leftlong`, `right` and `rightlong`. |
 
-tureel keeps three more things in `localStorage`, because they are not
+tureel keeps five more things in `localStorage`, because they are not
 settings or can outgrow the 4096 bytes of a cookie.
 
 | Key | Value |
 | --- | --- |
 | `tureel:blocked:v1` | The hosts of blocked sites. The list has no size limit. |
 | `tureel:read:v1` | The 500 most recently opened links. |
+| `tureel:hidden:v1` | The 500 most recently hidden entries. |
+| `tureel:hosted:v1` | When the feed of each hosted source was generated. |
 | `tureel:feed:v1:<source>` | The cached feed of a source. |
 
 tureel does not use the browser's `:visited` state to dim links. That state
@@ -196,12 +273,27 @@ npm run preview    # serve the production build
 2. Add an adapter in `src/sources/` that default-exports a `SourceAdapter` and
    exports a pure `parse` function. Pass every URL from the response through
    `safeUrl`.
-3. Add its metadata to `SOURCES` and its loader to `LOADERS` in
+3. Add its metadata to `SOURCES` and its adapter to `ADAPTERS` in
    `src/sources/index.ts`.
 4. Cover `parse` in `test/sources.test.ts`.
 
+A hosted source needs no adapter in the app:
+
+1. Add `scripts/hosted/sources/<id>.mjs`. It default-exports an async function
+   that returns the entries.
+2. Run `node scripts/hosted/run.mjs <id> /tmp/feed.json` and check the file.
+3. Add `.github/workflows/source-<id>.yml` with a schedule the source can bear.
+4. Add its metadata to `SOURCES` with `hosted: true`.
+
 Readers who have already chosen their sources see a new source at the end of
 their list, switched off.
+
+## Updates
+
+Every build writes its id to `version.json`. When the reader returns to the
+page, the app fetches that file, at most every 10 minutes, and reloads if the
+id differs from its own. A web app on the home screen can stay in memory for
+days, and without this check it would keep running the old release.
 
 ## Deployment
 

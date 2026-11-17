@@ -1,7 +1,13 @@
 import { onCookieChange, readCookie, writeCookie } from './cookies'
 import { SOURCES } from './sources/index'
 import type { SourceMeta } from './sources/types'
-import type { SwipeSettings } from './ui/gestures'
+import {
+	SWIPE_ACTIONS,
+	SWIPE_SLOTS,
+	type SwipeAction,
+	type SwipeSettings,
+	type SwipeSlot,
+} from './ui/gestures'
 
 export type Theme = 'auto' | 'light' | 'dark'
 
@@ -15,7 +21,7 @@ export interface Settings {
 	sources: readonly SourceSetting[]
 	theme: Theme
 	newTab: boolean
-	/** Which swipe gestures on an entry are switched on. Both are off by default. */
+	/** The action assigned to each swipe on an entry. No swipe has an action by default. */
 	swipe: SwipeSettings
 	/**
 	 * Hosts of linked sites the reader blocked, oldest first. This list is kept
@@ -96,15 +102,47 @@ function writeBlocked(hosts: readonly string[]): void {
 	}
 }
 
-/** The cookie lists the gestures that are on, joined by `.`, as in `read.unread`. */
+/** Joins a swipe and its action inside the cookie, as in `left_read`. */
+const ASSIGNMENT = '_'
+/** The first release of swipes stored only these two words. They map to the short swipes. */
+const LEGACY_SWIPES: Record<string, [SwipeSlot, SwipeAction]> = {
+	read: ['left', 'read'],
+	unread: ['right', 'unread'],
+}
+
+function parseAssignment(token: string): [SwipeSlot, SwipeAction] | undefined {
+	const legacy = LEGACY_SWIPES[token]
+	if (legacy) return legacy
+	const [slot, action] = token.split(ASSIGNMENT)
+	const knownSlot = SWIPE_SLOTS.find((known) => known.toLowerCase() === slot)
+	const knownAction = SWIPE_ACTIONS.find((known) => known === action)
+	return knownSlot && knownAction ? [knownSlot, knownAction] : undefined
+}
+
+/**
+ * The cookie lists the swipes that have an action, joined by `.`, as in
+ * `left_read.leftlong_hide.right_unread`. Unknown swipes and actions are dropped.
+ */
 export function parseSwipe(raw: string | undefined): SwipeSettings {
-	const gestures = (raw ?? '').split(SEPARATOR)
-	return { read: gestures.includes('read'), unread: gestures.includes('unread') }
+	const swipe: SwipeSettings = {}
+	for (const token of (raw ?? '').split(SEPARATOR)) {
+		const assignment = parseAssignment(token)
+		if (assignment) swipe[assignment[0]] = assignment[1]
+	}
+	return swipe
 }
 
 export function serializeSwipe(swipe: SwipeSettings): string {
-	const gestures = [swipe.read ? 'read' : '', swipe.unread ? 'unread' : '']
-	return gestures.filter(Boolean).join(SEPARATOR)
+	return SWIPE_SLOTS.flatMap((slot) => {
+		const action = swipe[slot]
+		return action ? [`${slot.toLowerCase()}${ASSIGNMENT}${action}`] : []
+	}).join(SEPARATOR)
+}
+
+/** Keeps the entries the list in the settings does not show, such as hosted sources without a feed. */
+export function withHiddenSources(visible: readonly SourceSetting[]): SourceSetting[] {
+	const shown = new Set(visible.map((source) => source.id))
+	return [...visible, ...current.sources.filter((source) => !shown.has(source.id))]
 }
 
 function read(): Settings {

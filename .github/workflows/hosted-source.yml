@@ -1,0 +1,55 @@
+name: Fetch a hosted source
+
+# Called by the workflow of each hosted source. It fetches the source, and only
+# if that worked it replaces the single file on the branch `data-<source>`.
+# A failed run publishes nothing, so the app keeps reading the last good feed.
+
+on:
+  workflow_call:
+    inputs:
+      source:
+        description: Id of the source, as in src/sources/index.ts
+        required: true
+        type: string
+    secrets:
+      PRODUCTHUNT_TOKEN:
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hosted-${{ inputs.source }}
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SOURCE: ${{ inputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Fetch the source
+        env:
+          PRODUCTHUNT_TOKEN: ${{ secrets.PRODUCTHUNT_TOKEN }}
+        run: node scripts/hosted/run.mjs "$SOURCE" "$RUNNER_TEMP/feed/feed.json"
+
+      # The branch holds one commit with one file. Each run replaces it, so the
+      # repository does not grow with every update.
+      - name: Publish the feed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        working-directory: ${{ runner.temp }}/feed
+        run: |
+          git init --quiet --initial-branch "data-$SOURCE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add feed.json
+          git commit --quiet --message "Update the $SOURCE feed"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "data-$SOURCE"

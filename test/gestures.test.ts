@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	BAR_BOTTOM_ZONE_PX,
 	BAR_TOLERANCE_PX,
 	BAR_TOP_ZONE_PX,
 	barHides,
@@ -9,30 +10,57 @@ import {
 	pullCommits,
 	pullDistance,
 	SLOP_PX,
-	SWIPE_COMMIT_PX,
+	SWIPE_LONG_PX,
 	SWIPE_MAX_PX,
+	SWIPE_SHORT_PX,
+	type SwipeSettings,
 	startsSwipe,
 	swipeAction,
-	swipeCommits,
+	swipeMoves,
 	swipeOffset,
+	swipeSlot,
 } from '../src/ui/gestures'
 
 describe('swipe', () => {
-	const both = { read: true, unread: true }
-	const none = { read: false, unread: false }
+	const all: SwipeSettings = { left: 'read', leftLong: 'hide', right: 'unread', rightLong: 'block' }
 
-	it('maps right to left to read and left to right to unread', () => {
-		expect(swipeAction(-80, both)).toBe('read')
-		expect(swipeAction(80, both)).toBe('unread')
-		expect(swipeAction(0, both)).toBeUndefined()
+	it('tells short from long swipes by distance', () => {
+		expect(swipeSlot(-(SWIPE_SHORT_PX - 1), all)).toBeUndefined()
+		expect(swipeSlot(-SWIPE_SHORT_PX, all)).toBe('left')
+		expect(swipeSlot(-(SWIPE_LONG_PX - 1), all)).toBe('left')
+		expect(swipeSlot(-SWIPE_LONG_PX, all)).toBe('leftLong')
+		expect(swipeSlot(SWIPE_SHORT_PX, all)).toBe('right')
+		expect(swipeSlot(SWIPE_LONG_PX, all)).toBe('rightLong')
 	})
 
-	it('does nothing for a direction that is switched off', () => {
-		expect(swipeAction(-80, none)).toBeUndefined()
-		expect(swipeAction(80, none)).toBeUndefined()
-		expect(swipeAction(-80, { read: false, unread: true })).toBeUndefined()
-		expect(swipeAction(80, { read: false, unread: true })).toBe('unread')
-		expect(swipeAction(80, { read: true, unread: false })).toBeUndefined()
+	it('returns the action assigned to the swipe', () => {
+		expect(swipeAction(-80, all)).toBe('read')
+		expect(swipeAction(-200, all)).toBe('hide')
+		expect(swipeAction(80, all)).toBe('unread')
+		expect(swipeAction(200, all)).toBe('block')
+		expect(swipeAction(0, all)).toBeUndefined()
+	})
+
+	it('does nothing when no swipe has an action', () => {
+		expect(swipeAction(-200, {})).toBeUndefined()
+		expect(swipeAction(200, {})).toBeUndefined()
+		expect(swipeMoves(-200, {})).toBe(false)
+	})
+
+	it('treats a long movement as the short swipe if the long one has no action', () => {
+		expect(swipeAction(-300, { left: 'read' })).toBe('read')
+	})
+
+	it('needs the long distance if only the long swipe has an action', () => {
+		expect(swipeAction(-100, { leftLong: 'hide' })).toBeUndefined()
+		expect(swipeAction(-SWIPE_LONG_PX, { leftLong: 'hide' })).toBe('hide')
+	})
+
+	it('moves the row only in a direction that has an action', () => {
+		const leftOnly: SwipeSettings = { leftLong: 'comments' }
+		expect(swipeMoves(-30, leftOnly)).toBe(true)
+		expect(swipeMoves(30, leftOnly)).toBe(false)
+		expect(swipeAction(200, leftOnly)).toBeUndefined()
 	})
 
 	it('starts only for a clearly horizontal movement beyond the slop', () => {
@@ -43,16 +71,11 @@ describe('swipe', () => {
 		expect(startsSwipe(5, 60)).toBe(false)
 	})
 
-	it('moves the row with the finger up to a limit', () => {
+	it('moves the row with the finger up to a limit beyond the long distance', () => {
 		expect(swipeOffset(-40)).toBe(-40)
 		expect(swipeOffset(-500)).toBe(-SWIPE_MAX_PX)
 		expect(swipeOffset(500)).toBe(SWIPE_MAX_PX)
-	})
-
-	it('commits at the commit distance in either direction', () => {
-		expect(swipeCommits(SWIPE_COMMIT_PX - 1)).toBe(false)
-		expect(swipeCommits(SWIPE_COMMIT_PX)).toBe(true)
-		expect(swipeCommits(-SWIPE_COMMIT_PX)).toBe(true)
+		expect(SWIPE_MAX_PX).toBeGreaterThan(SWIPE_LONG_PX)
 	})
 })
 
@@ -76,19 +99,28 @@ describe('pull to refresh', () => {
 
 describe('tab bar', () => {
 	const below = BAR_TOP_ZONE_PX + 500
+	const farFromEnd = 2000
 
 	it('hides on the way down and shows on the way up', () => {
-		expect(barHides(BAR_TOLERANCE_PX, below)).toBe(true)
-		expect(barHides(-BAR_TOLERANCE_PX, below)).toBe(false)
+		expect(barHides(BAR_TOLERANCE_PX, below, farFromEnd)).toBe(true)
+		expect(barHides(-BAR_TOLERANCE_PX, below, farFromEnd)).toBe(false)
 	})
 
 	it('does not decide on a movement below the tolerance', () => {
-		expect(barHides(BAR_TOLERANCE_PX - 1, below)).toBeUndefined()
-		expect(barHides(-(BAR_TOLERANCE_PX - 1), below)).toBeUndefined()
+		expect(barHides(BAR_TOLERANCE_PX - 1, below, farFromEnd)).toBeUndefined()
+		expect(barHides(-(BAR_TOLERANCE_PX - 1), below, farFromEnd)).toBeUndefined()
 	})
 
 	it('stays visible near the top of the page', () => {
-		expect(barHides(40, BAR_TOP_ZONE_PX)).toBe(false)
-		expect(barHides(40, 20)).toBe(false)
+		expect(barHides(40, BAR_TOP_ZONE_PX, farFromEnd)).toBe(false)
+		expect(barHides(40, 20, farFromEnd)).toBe(false)
+	})
+
+	it('shows at the end of the page, even while scrolling down', () => {
+		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX)).toBe(false)
+		expect(barHides(40, below, 0)).toBe(false)
+		// The last few pixels arrive as a movement below the tolerance.
+		expect(barHides(2, below, 0)).toBe(false)
+		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX + 1)).toBe(true)
 	})
 })

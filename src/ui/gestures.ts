@@ -1,44 +1,63 @@
 /**
- * The numbers and decisions behind the three touch gestures. They are kept
- * apart from the event handling, so that they can be tested without a browser.
+ * The numbers and decisions behind the touch gestures. They are kept apart
+ * from the event handling, so that they can be tested without a browser.
  */
 
-export interface SwipeSettings {
-	/** A swipe from right to left marks an entry as read. */
-	read: boolean
-	/** A swipe from left to right marks an entry as unread. */
-	unread: boolean
-}
+/** What a swipe can do to an entry. */
+export const SWIPE_ACTIONS = ['read', 'unread', 'block', 'comments', 'hide', 'browser'] as const
+export type SwipeAction = (typeof SWIPE_ACTIONS)[number]
 
-export type SwipeAction = 'read' | 'unread'
+/** The four swipes: two directions, each short or long. */
+export const SWIPE_SLOTS = ['left', 'leftLong', 'right', 'rightLong'] as const
+export type SwipeSlot = (typeof SWIPE_SLOTS)[number]
+
+/** The action assigned to each swipe. A swipe without an action does nothing. */
+export type SwipeSettings = Partial<Record<SwipeSlot, SwipeAction>>
 
 /** A finger that moved less than this has not started a gesture. */
 export const SLOP_PX = 10
 /** A swipe starts only if it is this many times more horizontal than vertical. */
 export const SWIPE_DOMINANCE = 1.5
-/** Lifting the finger after this distance carries out the swipe. */
-export const SWIPE_COMMIT_PX = 72
+/** Lifting the finger after this distance carries out the short swipe. */
+export const SWIPE_SHORT_PX = 64
+/** Lifting the finger after this distance carries out the long swipe. */
+export const SWIPE_LONG_PX = 160
 /** The row follows the finger up to this distance. */
-export const SWIPE_MAX_PX = 112
-
-/** The action a horizontal movement stands for, or nothing if that direction is switched off. */
-export function swipeAction(dx: number, settings: SwipeSettings): SwipeAction | undefined {
-	if (dx < 0 && settings.read) return 'read'
-	if (dx > 0 && settings.unread) return 'unread'
-	return undefined
-}
+export const SWIPE_MAX_PX = 208
 
 export function startsSwipe(dx: number, dy: number): boolean {
 	return Math.abs(dx) > SLOP_PX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE
 }
 
+/** True if either swipe in the direction of `dx` has an action. Only then does the row move. */
+export function swipeMoves(dx: number, settings: SwipeSettings): boolean {
+	if (dx < 0) return Boolean(settings.left || settings.leftLong)
+	if (dx > 0) return Boolean(settings.right || settings.rightLong)
+	return false
+}
+
+/**
+ * The swipe a finger movement of `dx` stands for right now. A movement past
+ * the long distance counts as the long swipe if that has an action, and as the
+ * short swipe otherwise.
+ */
+export function swipeSlot(dx: number, settings: SwipeSettings): SwipeSlot | undefined {
+	const distance = Math.abs(dx)
+	const [short, long]: [SwipeSlot, SwipeSlot] =
+		dx < 0 ? ['left', 'leftLong'] : ['right', 'rightLong']
+	if (distance >= SWIPE_LONG_PX && settings[long]) return long
+	if (distance >= SWIPE_SHORT_PX && settings[short]) return short
+	return undefined
+}
+
+export function swipeAction(dx: number, settings: SwipeSettings): SwipeAction | undefined {
+	const slot = swipeSlot(dx, settings)
+	return slot && settings[slot]
+}
+
 /** How far the row moves for a finger movement of `dx`. */
 export function swipeOffset(dx: number): number {
 	return Math.max(-SWIPE_MAX_PX, Math.min(SWIPE_MAX_PX, dx))
-}
-
-export function swipeCommits(dx: number): boolean {
-	return Math.abs(dx) >= SWIPE_COMMIT_PX
 }
 
 /** The indicator moves this fraction of the finger's distance. */
@@ -61,12 +80,17 @@ export function pullCommits(distance: number): boolean {
 export const BAR_TOLERANCE_PX = 8
 /** The bar is always shown this close to the top of the page. */
 export const BAR_TOP_ZONE_PX = 64
+/** The bar is shown again once the page is this close to its end. */
+export const BAR_BOTTOM_ZONE_PX = 24
 
 /**
  * Whether the tab bar hides after the page scrolled by `delta` pixels to the
- * position `y`. Returns nothing while the movement is too small to decide.
+ * position `y`, with `toBottom` pixels left below. Returns nothing while the
+ * movement is too small to decide.
  */
-export function barHides(delta: number, y: number): boolean | undefined {
+export function barHides(delta: number, y: number, toBottom: number): boolean | undefined {
+	// At the end of the page there is nothing left to read, so the bar comes back.
+	if (toBottom <= BAR_BOTTOM_ZONE_PX) return false
 	if (Math.abs(delta) < BAR_TOLERANCE_PX) return undefined
 	return delta > 0 && y > BAR_TOP_ZONE_PX
 }

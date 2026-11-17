@@ -1,9 +1,12 @@
+import { hide } from '../hidden'
 import { markRead, markUnread } from '../read'
+import { getSettings, isBlocked, setBlocked } from '../settings'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
 import type { SwipeAction } from './gestures'
 import { capacity, windowStart } from './layout'
+import { openInBrowser } from './open'
 
 interface DeckOptions {
 	deck: HTMLElement
@@ -21,6 +24,15 @@ interface DeckOptions {
 const COLUMN_MIN = '--column-min'
 /** Space kept on both sides of the current tab when the strip scrolls it into view. */
 const TAB_MARGIN_PX = 12
+
+const SWIPE_LABELS: Record<SwipeAction, string> = {
+	block: 'Block site',
+	browser: 'Open in browser',
+	comments: 'Comments',
+	hide: 'Hide',
+	read: 'Read',
+	unread: 'Unread',
+}
 
 function savesData(): boolean {
 	const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
@@ -102,14 +114,39 @@ export class Deck {
 		return this.columns.get(id)?.refresh() ?? Promise.resolve()
 	}
 
+	/** False if a swipe action has nothing to act on in this row. */
+	swipeApplies(row: HTMLElement, action: SwipeAction): boolean {
+		if (action === 'block') return row.dataset.site !== undefined
+		if (action === 'comments') return row.querySelector('a.comments') !== null
+		return row.dataset.url !== undefined
+	}
+
+	/** The words shown behind a row while a swipe would carry out this action. */
+	swipeLabel(row: HTMLElement, action: SwipeAction): string {
+		const site = row.dataset.site
+		if (action === 'block' && site) return isBlocked(site) ? `Unblock ${site}` : `Block ${site}`
+		return SWIPE_LABELS[action]
+	}
+
 	/** Carries out a swipe on a row. */
 	swipe(row: HTMLElement, action: SwipeAction): void {
-		const url = row.dataset.url
+		const { site, url } = row.dataset
 		if (!url) return
+		const comments = row.querySelector<HTMLAnchorElement>('a.comments')?.href
 		if (action === 'read') markRead(url)
-		else markUnread(url)
+		else if (action === 'unread') markUnread(url)
+		else if (action === 'hide') hide(url)
+		else if (action === 'block' && site) setBlocked(site, !isBlocked(site))
+		else if (action === 'comments' && comments) this.navigate(comments)
+		else if (action === 'browser') openInBrowser(url)
 		// The same link can appear in several sources.
 		this.restyle()
+	}
+
+	/** Follows a link the way a tap on it would. */
+	private navigate(url: string): void {
+		if (getSettings().newTab) window.open(url, '_blank', 'noopener')
+		else location.assign(url)
 	}
 
 	private onItemClick(event: MouseEvent): void {

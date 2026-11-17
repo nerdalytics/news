@@ -23,6 +23,8 @@ export interface FeedItem {
 	time?: number
 	/** Short context such as a language, community or publisher. */
 	tag?: string
+	/** The rank on the source, if the feed does not start at 1. Without it the position in the list is shown. */
+	rank?: number
 }
 
 export interface FetchContext {
@@ -47,6 +49,8 @@ export interface SourceMeta {
 	accent: readonly [light: string, dark: string]
 	home: string
 	comments: boolean
+	/** True if a workflow of this repository fetches the source, see `hosted.ts`. */
+	hosted?: boolean
 	/** Minutes a fetched feed counts as fresh. */
 	ttl: number
 }
