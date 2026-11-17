@@ -123,11 +123,6 @@ describe('swipe settings', () => {
 		expect(parseSwipe('up_read.left_explode.left.right_comments')).toEqual({ right: 'comments' })
 	})
 
-	it('understands the cookie of the first release', () => {
-		expect(parseSwipe('read')).toEqual({ left: 'read' })
-		expect(parseSwipe('read.unread')).toEqual({ left: 'read', right: 'unread' })
-	})
-
 	it('round-trips through serializeSwipe', () => {
 		for (const raw of [
 			'',

@@ -222,7 +222,7 @@ and they expire after 400 days.
 | `thenews_newtab` | `1` opens links in a new tab. |
 | `thenews_swipe` | The swipes that have an action, joined by `.`, as in `left_read.leftlong_hide.right_unread`. The swipes are `left`, `leftlong`, `right` and `rightlong`. |
 
-TheNews keeps six more things in `localStorage`, because they are not
+TheNews keeps five more things in `localStorage`, because they are not
 settings or can outgrow the 4096 bytes of a cookie.
 
 | Key | Value |
@@ -232,16 +232,6 @@ settings or can outgrow the 4096 bytes of a cookie.
 | `thenews:hidden:v1` | The 500 most recently hidden entries. |
 | `thenews:hosted:v1` | When the feed of each hosted source was generated. |
 | `thenews:feed:v1:<source>` | The cached feed of a source. |
-| `thenews:settings:v1` | A copy of the four settings cookies, see below. |
-
-Cookies are tied to the path of the site, and `localStorage` to its host. If
-the site moves to another path on the same host, as after a rename of the
-repository, the new path cannot see the old cookies. TheNews therefore keeps a
-copy of the settings cookies in `localStorage` and restores the cookies from it
-when it starts without them. A move to another host starts empty.
-
-The app was called tureel before. At startup it renames the cookies and stored
-keys that still carry that name.
 
 TheNews does not use the browser's `:visited` state to dim links. That state
 misses links opened from a home screen web app or a private window, and a

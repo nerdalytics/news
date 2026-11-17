@@ -1,5 +1,4 @@
 import { onCookieChange, readCookie, writeCookie } from './cookies'
-import { backUpCookies, migrate } from './migrate'
 import { SOURCES } from './sources/index'
 import type { SourceMeta } from './sources/types'
 import {
@@ -105,15 +104,7 @@ function writeBlocked(hosts: readonly string[]): void {
 
 /** Joins a swipe and its action inside the cookie, as in `left_read`. */
 const ASSIGNMENT = '_'
-/** The first release of swipes stored only these two words. They map to the short swipes. */
-const LEGACY_SWIPES: Record<string, [SwipeSlot, SwipeAction]> = {
-	read: ['left', 'read'],
-	unread: ['right', 'unread'],
-}
-
 function parseAssignment(token: string): [SwipeSlot, SwipeAction] | undefined {
-	const legacy = LEGACY_SWIPES[token]
-	if (legacy) return legacy
 	const [slot, action] = token.split(ASSIGNMENT)
 	const knownSlot = SWIPE_SLOTS.find((known) => known.toLowerCase() === slot)
 	const knownAction = SWIPE_ACTIONS.find((known) => known === action)
@@ -163,21 +154,7 @@ export function isFirstVisit(): boolean {
 
 type Listener = (settings: Settings) => void
 
-/** The settings as the strings their cookies hold. */
-function cookieValues(settings: Settings): Record<string, string> {
-	return {
-		[COOKIE.newTab]: settings.newTab ? '1' : '0',
-		[COOKIE.sources]: serializeSources(settings.sources),
-		[COOKIE.swipe]: serializeSwipe(settings.swipe),
-		[COOKIE.theme]: settings.theme,
-	}
-}
-
-// Data stored under the former name or the former path has to be in place before the first read.
-migrate(COOKIE_NAMES)
 let current = read()
-// A reader who has chosen sources gets a copy of the settings that survives a change of path.
-if (!isFirstVisit()) backUpCookies(cookieValues(current))
 const listeners = new Set<Listener>()
 
 function emit(): void {
@@ -203,9 +180,6 @@ export function updateSettings(patch: Partial<Settings>): void {
 	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
 	if (patch.swipe) writeCookie(COOKIE.swipe, serializeSwipe(current.swipe))
 	if (patch.blocked) writeBlocked(current.blocked)
-	if (patch.sources || patch.theme || patch.swipe || patch.newTab !== undefined) {
-		backUpCookies(cookieValues(current))
-	}
 	emit()
 }
 

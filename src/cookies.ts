@@ -34,14 +34,6 @@ function writeLegacy(name: string, value: string): void {
 	document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${MAX_AGE_SECONDS}; Path=${cookiePath()}; SameSite=Lax${secure}`
 }
 
-/**
- * Writes a cookie that the next line of code can already read. The Cookie
- * Store API writes asynchronously, so startup code uses this instead.
- */
-export function writeCookieNow(name: string, value: string): void {
-	writeLegacy(name, value)
-}
-
 export function writeCookie(name: string, value: string): void {
 	if (!('cookieStore' in window)) {
 		writeLegacy(name, value)
