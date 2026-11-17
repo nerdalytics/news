@@ -1,0 +1,16 @@
+name: "Source: BetaList"
+
+# Every three hours. The feed gains a few entries a day.
+on:
+  schedule:
+    - cron: "41 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: betalist

@@ -1,17 +1,25 @@
 import devto from './devto'
 import github from './github'
 import hn from './hackernews'
+import { hostedAdapter } from './hosted'
 import huggingface from './huggingface'
+import launchllama from './launchllama'
 import lemmy from './lemmy'
 import mastodon from './mastodon'
+import nick from './nicklaunches'
+import showhn from './showhn'
 import stackoverflow from './stackoverflow'
 import tnw from './thenextweb'
 import type { SourceAdapter, SourceMeta } from './types'
+import uneed from './uneed'
 import wikipedia from './wikipedia'
 
 /**
- * The catalogue. Readers can enable only the sources listed here. Each one uses
- * a public endpoint that sends CORS headers, so the app needs no backend.
+ * The catalogue. Readers can enable only the sources listed here.
+ *
+ * A direct source uses a public endpoint that sends CORS headers, so the
+ * browser reads it itself. A hosted source is fetched by a GitHub workflow of
+ * this repository, and the browser reads the feed file that workflow publishes.
  */
 export const SOURCES: readonly SourceMeta[] = [
 	{
@@ -113,28 +121,129 @@ export const SOURCES: readonly SourceMeta[] = [
 		comments: false,
 		ttl: 60,
 	},
+	{
+		id: 'showhn',
+		name: 'Show HN',
+		tagline: 'Projects shared on Hacker News',
+		mark: 'SH',
+		badge: ['#b45309', '#ffffff'],
+		accent: ['#b45309', '#fbbf24'],
+		home: 'https://news.ycombinator.com/show',
+		comments: true,
+		ttl: 10,
+	},
+	{
+		id: 'uneed',
+		name: 'Uneed',
+		tagline: "Today's launch ranking",
+		mark: 'U',
+		badge: ['#7c3aed', '#ffffff'],
+		accent: ['#6d28d9', '#a78bfa'],
+		home: 'https://www.uneed.best/',
+		comments: false,
+		ttl: 30,
+	},
+	{
+		id: 'nick',
+		name: 'Nick Launches',
+		tagline: "This week's launches by upvotes",
+		mark: 'NL',
+		badge: ['#0369a1', '#ffffff'],
+		accent: ['#0369a1', '#38bdf8'],
+		home: 'https://nicklaunches.com/',
+		comments: true,
+		ttl: 30,
+	},
+	{
+		id: 'launchllama',
+		name: 'Launch Llama',
+		tagline: 'Top products this week',
+		mark: 'LL',
+		badge: ['#be185d', '#ffffff'],
+		accent: ['#be185d', '#f472b6'],
+		home: 'https://tools.launchllama.co/',
+		comments: false,
+		ttl: 30,
+	},
+	{
+		id: 'lobsters',
+		name: 'Lobsters',
+		tagline: 'Hottest stories',
+		mark: 'LB',
+		badge: ['#ac130d', '#ffffff'],
+		accent: ['#ac130d', '#f87171'],
+		home: 'https://lobste.rs/',
+		comments: true,
+		hosted: true,
+		ttl: 20,
+	},
+	{
+		id: 'producthunt',
+		name: 'Product Hunt',
+		tagline: "Today's top products",
+		mark: 'P',
+		badge: ['#da552f', '#ffffff'],
+		accent: ['#c2410c', '#fb923c'],
+		home: 'https://www.producthunt.com/',
+		comments: true,
+		hosted: true,
+		ttl: 20,
+	},
+	{
+		id: 'betalist',
+		name: 'BetaList',
+		tagline: 'Newest startups',
+		mark: 'B',
+		badge: ['#1c1c1c', '#ffffff'],
+		accent: ['#374151', '#d1d5db'],
+		home: 'https://betalist.com/',
+		comments: false,
+		hosted: true,
+		ttl: 60,
+	},
+	{
+		id: 'smollaunch',
+		name: 'Smol Launch',
+		tagline: "This week's ranking",
+		mark: 'SL',
+		badge: ['#15803d', '#ffffff'],
+		accent: ['#15803d', '#4ade80'],
+		home: 'https://smollaunch.com/',
+		comments: true,
+		hosted: true,
+		ttl: 60,
+	},
 ]
 
 const BY_ID = new Map(SOURCES.map((source) => [source.id, source]))
+
+export function hostedSources(): SourceMeta[] {
+	return SOURCES.filter((source) => source.hosted)
+}
 
 export function sourceById(id: string): SourceMeta | undefined {
 	return BY_ID.get(id)
 }
 
-/** The adapters are a few hundred bytes each, so they ship in the main bundle. */
+/** The adapters of the direct sources are a few hundred bytes each, so they ship in the main bundle. */
 const ADAPTERS: Record<string, SourceAdapter> = {
 	devto,
 	github,
 	hn,
 	huggingface,
+	launchllama,
 	lemmy,
 	mastodon,
+	nick,
+	showhn,
 	stackoverflow,
 	tnw,
+	uneed,
 	wikipedia,
 }
 
 export function adapterFor(id: string): SourceAdapter {
+	if (BY_ID.get(id)?.hosted) return hostedAdapter(id)
 	const adapter = ADAPTERS[id]
 	if (!adapter) throw new Error(`Unknown source: ${id}`)
 	return adapter

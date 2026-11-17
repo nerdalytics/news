@@ -47,6 +47,8 @@ export interface SourceMeta {
 	accent: readonly [light: string, dark: string]
 	home: string
 	comments: boolean
+	/** True if a workflow of this repository fetches the source, see `hosted.ts`. */
+	hosted?: boolean
 	/** Minutes a fetched feed counts as fresh. */
 	ttl: number
 }

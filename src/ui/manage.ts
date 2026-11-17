@@ -1,6 +1,16 @@
-import { getSettings, type Theme, updateSettings } from '../settings'
+import { isAvailable, onAvailabilityChange } from '../availability'
+import { hiddenCount, showAllHidden } from '../hidden'
+import { checkHosted } from '../hosted-check'
+import {
+	getSettings,
+	type SourceSetting,
+	type Theme,
+	updateSettings,
+	withHiddenSources,
+} from '../settings'
+import { sourceById } from '../sources/index'
 import { el } from './dom'
-import type { SwipeSettings } from './gestures'
+import { SWIPE_ACTIONS, type SwipeAction, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
 
 const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
@@ -56,18 +66,80 @@ function renderNewTabSwitch(): HTMLElement {
 	return section
 }
 
-/** Both gestures are off until the reader switches them on. Each one works without the other. */
-function renderSwipeSwitches(): HTMLElement {
+const SLOT_LABELS: ReadonlyArray<readonly [slot: SwipeSlot, label: string]> = [
+	['left', 'Short swipe left'],
+	['leftLong', 'Long swipe left'],
+	['right', 'Short swipe right'],
+	['rightLong', 'Long swipe right'],
+]
+
+const ACTION_LABELS: Record<SwipeAction, string> = {
+	block: 'Block the site',
+	browser: 'Open in the browser',
+	comments: 'Open the comments',
+	hide: 'Hide the entry',
+	read: 'Mark as read',
+	unread: 'Mark as unread',
+}
+
+/** The value of the option that leaves a swipe without an action. */
+const NO_ACTION = ''
+
+function renderSwipeSelect(slot: SwipeSlot, label: string): HTMLElement {
+	const row = el('label', 'select-row')
+	const select = el('select', 'select')
+	select.append(new Option('Nothing', NO_ACTION))
+	for (const action of SWIPE_ACTIONS) select.append(new Option(ACTION_LABELS[action], action))
+	select.value = getSettings().swipe[slot] ?? NO_ACTION
+	select.addEventListener('change', () => {
+		const swipe = { ...getSettings().swipe }
+		const action = SWIPE_ACTIONS.find((known) => known === select.value)
+		if (action) swipe[slot] = action
+		else delete swipe[slot]
+		updateSettings({ swipe })
+	})
+	row.append(el('span', undefined, label), select)
+	return row
+}
+
+/** Lets the reader bring back the entries a swipe has hidden. */
+function renderHiddenEntries(): HTMLElement {
+	const row = el('p', 'hidden-entries')
+	const render = (): void => {
+		const count = hiddenCount()
+		row.replaceChildren(count === 1 ? '1 hidden entry. ' : `${count} hidden entries. `)
+		if (count === 0) return
+		const button = el('button', 'link-btn', 'Show them again')
+		button.type = 'button'
+		button.addEventListener('click', () => {
+			showAllHidden()
+			// Nothing in the settings changed, but the columns have to draw the rows again.
+			updateSettings({})
+			render()
+		})
+		row.append(button)
+	}
+	render()
+	return row
+}
+
+/** Each of the four swipes can carry out one action. None has an action until the reader picks one. */
+function renderSwipeSettings(): HTMLElement {
 	const section = el('section', 'pref')
-	const set = (patch: Partial<SwipeSettings>): void =>
-		updateSettings({ swipe: { ...getSettings().swipe, ...patch } })
-	const { read, unread } = getSettings().swipe
 	section.append(
 		el('h3', undefined, 'Swipe on an entry'),
-		renderSwitch('Swipe left to mark it as read', read, (value) => set({ read: value })),
-		renderSwitch('Swipe right to mark it as unread', unread, (value) => set({ unread: value }))
+		...SLOT_LABELS.map(([slot, label]) => renderSwipeSelect(slot, label)),
+		renderHiddenEntries()
 	)
 	return section
+}
+
+/** The sources the list shows. A hosted source without a recent feed is left out. */
+function listedSources(): SourceSetting[] {
+	return getSettings().sources.filter((setting) => {
+		const source = sourceById(setting.id)
+		return source !== undefined && isAvailable(source)
+	})
 }
 
 /** The reader has this long to confirm before the button returns to its first label. */
@@ -130,14 +202,14 @@ function build(): HTMLDialogElement {
 
 	const body = el('div', 'sheet-body')
 	sources = createSourceList({
-		onChange: (next) => updateSettings({ sources: next }),
+		onChange: (next) => updateSettings({ sources: withHiddenSources(next) }),
 		scroller: body,
 	})
 	body.append(
 		...sources.nodes,
 		renderThemePicker(),
 		renderNewTabSwitch(),
-		renderSwipeSwitches(),
+		renderSwipeSettings(),
 		el(
 			'p',
 			'note',
@@ -152,7 +224,16 @@ function build(): HTMLDialogElement {
 }
 
 export function openManageDialog(): void {
-	dialog ??= build()
-	sources?.render(getSettings().sources)
-	if (!dialog.open) dialog.showModal()
+	// The swipe settings and the hidden count are drawn when the sheet is built, so build it anew each time.
+	dialog?.remove()
+	dialog = build()
+	sources?.render(listedSources())
+	dialog.showModal()
+	// Finds hosted sources whose first feed has arrived since the last look.
+	void checkHosted()
 }
+
+// A hosted source can gain or lose its feed while the sheet is open.
+onAvailabilityChange(() => {
+	if (dialog?.open) sources?.render(listedSources())
+})

@@ -32,6 +32,11 @@ export function enablePullToRefresh(options: PullOptions): void {
 	let pulling = false
 	let refreshing = false
 
+	/** The header button would repeat what the indicator shows, so it steps aside. */
+	const setActive = (active: boolean): void => {
+		document.documentElement.classList.toggle('is-pull-active', active)
+	}
+
 	const place = (value: number): void => {
 		distance = value
 		indicator.style.setProperty('--pull', `${value}px`)
@@ -54,6 +59,7 @@ export function enablePullToRefresh(options: PullOptions): void {
 		})
 		indicator.classList.remove('is-refreshing')
 		refreshing = false
+		setActive(false)
 		place(0)
 	}
 
@@ -71,6 +77,7 @@ export function enablePullToRefresh(options: PullOptions): void {
 			if (dy < SLOP_PX) return
 			pulling = true
 			indicator.classList.add('is-pulling')
+			setActive(true)
 		}
 		// Stops the browser's own overscroll and its page reload gesture.
 		if (event.cancelable) event.preventDefault()
@@ -80,8 +87,12 @@ export function enablePullToRefresh(options: PullOptions): void {
 	function onEnd(): void {
 		const commit = pulling && pullCommits(distance) && column
 		release()
-		if (commit) void refresh(commit)
-		else place(0)
+		if (commit) {
+			void refresh(commit)
+			return
+		}
+		setActive(false)
+		place(0)
 	}
 
 	options.root.addEventListener(

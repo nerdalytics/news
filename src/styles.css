@@ -22,8 +22,10 @@
 	--dim-separator: 0.6;
 	--dim-pulse: 0.5;
 	/* Durations */
-	--fast: var(--fast);
-	--sheet-move: var(--sheet-move);
+	--fast: 0.15s;
+	--sheet-move: 0.22s;
+	/* The tab bar slides slowly enough to be seen leaving and returning. */
+	--bar-move: 0.4s;
 	--warning: light-dark(#c2410c, #fb923c);
 	--on-warning: light-dark(#ffffff, #1c1206);
 	--bg: light-dark(#ffffff, #0f1012);
@@ -169,7 +171,7 @@ button {
 	padding: 0 8px var(--safe-bottom) 0;
 	background: var(--bg);
 	border-top: 1px solid var(--line);
-	transition: translate var(--sheet-move) ease;
+	transition: translate var(--bar-move) ease;
 }
 
 /* Scrolling down moves the bar out of view. Scrolling up brings it back. */
@@ -339,6 +341,11 @@ button {
 	margin: -4px -10px 0 0;
 }
 
+/* The header button of the column would repeat what the indicator shows. */
+.is-pull-active .reload {
+	visibility: hidden;
+}
+
 .column[data-state="loading"] .reload svg {
 	animation: spin 0.8s linear infinite;
 }
@@ -379,28 +386,56 @@ button {
 	inset: 0;
 }
 
-/* Entries the reader opened or marked as read. A swipe previews its result before the finger lifts. */
-.is-read .title,
-.item[data-swipe="read"] .title {
+/* Entries the reader opened or marked as read. */
+.is-read .title {
 	color: var(--text-visited);
 }
 
-.item[data-swipe="unread"] .title {
-	color: var(--text);
+.is-read .rank {
+	opacity: var(--dim-read);
+}
+
+/* An entry the reader hid with a swipe. */
+.item[hidden] {
+	display: none;
+}
+
+/* The content of a row follows the finger by --swipe. The row itself stays, so the label behind it shows. */
+.item > .rank,
+.item > .item-body {
+	translate: var(--swipe, 0px) 0;
+}
+
+.item:not(.is-swiping) > .rank,
+.item:not(.is-swiping) > .item-body {
+	transition: translate var(--fast) ease;
+}
+
+/* Names the action a swipe would carry out if the finger lifted now. */
+.swipe-hint {
+	position: absolute;
+	inset-block: 0;
+	display: flex;
+	align-items: center;
+	max-inline-size: 45%;
+	color: var(--accent);
+	font-size: 0.875rem;
+	font-weight: 600;
+	pointer-events: none;
+}
+
+.swipe-hint[data-side="end"] {
+	inset-inline-end: 0;
+	text-align: end;
+}
+
+.swipe-hint[data-side="start"] {
+	inset-inline-start: 0;
 }
 
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
 .has-swipe .item {
 	touch-action: pan-y pinch-zoom;
-}
-
-/* A row follows the finger directly and eases back when released. */
-.item:not(.is-swiping) {
-	transition: translate var(--fast) ease;
-}
-
-.is-read .rank {
-	opacity: var(--dim-read);
 }
 
 /* Entries that link to a blocked site stay in the list, dimmed. */
@@ -780,6 +815,28 @@ button {
 	gap: 16px;
 	font-weight: 600;
 	cursor: pointer;
+}
+
+.select-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+	align-items: center;
+	gap: 12px;
+	margin-top: 10px;
+}
+
+.select {
+	min-height: var(--tap);
+	padding: 0 12px;
+	border: 0;
+	border-radius: 10px;
+	color: var(--text);
+	background: var(--surface);
+	font: inherit;
+}
+
+.hidden-entries {
+	margin: 14px 0 0;
 }
 
 .switch-row + .switch-row {
