@@ -62,14 +62,19 @@
 	box-sizing: border-box;
 }
 
-/* The app has its own pull to refresh, so the browser's reload gesture is switched off where CSS can do that. */
+/*
+ * One concept for every scroller: the operating system draws the bars and
+ * decides their width and look — overlay bars on iOS/macOS, classic bars on
+ * Windows/Linux — and because nothing overrides that anywhere in this file,
+ * every bar is the same. The document used to set `scrollbar-width: thin`,
+ * which shrank only the bars of elements inside it (the splash screen) while
+ * the settings sheet kept the default ones; that was the inconsistency. No
+ * scrollbar-* property or ::-webkit-scrollbar rule may appear again below.
+ */
 html {
 	overscroll-behavior-y: contain;
 	/* Opening a dialog hides the document scrollbar. The reserved gutter keeps the page from shifting. */
 	scrollbar-gutter: stable;
-	/* The OS draws the scrollbars; color-scheme makes them follow the light or dark theme. */
-	scrollbar-width: thin;
-	scrollbar-color: auto;
 }
 
 /* A modal dialog does not stop the page behind it from scrolling on iOS. */
