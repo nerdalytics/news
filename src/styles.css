@@ -423,9 +423,14 @@ button {
 	transition: translate var(--fast) ease;
 }
 
-/* While the row follows the finger it glides a little, so taking over from a view swipe is a movement, not a jump. */
-.item.is-swiping > :is(.rank, .item-body) {
-	transition-duration: var(--swipe-follow);
+/*
+ * While this row follows the finger, its content must sit exactly under it.
+ * A transition would chase every new value instead of landing on it, so the
+ * content trails the hand and smears into a double image. Only when the view
+ * takes over does this row glide back, at the short release speed.
+ */
+.has-swipe .item.is-swiping > :is(.rank, .item-body) {
+	transition-duration: 0s;
 }
 
 /*
@@ -447,6 +452,11 @@ button {
 	pointer-events: none;
 	translate: var(--hint-x, 0px) var(--hint-y, 0px);
 	transition: translate var(--fast) ease;
+}
+
+/* While a swipe is on, the label sits where the finger is now; gliding toward each new place would smear it too. */
+.has-swipe .is-swiping > .swipe-hint {
+	transition-duration: 0s;
 }
 
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
@@ -588,10 +598,16 @@ button {
 }
 
 /*
- * The view follows the finger only while no row is swiping. :has keeps the row
- * isolated from the view: the moment a row takes over, the view settles back
- * at the release speed instead of jumping to zero.
+ * The view follows the finger only while no row is swiping. While it is
+ * followed, its columns sit exactly under the finger — a transition there
+ * would trail the hand and smear into a double image. When a row takes over,
+ * :has keeps the view gliding back at the release speed instead of jumping to
+ * zero.
  */
+.has-swipe .deck.is-swiping > .column > :is(.col-head, .col-body, .col-foot) {
+	transition-duration: 0s;
+}
+
 .deck.is-swiping:not(:has(.item.is-swiping)) > .column > :is(.col-head, .col-body, .col-foot) {
 	transition-duration: var(--swipe-follow);
 }

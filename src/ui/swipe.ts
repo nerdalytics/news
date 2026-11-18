@@ -38,6 +38,15 @@ const CLICK_SUPPRESS_MS = 400
  * target follows the current action, so a gesture can pass from a row action
  * to a source action and back. The styles glide between the two targets, and
  * the label glides to its new place, instead of jumping.
+ *
+ * While a target follows the finger, nothing may animate toward it: a CSS
+ * transition chases each new value instead of landing on it, so the content
+ * trails the finger and smears into a double image while the hand moves.
+ * During the drag the followed element therefore carries `is-swiping`, which
+ * keeps its transitions at 0s; only the element that is *not* followed keeps
+ * its short glide, so it settles as the other takes over. When the finger
+ * lifts, the class goes away before the offset resets, and the return home is
+ * the one movement that may animate.
  */
 export function enableSwipe(options: SwipeOptions): void {
 	const { root } = options
@@ -62,12 +71,13 @@ export function enableSwipe(options: SwipeOptions): void {
 
 	const clearRow = (): void => {
 		if (!row) return
-		row.style.removeProperty('--swipe')
 		row.classList.remove('is-swiping')
+		row.style.removeProperty('--swipe')
 		delete row.dataset.swipe
 	}
 
 	const clearView = (): void => {
+		root.classList.remove('is-swiping')
 		root.style.removeProperty('--col-swipe')
 		delete root.dataset.swipe
 	}
@@ -96,7 +106,6 @@ export function enableSwipe(options: SwipeOptions): void {
 	const reset = (): void => {
 		clearRow()
 		clearView()
-		root.classList.remove('is-swiping')
 		hint.remove()
 		hint.style.removeProperty('--hint-x')
 		hint.style.removeProperty('--hint-y')
@@ -114,12 +123,12 @@ export function enableSwipe(options: SwipeOptions): void {
 		// Before a threshold is reached, the first action of the direction decides what moves.
 		const onColumn = movesSource(action ?? swipePending(dx, settings))
 		const offset = `${moves ? swipeOffset(dx) : 0}px`
+		const target = onColumn ? root : row
+		// Only the followed element carries is-swiping, which pins it to the finger.
 		if (onColumn) clearRow()
 		else clearView()
-		const target = onColumn ? root : row
+		target.classList.add('is-swiping')
 		target.style.setProperty(onColumn ? '--col-swipe' : '--swipe', offset)
-		// The deck keeps is-swiping for the whole gesture; the row only while it is the target.
-		if (!onColumn) row.classList.add('is-swiping')
 		if (hint.parentElement !== root) root.append(hint)
 		hint.textContent = action ? options.label(row, action) : ''
 		placeHint(onColumn)
@@ -129,7 +138,10 @@ export function enableSwipe(options: SwipeOptions): void {
 
 	root.addEventListener('pointerdown', (event) => {
 		if (event.pointerType === 'mouse' || !event.isPrimary || !enabled()) return
-		reset()
+		// The previous gesture may still be gliding home; start from a clean state.
+		clearRow()
+		clearView()
+		hint.remove()
 		row = (event.target as Element).closest<HTMLElement>('.item[data-url]')
 		if (!row) return
 		column = row.closest<HTMLElement>('.column')
