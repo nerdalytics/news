@@ -448,11 +448,10 @@ button {
  * The label of a source swipe sits behind the column, at the center of the
  * screen. It is fixed, because the column is much taller than the screen and
  * an absolute label would center below the fold. The script aligns its inline
- * edge with the column.
+ * edge with the column's content, so it keeps the row labels' size and gap.
  */
 .swipe-hint.on-column {
 	position: fixed;
-	font-size: 1rem;
 }
 
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
