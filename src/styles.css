@@ -69,7 +69,9 @@
  * every bar is the same. The document used to set `scrollbar-width: thin`,
  * which shrank only the bars of elements inside it (the splash screen) while
  * the settings sheet kept the default ones; that was the inconsistency. No
- * scrollbar-* property or ::-webkit-scrollbar rule may appear again below.
+ * visible scroller may set a scrollbar-* property or a ::-webkit-scrollbar
+ * rule. The single sanctioned exception is the bottom tab strip below, whose
+ * bar is hidden entirely (a chrome element, not content).
  */
 html {
 	overscroll-behavior-y: contain;
