@@ -190,10 +190,16 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - While the finger is down, a label behind the row names the action that
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
-- A swipe that switches the source moves the whole column, not the row under
-  the finger. The label sits behind the column, at the center of the screen.
-  The next and previous actions wrap around the ends of the reader's list.
-  With only one source enabled, the swipe does nothing.
+- A swipe that switches the source moves the whole view, not the row under the
+  finger: every displayed column travels together, and the whole window of
+  sources shifts by one, from any column. The label sits behind the view, at
+  the center of the screen. The next and previous actions wrap around the ends
+  of the reader's list. When every enabled source already fits on screen, the
+  swipe does nothing.
+- The handover between a row swipe and a view swipe glides: the target that
+  takes over follows the finger with a short transition, and the one left
+  behind settles back. The label moves to its new place by translation instead
+  of jumping. Without the reader's motion preference, everything stays instant.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
   the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it
