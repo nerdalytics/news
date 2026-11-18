@@ -13,3 +13,17 @@ export function windowStart(index: number, count: number, size: number): number 
 	const last = Math.max(0, count - size)
 	return Math.min(Math.max(0, index), last)
 }
+
+/**
+ * The first shown source after the whole view swipes one source forward or
+ * back. The window moves as a whole, so the swipe works from every column and
+ * wraps around the ends: after the last full window comes the first, before
+ * the first comes the last.
+ */
+export function windowStep(index: number, count: number, size: number, delta: 1 | -1): number {
+	const last = Math.max(0, count - size)
+	const next = windowStart(index, count, size) + delta
+	if (next < 0) return last
+	if (next > last) return 0
+	return next
+}
