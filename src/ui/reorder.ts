@@ -19,44 +19,78 @@ function rowOf(target: EventTarget | null): HTMLElement | null {
  * Adds drag-to-reorder to a list whose rows contain a `.handle` button.
  *
  * Pointer events cover mouse, touch and pen. A transform moves the dragged row
- * with the pointer. When the row passes the middle of a neighbour, the code
- * moves the neighbour to the row's other side. The dragged row never leaves the
- * document, so it keeps its pointer capture.
+ * with the pointer in both axes, because the list may flow into several columns.
+ * When the pointer sits over a neighbour, the code moves the row to that
+ * neighbour's place in reading order. The dragged row never leaves the document,
+ * so it keeps its pointer capture.
  */
 export function enableReorder(list: HTMLElement, options: ReorderOptions): void {
 	let row: HTMLElement | null = null
+	let pointerX = 0
 	let pointerY = 0
 	/** The pointer position at which the row sits in its current slot without a transform. */
+	let originX = 0
 	let originY = 0
 	let moved = false
 	let frame = 0
 
-	const position = (): number => pointerY + options.scroller.scrollTop
+	const positionY = (): number => pointerY + options.scroller.scrollTop
 
-	function swapWhilePast(): void {
-		if (!row) return
-		for (;;) {
-			const offset = position() - originY
-			const next = row.nextElementSibling as HTMLElement | null
-			const previous = row.previousElementSibling as HTMLElement | null
-			if (next && offset > next.offsetHeight / 2) {
-				originY += next.offsetHeight
-				row.before(next)
-			} else if (previous && offset < -previous.offsetHeight / 2) {
-				originY -= previous.offsetHeight
-				row.after(previous)
-			} else {
-				break
+	/** The row under the pointer, ignoring the dragged row itself. */
+	function rowUnderPointer(): HTMLElement | null {
+		for (const child of list.children) {
+			if (child === row) continue
+			const bounds = child.getBoundingClientRect()
+			if (
+				pointerX >= bounds.left &&
+				pointerX <= bounds.right &&
+				pointerY >= bounds.top &&
+				pointerY <= bounds.bottom
+			) {
+				return child as HTMLElement
 			}
+		}
+		return null
+	}
+
+	function swapWhileOver(): void {
+		const current = row
+		if (!current) return
+		// Each swap moves a neighbour away from the pointer; the bound guards against a cycle.
+		for (let guard = list.children.length; guard > 0; guard -= 1) {
+			const hit = rowUnderPointer()
+			if (!hit) break
+			const bounds = hit.getBoundingClientRect()
+			const rect = current.getBoundingClientRect()
+			const baseTop: number = rect.top - (positionY() - originY)
+			// In the same grid row the horizontal position decides; otherwise the row's
+			// top half comes before it and the bottom half after it, in reading order.
+			const before: boolean =
+				Math.abs(baseTop - bounds.top) < 1
+					? pointerX < bounds.left + bounds.width / 2
+					: pointerY < bounds.top + bounds.height / 2
+			// The row takes the neighbour's slot (or the one after it), and the
+			// neighbour flows into the space the row leaves behind.
+			const children = Array.from(list.children)
+			const from = children.indexOf(current)
+			const hitIndex = children.indexOf(hit)
+			const ref: Element | null = before && from > hitIndex ? hit : hit.nextElementSibling
+			if (ref === current) break
+			list.insertBefore(current, ref)
 			moved = true
-			options.onMove(row)
+			options.onMove(current)
+			// The slot moved by the difference of the two rects (the transform is the
+			// same in both). Shift the origin with it, so the row keeps following the pointer.
+			const placed = current.getBoundingClientRect()
+			originX += placed.left - rect.left
+			originY += placed.top - rect.top
 		}
 	}
 
 	function update(): void {
 		if (!row) return
-		swapWhilePast()
-		row.style.transform = `translateY(${position() - originY}px)`
+		swapWhileOver()
+		row.style.transform = `translate(${pointerX - originX}px, ${positionY() - originY}px)`
 	}
 
 	/** Scrolls the sheet while the pointer is near its top or bottom edge. */
@@ -85,16 +119,19 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		event.preventDefault()
 		row = target
 		moved = false
+		pointerX = event.clientX
 		pointerY = event.clientY
-		originY = position()
+		originX = pointerX
+		originY = positionY()
 		row.classList.add('is-dragging')
 		list.classList.add('is-sorting')
-		row.querySelector<HTMLElement>('.handle')?.setPointerCapture(event.pointerId)
 		frame = requestAnimationFrame(autoScroll)
+		row.querySelector<HTMLElement>('.handle')?.setPointerCapture(event.pointerId)
 	})
 
 	list.addEventListener('pointermove', (event) => {
 		if (!row) return
+		pointerX = event.clientX
 		pointerY = event.clientY
 		update()
 	})
