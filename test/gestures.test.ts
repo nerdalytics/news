@@ -4,6 +4,7 @@ import {
 	BAR_TOLERANCE_PX,
 	BAR_TOP_ZONE_PX,
 	barHides,
+	movesSource,
 	PULL_COMMIT_PX,
 	PULL_MAX_PX,
 	PULL_RESISTANCE,
@@ -18,6 +19,7 @@ import {
 	swipeAction,
 	swipeMoves,
 	swipeOffset,
+	swipePending,
 	swipeSlot,
 } from '../src/ui/gestures'
 
@@ -76,6 +78,30 @@ describe('swipe', () => {
 		expect(swipeOffset(-500)).toBe(-SWIPE_MAX_PX)
 		expect(swipeOffset(500)).toBe(SWIPE_MAX_PX)
 		expect(SWIPE_MAX_PX).toBeGreaterThan(SWIPE_LONG_PX)
+	})
+
+	it('switches the source with the next and previous actions', () => {
+		const navigate: SwipeSettings = { left: 'next', right: 'previous' }
+		expect(swipeAction(-SWIPE_SHORT_PX, navigate)).toBe('next')
+		expect(swipeAction(SWIPE_SHORT_PX, navigate)).toBe('previous')
+		expect(swipeMoves(-30, navigate)).toBe(true)
+	})
+
+	it('marks only next and previous as source actions', () => {
+		expect(movesSource('next')).toBe(true)
+		expect(movesSource('previous')).toBe(true)
+		expect(movesSource('read')).toBe(false)
+		expect(movesSource('hide')).toBe(false)
+		expect(movesSource(undefined)).toBe(false)
+	})
+
+	it('names the first action of a direction before a threshold is reached', () => {
+		expect(swipePending(-30, { left: 'next' })).toBe('next')
+		expect(swipePending(30, { right: 'read', rightLong: 'previous' })).toBe('read')
+		// Without a short action, the long one decides what moves from the start.
+		expect(swipePending(-30, { leftLong: 'next' })).toBe('next')
+		expect(swipePending(-30, {})).toBeUndefined()
+		expect(swipePending(0, { left: 'next', right: 'read' })).toBeUndefined()
 	})
 })
 

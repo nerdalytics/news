@@ -183,11 +183,15 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - Swipes. An entry can be swiped left or right, and each direction has a short
   swipe (64 px) and a long swipe (160 px). The settings sheet assigns one
   action to each of the four. The actions are mark as read, mark as unread,
-  block or unblock the linked site, open the comments, hide the entry, and
-  open in the browser.
+  block or unblock the linked site, open the comments, hide the entry, open in
+  the browser, and switch to the next or previous source.
 - While the finger is down, a label behind the row names the action that
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
+- A swipe that switches the source moves the whole column, not the row under
+  the finger. The label sits behind the column. The next and previous actions
+  wrap around the ends of the reader's list. With only one source enabled, the
+  swipe does nothing.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
   the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it

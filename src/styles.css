@@ -300,6 +300,7 @@ button {
 }
 
 .column {
+	position: relative;
 	inline-size: 100%;
 	min-inline-size: 0;
 	max-inline-size: var(--column-max);
@@ -433,6 +434,11 @@ button {
 	inset-inline-start: 0;
 }
 
+/* The label of a source swipe sits behind the whole column, at its vertical center. */
+.swipe-hint.on-column {
+	font-size: 1rem;
+}
+
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
 .has-swipe .item {
 	touch-action: pan-y pinch-zoom;
@@ -543,6 +549,23 @@ button {
 .foot-problem {
 	flex-basis: 100%;
 	color: var(--danger);
+}
+
+/*
+ * A swipe that switches the source moves the whole column by --col-swipe.
+ * The property is separate from --swipe, so the offset does not inherit into
+ * the rows and move their content twice.
+ */
+.column > .col-head,
+.column > .col-body,
+.column > .col-foot {
+	translate: var(--col-swipe, 0px) 0;
+}
+
+.column:not(.is-swiping) > .col-head,
+.column:not(.is-swiping) > .col-body,
+.column:not(.is-swiping) > .col-foot {
+	transition: translate var(--fast) ease;
 }
 
 .empty {
