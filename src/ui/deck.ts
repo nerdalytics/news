@@ -5,7 +5,7 @@ import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
 import type { SwipeAction } from './gestures'
-import { capacity, windowStart } from './layout'
+import { capacity, windowStart, windowStep } from './layout'
 import { openInBrowser } from './open'
 
 interface DeckOptions {
@@ -119,7 +119,8 @@ export class Deck {
 
 	/** False if a swipe action has nothing to act on in this row. */
 	swipeApplies(row: HTMLElement, action: SwipeAction): boolean {
-		if (action === 'next' || action === 'previous') return this.order.length > 1
+		// A source swipe moves the whole view, so it needs a source off screen.
+		if (action === 'next' || action === 'previous') return this.order.length > this.size
 		if (action === 'block' || action === 'favorite') return row.dataset.site !== undefined
 		if (action === 'comments') return row.querySelector('a.comments') !== null
 		return row.dataset.url !== undefined
@@ -137,7 +138,7 @@ export class Deck {
 	/** Carries out a swipe on a row. */
 	swipe(row: HTMLElement, action: SwipeAction): void {
 		if (action === 'next' || action === 'previous') {
-			this.step(row, action === 'next' ? 1 : -1)
+			this.step(action === 'next' ? 1 : -1)
 			return
 		}
 		const { site, url } = row.dataset
@@ -154,12 +155,16 @@ export class Deck {
 		this.restyle()
 	}
 
-	/** Displays the source next to or before the swiped column, wrapping around the ends. */
-	private step(row: HTMLElement, delta: 1 | -1): void {
-		const id = row.closest<HTMLElement>('.column')?.id.replace('source-', '')
-		const index = id ? this.order.indexOf(id) : -1
-		if (index < 0 || this.order.length < 2) return
-		const target = this.order[(index + delta + this.order.length) % this.order.length]
+	/**
+	 * Swipes the whole view one source forward or back, wrapping around the ends.
+	 * The window moves, not the swiped column, so the gesture works from every
+	 * column and never lands on a source that is already displayed.
+	 */
+	private step(delta: 1 | -1): void {
+		const count = this.order.length
+		if (count < 2) return
+		const index = this.current ? this.order.indexOf(this.current) : 0
+		const target = this.order[windowStep(index, count, this.size, delta)]
 		if (!target) return
 		this.show(target)
 		this.writeHash(target)

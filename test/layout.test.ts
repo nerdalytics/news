@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { capacity, windowStart } from '../src/ui/layout'
+import { capacity, windowStart, windowStep } from '../src/ui/layout'
 
 describe('capacity', () => {
 	const COLUMN_MIN = 352
@@ -39,5 +39,37 @@ describe('windowStart', () => {
 	it('starts at the first source when everything fits', () => {
 		expect(windowStart(1, 2, 4)).toBe(0)
 		expect(windowStart(-1, 0, 3)).toBe(0)
+	})
+})
+
+describe('windowStep', () => {
+	it('moves the whole view one source in each direction', () => {
+		expect(windowStep(2, 6, 2, 1)).toBe(3)
+		expect(windowStep(2, 6, 2, -1)).toBe(1)
+		expect(windowStep(2, 6, 1, 1)).toBe(3)
+		expect(windowStep(2, 6, 1, -1)).toBe(1)
+	})
+
+	it('moves the view even when the swipe starts in a later column', () => {
+		// The deck steps from the first displayed source, not from the swiped one.
+		// With sources 2, 3 and 4 displayed, a previous swipe in the right column
+		// must move the view to 1, not land on 3, which is already displayed.
+		expect(windowStep(2, 9, 3, -1)).toBe(1)
+	})
+
+	it('wraps around the ends instead of staying on the last window', () => {
+		// The last full window shows sources 4 and 5; next wraps to the first.
+		expect(windowStep(4, 6, 2, 1)).toBe(0)
+		expect(windowStep(5, 6, 2, 1)).toBe(0)
+		expect(windowStep(0, 6, 2, -1)).toBe(4)
+		expect(windowStep(4, 6, 1, 1)).toBe(5)
+		expect(windowStep(5, 6, 1, 1)).toBe(0)
+		expect(windowStep(0, 6, 1, -1)).toBe(5)
+	})
+
+	it('stays at the first source when everything fits', () => {
+		expect(windowStep(1, 2, 4, 1)).toBe(0)
+		expect(windowStep(1, 2, 4, -1)).toBe(0)
+		expect(windowStep(0, 1, 1, 1)).toBe(0)
 	})
 })

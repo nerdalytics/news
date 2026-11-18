@@ -33,9 +33,11 @@ const CLICK_SUPPRESS_MS = 400
  * action the swipe would carry out if the finger lifted now. The label changes
  * when the finger passes from the short to the long distance.
  *
- * A swipe that switches the source moves the whole column instead, with the
- * label behind the column. The target follows the current action, so a gesture
- * can pass from a row action to a source action and back.
+ * A swipe that switches the source moves the whole view instead — every
+ * displayed column travels together — with the label behind the view. The
+ * target follows the current action, so a gesture can pass from a row action
+ * to a source action and back. The styles glide between the two targets, and
+ * the label glides to its new place, instead of jumping.
  */
 export function enableSwipe(options: SwipeOptions): void {
 	const { root } = options
@@ -65,39 +67,39 @@ export function enableSwipe(options: SwipeOptions): void {
 		delete row.dataset.swipe
 	}
 
-	const clearColumn = (): void => {
-		if (!column) return
-		column.style.removeProperty('--col-swipe')
-		column.classList.remove('is-swiping')
-		delete column.dataset.swipe
+	const clearView = (): void => {
+		root.style.removeProperty('--col-swipe')
+		delete root.dataset.swipe
 	}
 
-	/** The fixed column label spans the screen. Align its inline edge with the column's content. */
-	const placeColumnHint = (): void => {
-		if (!column) return
-		const rect = column.getBoundingClientRect()
-		const style = getComputedStyle(column)
-		const start = rect.left + Number.parseFloat(style.paddingLeft)
-		const end = rect.right - Number.parseFloat(style.paddingRight)
-		if (dx < 0) {
-			hint.style.insetInlineStart = 'auto'
-			hint.style.insetInlineEnd = `${document.documentElement.clientWidth - end}px`
-		} else {
-			hint.style.insetInlineEnd = 'auto'
-			hint.style.insetInlineStart = `${start}px`
-		}
-	}
-
-	const clearHintPlacement = (): void => {
-		hint.style.removeProperty('inset-inline-start')
-		hint.style.removeProperty('inset-inline-end')
+	/**
+	 * The label is fixed and placed by translate alone, so every change of
+	 * place — the side, the row, or row to view — is a movement the styles can
+	 * transition. It stays in the root for the whole gesture; moving it between
+	 * parents would restart it instantly.
+	 */
+	const placeHint = (onColumn: boolean): void => {
+		if (!row || !column) return
+		const anchor = onColumn ? column : row
+		const rect = anchor.getBoundingClientRect()
+		// The column's content sits inside its gutter; the row already spans the content.
+		const pad = onColumn ? getComputedStyle(column) : undefined
+		const start = rect.left + (pad ? Number.parseFloat(pad.paddingLeft) : 0)
+		const end = rect.right - (pad ? Number.parseFloat(pad.paddingRight) : 0)
+		const x = dx < 0 ? end - hint.offsetWidth : start
+		// A view swipe centers the label on the screen, a row swipe on the row.
+		const y = onColumn ? 0 : rect.top + rect.height / 2 - document.documentElement.clientHeight / 2
+		hint.style.setProperty('--hint-x', `${x}px`)
+		hint.style.setProperty('--hint-y', `${y}px`)
 	}
 
 	const reset = (): void => {
 		clearRow()
-		clearColumn()
-		clearHintPlacement()
+		clearView()
+		root.classList.remove('is-swiping')
 		hint.remove()
+		hint.style.removeProperty('--hint-x')
+		hint.style.removeProperty('--hint-y')
 		row = null
 		column = null
 		pointer = -1
@@ -113,17 +115,14 @@ export function enableSwipe(options: SwipeOptions): void {
 		const onColumn = movesSource(action ?? swipePending(dx, settings))
 		const offset = `${moves ? swipeOffset(dx) : 0}px`
 		if (onColumn) clearRow()
-		else clearColumn()
-		const target = onColumn ? column : row
+		else clearView()
+		const target = onColumn ? root : row
 		target.style.setProperty(onColumn ? '--col-swipe' : '--swipe', offset)
-		target.classList.add('is-swiping')
-		hint.classList.toggle('on-column', onColumn)
-		if (onColumn) placeColumnHint()
-		else clearHintPlacement()
+		// The deck keeps is-swiping for the whole gesture; the row only while it is the target.
+		if (!onColumn) row.classList.add('is-swiping')
+		if (hint.parentElement !== root) root.append(hint)
 		hint.textContent = action ? options.label(row, action) : ''
-		// The label sits on the side the content moved away from.
-		hint.dataset.side = dx < 0 ? 'end' : 'start'
-		if (hint.parentElement !== target) target.append(hint)
+		placeHint(onColumn)
 		if (action) target.dataset.swipe = action
 		else delete target.dataset.swipe
 	}
@@ -146,6 +145,7 @@ export function enableSwipe(options: SwipeOptions): void {
 		if (!swiping) {
 			if (!startsSwipe(dx, event.clientY - startY)) return
 			swiping = true
+			root.classList.add('is-swiping')
 			// Keeps the movement with this row when the finger leaves it.
 			row.setPointerCapture(pointer)
 		}
