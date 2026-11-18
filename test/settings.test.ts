@@ -134,6 +134,7 @@ describe('swipe settings', () => {
 		})
 		expect(parseSwipe('rightlong_browser')).toEqual({ rightLong: 'browser' })
 		expect(parseSwipe('left_next.right_previous')).toEqual({ left: 'next', right: 'previous' })
+		expect(parseSwipe('right_favorite')).toEqual({ right: 'favorite' })
 	})
 
 	it('drops unknown swipes and actions', () => {
@@ -147,6 +148,7 @@ describe('swipe settings', () => {
 			'leftlong_hide.right_unread',
 			'left_comments.rightlong_browser',
 			'left_next.rightlong_previous',
+			'leftlong_favorite.right_block',
 		]) {
 			expect(serializeSwipe(parseSwipe(raw))).toBe(raw)
 		}
