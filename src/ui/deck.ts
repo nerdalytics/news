@@ -30,6 +30,8 @@ const SWIPE_LABELS: Record<SwipeAction, string> = {
 	browser: 'Open in browser',
 	comments: 'Comments',
 	hide: 'Hide',
+	next: 'Next source',
+	previous: 'Previous source',
 	read: 'Read',
 	unread: 'Unread',
 }
@@ -116,6 +118,7 @@ export class Deck {
 
 	/** False if a swipe action has nothing to act on in this row. */
 	swipeApplies(row: HTMLElement, action: SwipeAction): boolean {
+		if (action === 'next' || action === 'previous') return this.order.length > 1
 		if (action === 'block') return row.dataset.site !== undefined
 		if (action === 'comments') return row.querySelector('a.comments') !== null
 		return row.dataset.url !== undefined
@@ -130,6 +133,10 @@ export class Deck {
 
 	/** Carries out a swipe on a row. */
 	swipe(row: HTMLElement, action: SwipeAction): void {
+		if (action === 'next' || action === 'previous') {
+			this.step(row, action === 'next' ? 1 : -1)
+			return
+		}
 		const { site, url } = row.dataset
 		if (!url) return
 		const comments = row.querySelector<HTMLAnchorElement>('a.comments')?.href
@@ -141,6 +148,17 @@ export class Deck {
 		else if (action === 'browser') openInBrowser(url)
 		// The same link can appear in several sources.
 		this.restyle()
+	}
+
+	/** Displays the source next to or before the swiped column, wrapping around the ends. */
+	private step(row: HTMLElement, delta: 1 | -1): void {
+		const id = row.closest<HTMLElement>('.column')?.id.replace('source-', '')
+		const index = id ? this.order.indexOf(id) : -1
+		if (index < 0 || this.order.length < 2) return
+		const target = this.order[(index + delta + this.order.length) % this.order.length]
+		if (!target) return
+		this.show(target)
+		this.writeHash(target)
 	}
 
 	/** Follows a link the way a tap on it would. */

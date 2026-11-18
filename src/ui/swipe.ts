@@ -1,11 +1,13 @@
 import { el } from './dom'
 import {
+	movesSource,
 	type SwipeAction,
 	type SwipeSettings,
 	startsSwipe,
 	swipeAction,
 	swipeMoves,
 	swipeOffset,
+	swipePending,
 } from './gestures'
 
 interface SwipeOptions {
@@ -30,12 +32,17 @@ const CLICK_SUPPRESS_MS = 400
  * The content of the row follows the finger. Behind it a label names the
  * action the swipe would carry out if the finger lifted now. The label changes
  * when the finger passes from the short to the long distance.
+ *
+ * A swipe that switches the source moves the whole column instead, with the
+ * label behind the column. The target follows the current action, so a gesture
+ * can pass from a row action to a source action and back.
  */
 export function enableSwipe(options: SwipeOptions): void {
 	const { root } = options
 	const hint = el('span', 'swipe-hint')
 	hint.setAttribute('aria-hidden', 'true')
 	let row: HTMLElement | null = null
+	let column: HTMLElement | null = null
 	let pointer = -1
 	let startX = 0
 	let startY = 0
@@ -51,28 +58,50 @@ export function enableSwipe(options: SwipeOptions): void {
 		return row && action && options.applies(row, action) ? action : undefined
 	}
 
+	const clearRow = (): void => {
+		if (!row) return
+		row.style.removeProperty('--swipe')
+		row.classList.remove('is-swiping')
+		delete row.dataset.swipe
+	}
+
+	const clearColumn = (): void => {
+		if (!column) return
+		column.style.removeProperty('--col-swipe')
+		column.classList.remove('is-swiping')
+		delete column.dataset.swipe
+	}
+
 	const reset = (): void => {
-		if (row) {
-			row.style.removeProperty('--swipe')
-			row.classList.remove('is-swiping')
-			delete row.dataset.swipe
-		}
+		clearRow()
+		clearColumn()
 		hint.remove()
 		row = null
+		column = null
 		pointer = -1
 		swiping = false
 	}
 
 	const draw = (): void => {
-		if (!row) return
-		const moves = swipeMoves(dx, options.settings())
-		row.style.setProperty('--swipe', `${moves ? swipeOffset(dx) : 0}px`)
+		if (!row || !column) return
+		const settings = options.settings()
+		const moves = swipeMoves(dx, settings)
 		const action = current()
+		// Before a threshold is reached, the first action of the direction decides what moves.
+		const onColumn = movesSource(action ?? swipePending(dx, settings))
+		const offset = `${moves ? swipeOffset(dx) : 0}px`
+		if (onColumn) clearRow()
+		else clearColumn()
+		const target = onColumn ? column : row
+		target.style.setProperty(onColumn ? '--col-swipe' : '--swipe', offset)
+		target.classList.add('is-swiping')
+		hint.classList.toggle('on-column', onColumn)
 		hint.textContent = action ? options.label(row, action) : ''
 		// The label sits on the side the content moved away from.
 		hint.dataset.side = dx < 0 ? 'end' : 'start'
-		if (action) row.dataset.swipe = action
-		else delete row.dataset.swipe
+		if (hint.parentElement !== target) target.append(hint)
+		if (action) target.dataset.swipe = action
+		else delete target.dataset.swipe
 	}
 
 	root.addEventListener('pointerdown', (event) => {
@@ -80,6 +109,7 @@ export function enableSwipe(options: SwipeOptions): void {
 		reset()
 		row = (event.target as Element).closest<HTMLElement>('.item[data-url]')
 		if (!row) return
+		column = row.closest<HTMLElement>('.column')
 		pointer = event.pointerId
 		startX = event.clientX
 		startY = event.clientY
@@ -92,8 +122,6 @@ export function enableSwipe(options: SwipeOptions): void {
 		if (!swiping) {
 			if (!startsSwipe(dx, event.clientY - startY)) return
 			swiping = true
-			row.classList.add('is-swiping')
-			row.append(hint)
 			// Keeps the movement with this row when the finger leaves it.
 			row.setPointerCapture(pointer)
 		}

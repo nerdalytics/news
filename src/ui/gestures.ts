@@ -3,9 +3,23 @@
  * from the event handling, so that they can be tested without a browser.
  */
 
-/** What a swipe can do to an entry. */
-export const SWIPE_ACTIONS = ['read', 'unread', 'block', 'comments', 'hide', 'browser'] as const
+/** What a swipe can do. Most actions act on an entry; `next` and `previous` switch the source. */
+export const SWIPE_ACTIONS = [
+	'read',
+	'unread',
+	'block',
+	'comments',
+	'hide',
+	'browser',
+	'next',
+	'previous',
+] as const
 export type SwipeAction = (typeof SWIPE_ACTIONS)[number]
+
+/** True for the actions that move the whole column instead of a single row. */
+export function movesSource(action: SwipeAction | undefined): boolean {
+	return action === 'next' || action === 'previous'
+}
 
 /** The four swipes: two directions, each short or long. */
 export const SWIPE_SLOTS = ['left', 'leftLong', 'right', 'rightLong'] as const
@@ -53,6 +67,18 @@ export function swipeSlot(dx: number, settings: SwipeSettings): SwipeSlot | unde
 export function swipeAction(dx: number, settings: SwipeSettings): SwipeAction | undefined {
 	const slot = swipeSlot(dx, settings)
 	return slot && settings[slot]
+}
+
+/**
+ * The action a swipe in this direction carries out first, regardless of the
+ * distance. It tells which element the gesture moves before a threshold is
+ * reached: the column for a source action, the row otherwise.
+ */
+export function swipePending(dx: number, settings: SwipeSettings): SwipeAction | undefined {
+	if (dx === 0) return undefined
+	const [short, long]: [SwipeSlot, SwipeSlot] =
+		dx < 0 ? ['left', 'leftLong'] : ['right', 'rightLong']
+	return settings[short] ?? settings[long]
 }
 
 /** How far the row moves for a finger movement of `dx`. */

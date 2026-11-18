@@ -78,6 +78,8 @@ const ACTION_LABELS: Record<SwipeAction, string> = {
 	browser: 'Open in the browser',
 	comments: 'Open the comments',
 	hide: 'Hide the entry',
+	next: 'Next source',
+	previous: 'Previous source',
 	read: 'Mark as read',
 	unread: 'Mark as unread',
 }
@@ -127,7 +129,7 @@ function renderHiddenEntries(): HTMLElement {
 function renderSwipeSettings(): HTMLElement {
 	const section = el('section', 'pref')
 	section.append(
-		el('h3', undefined, 'Swipe on an entry'),
+		el('h3', undefined, 'Swipe gestures'),
 		...SLOT_LABELS.map(([slot, label]) => renderSwipeSelect(slot, label)),
 		renderHiddenEntries()
 	)
