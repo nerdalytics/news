@@ -189,9 +189,9 @@ one the reader chose. A phone shows one source, a 1440 px window three.
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
 - A swipe that switches the source moves the whole column, not the row under
-  the finger. The label sits behind the column. The next and previous actions
-  wrap around the ends of the reader's list. With only one source enabled, the
-  swipe does nothing.
+  the finger. The label sits behind the column, at the center of the screen.
+  The next and previous actions wrap around the ends of the reader's list.
+  With only one source enabled, the swipe does nothing.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
   the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it

@@ -434,8 +434,14 @@ button {
 	inset-inline-start: 0;
 }
 
-/* The label of a source swipe sits behind the whole column, at its vertical center. */
+/*
+ * The label of a source swipe sits behind the column, at the center of the
+ * screen. It is fixed, because the column is much taller than the screen and
+ * an absolute label would center below the fold. The script aligns its inline
+ * edge with the column.
+ */
 .swipe-hint.on-column {
+	position: fixed;
 	font-size: 1rem;
 }
 

@@ -72,9 +72,28 @@ export function enableSwipe(options: SwipeOptions): void {
 		delete column.dataset.swipe
 	}
 
+	/** The fixed column label spans the screen. Align its inline edge with the column. */
+	const placeColumnHint = (): void => {
+		if (!column) return
+		const rect = column.getBoundingClientRect()
+		if (dx < 0) {
+			hint.style.insetInlineStart = 'auto'
+			hint.style.insetInlineEnd = `${document.documentElement.clientWidth - rect.right}px`
+		} else {
+			hint.style.insetInlineEnd = 'auto'
+			hint.style.insetInlineStart = `${rect.left}px`
+		}
+	}
+
+	const clearHintPlacement = (): void => {
+		hint.style.removeProperty('inset-inline-start')
+		hint.style.removeProperty('inset-inline-end')
+	}
+
 	const reset = (): void => {
 		clearRow()
 		clearColumn()
+		clearHintPlacement()
 		hint.remove()
 		row = null
 		column = null
@@ -96,6 +115,8 @@ export function enableSwipe(options: SwipeOptions): void {
 		target.style.setProperty(onColumn ? '--col-swipe' : '--swipe', offset)
 		target.classList.add('is-swiping')
 		hint.classList.toggle('on-column', onColumn)
+		if (onColumn) placeColumnHint()
+		else clearHintPlacement()
 		hint.textContent = action ? options.label(row, action) : ''
 		// The label sits on the side the content moved away from.
 		hint.dataset.side = dx < 0 ? 'end' : 'start'
