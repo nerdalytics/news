@@ -17,9 +17,10 @@ file.
 - Four swipes on an entry, short and long in each direction, can each be given
   an action. No swipe has an action by default.
 - The page reloads itself after a new release.
-- Tapping the name of a linked site, such as `slate.com`, offers to block that
-  site. Entries that link to a blocked site stay in the list, dimmed, with the
-  site name crossed out. Tapping the name again offers to unblock it.
+- Tapping the name of a linked site, such as `slate.com`, offers to favorite
+  or block that site. Entries that link to a favorited site carry a star and
+  a faint tint. Entries that link to a blocked site stay in the list, dimmed,
+  with the site name crossed out. Tapping the name again offers to undo either.
 - The theme follows the system or stays fixed on light or dark.
 - TheNews stores settings in browser cookies.
 
@@ -226,12 +227,13 @@ and they expire after 400 days.
 | `thenews_newtab` | `1` opens links in a new tab. |
 | `thenews_swipe` | The swipes that have an action, joined by `.`, as in `left_read.leftlong_hide.right_unread`. The swipes are `left`, `leftlong`, `right` and `rightlong`. |
 
-TheNews keeps five more things in `localStorage`, because they are not
+TheNews keeps six more things in `localStorage`, because they are not
 settings or can outgrow the 4096 bytes of a cookie.
 
 | Key | Value |
 | --- | --- |
 | `thenews:blocked:v1` | The hosts of blocked sites. The list has no size limit. |
+| `thenews:favorites:v1` | The hosts of favorited sites. The list has no size limit. |
 | `thenews:read:v1` | The 500 most recently opened links. |
 | `thenews:hidden:v1` | The 500 most recently hidden entries. |
 | `thenews:hosted:v1` | When the feed of each hosted source was generated. |
@@ -245,9 +247,11 @@ script cannot clear it when the reader marks an entry as unread.
 every `thenews:` key, then shows the first-run screen. The button asks for a
 second tap before it deletes anything.
 
-A site can be blocked when an entry links away from its source, as entries on
-Hacker News, Lemmy and Mastodon do. TheNews matches the exact host without a
-leading `www.`, so blocking `example.com` does not block `news.example.com`.
+A site can be favorited or blocked when an entry links away from its source,
+as entries on Hacker News, Lemmy and Mastodon do. TheNews matches the exact
+host without a leading `www.`, so favoriting `example.com` does not favorite
+`news.example.com`. The highlight uses the accent colour of the theme, a star
+before the site name and a faint tint behind the entry.
 
 TheNews writes cookies with the Cookie Store API and falls back to
 `document.cookie` in browsers without it. In browsers with the Cookie Store

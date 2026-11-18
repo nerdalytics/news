@@ -72,16 +72,19 @@ export function enableSwipe(options: SwipeOptions): void {
 		delete column.dataset.swipe
 	}
 
-	/** The fixed column label spans the screen. Align its inline edge with the column. */
+	/** The fixed column label spans the screen. Align its inline edge with the column's content. */
 	const placeColumnHint = (): void => {
 		if (!column) return
 		const rect = column.getBoundingClientRect()
+		const style = getComputedStyle(column)
+		const start = rect.left + Number.parseFloat(style.paddingLeft)
+		const end = rect.right - Number.parseFloat(style.paddingRight)
 		if (dx < 0) {
 			hint.style.insetInlineStart = 'auto'
-			hint.style.insetInlineEnd = `${document.documentElement.clientWidth - rect.right}px`
+			hint.style.insetInlineEnd = `${document.documentElement.clientWidth - end}px`
 		} else {
 			hint.style.insetInlineEnd = 'auto'
-			hint.style.insetInlineStart = `${rect.left}px`
+			hint.style.insetInlineStart = `${start}px`
 		}
 	}
 

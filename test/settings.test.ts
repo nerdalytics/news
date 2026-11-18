@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseCookies } from '../src/cookies'
 import {
 	parseBlocked,
+	parseFavorites,
 	parseSources,
 	parseSwipe,
 	parseTheme,
@@ -100,6 +101,21 @@ describe('blocked sites', () => {
 	it('has no size limit', () => {
 		const hosts = Array.from({ length: 1000 }, (_, index) => `site${index}.example`)
 		expect(parseBlocked(hosts)).toHaveLength(1000)
+	})
+})
+
+describe('favorited sites', () => {
+	it('accepts a stored list of hosts', () => {
+		expect(parseFavorites(['openai.com', 'calif.io'])).toEqual(['openai.com', 'calif.io'])
+	})
+
+	it('is empty for anything that is not a list', () => {
+		expect(parseFavorites(undefined)).toEqual([])
+		expect(parseFavorites('openai.com')).toEqual([])
+	})
+
+	it('drops duplicates and entries that are not host names', () => {
+		expect(parseFavorites(['a.com', 'a.com', '<script>', 42, 'b.org'])).toEqual(['a.com', 'b.org'])
 	})
 })
 

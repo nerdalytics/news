@@ -28,6 +28,8 @@ export interface Settings {
 	 * in `localStorage`, because it can outgrow the 4096 bytes of a cookie.
 	 */
 	blocked: readonly string[]
+	/** Hosts of linked sites the reader favorited. Their entries are highlighted. */
+	favorites: readonly string[]
 }
 
 const COOKIE = {
@@ -38,6 +40,7 @@ const COOKIE = {
 }
 export const COOKIE_NAMES: readonly string[] = Object.values(COOKIE)
 const BLOCKED_KEY = 'thenews:blocked:v1'
+const FAVORITES_KEY = 'thenews:favorites:v1'
 const DISABLED_PREFIX = '-'
 const SEPARATOR = '.'
 const HOST_PATTERN = /^[a-z0-9.-]+$/
@@ -79,24 +82,32 @@ export function parseTheme(raw: string | undefined): Theme {
 }
 
 /** Accepts a stored list and keeps the entries that are host names, without duplicates. */
-export function parseBlocked(stored: unknown): string[] {
+function parseHosts(stored: unknown): string[] {
 	if (!Array.isArray(stored)) return []
 	const hosts = stored.filter((host) => typeof host === 'string' && HOST_PATTERN.test(host))
 	return [...new Set(hosts)]
 }
 
-function readBlocked(): string[] {
+export function parseBlocked(stored: unknown): string[] {
+	return parseHosts(stored)
+}
+
+export function parseFavorites(stored: unknown): string[] {
+	return parseHosts(stored)
+}
+
+function readHosts(key: string): string[] {
 	try {
-		return parseBlocked(JSON.parse(localStorage.getItem(BLOCKED_KEY) ?? '[]'))
+		return parseHosts(JSON.parse(localStorage.getItem(key) ?? '[]'))
 	} catch {
 		// Storage can be blocked, and stored data can be invalid. Start with an empty list.
 		return []
 	}
 }
 
-function writeBlocked(hosts: readonly string[]): void {
+function writeHosts(key: string, hosts: readonly string[]): void {
 	try {
-		localStorage.setItem(BLOCKED_KEY, JSON.stringify(hosts))
+		localStorage.setItem(key, JSON.stringify(hosts))
 	} catch {
 		// Writing fails when storage is full or blocked. The list still applies to this visit.
 	}
@@ -139,7 +150,8 @@ export function withHiddenSources(visible: readonly SourceSetting[]): SourceSett
 
 function read(): Settings {
 	return {
-		blocked: readBlocked(),
+		blocked: readHosts(BLOCKED_KEY),
+		favorites: readHosts(FAVORITES_KEY),
 		newTab: readCookie(COOKIE.newTab) === '1',
 		sources: parseSources(readCookie(COOKIE.sources)),
 		swipe: parseSwipe(readCookie(COOKIE.swipe)),
@@ -179,7 +191,8 @@ export function updateSettings(patch: Partial<Settings>): void {
 	if (patch.theme) writeCookie(COOKIE.theme, current.theme)
 	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
 	if (patch.swipe) writeCookie(COOKIE.swipe, serializeSwipe(current.swipe))
-	if (patch.blocked) writeBlocked(current.blocked)
+	if (patch.blocked) writeHosts(BLOCKED_KEY, current.blocked)
+	if (patch.favorites) writeHosts(FAVORITES_KEY, current.favorites)
 	emit()
 }
 
@@ -193,12 +206,23 @@ export function setBlocked(host: string, blocked: boolean): void {
 	updateSettings({ blocked: blocked ? [...others, host] : others })
 }
 
+export function isFavorite(host: string): boolean {
+	return current.favorites.includes(host)
+}
+
+/** Favorites or unfavorites the host of a linked site. */
+export function setFavorite(host: string, favorite: boolean): void {
+	const others = current.favorites.filter((entry) => entry !== host)
+	updateSettings({ favorites: favorite ? [...others, host] : others })
+}
+
 function sameSettings(a: Settings, b: Settings): boolean {
 	return (
 		a.theme === b.theme &&
 		a.newTab === b.newTab &&
 		serializeSwipe(a.swipe) === serializeSwipe(b.swipe) &&
 		a.blocked.join() === b.blocked.join() &&
+		a.favorites.join() === b.favorites.join() &&
 		serializeSources(a.sources) === serializeSources(b.sources)
 	)
 }
@@ -214,5 +238,5 @@ function reload(): void {
 onCookieChange(COOKIE_NAMES, reload)
 // The `storage` event fires in the other tabs of this site, not in the one that wrote.
 addEventListener('storage', (event) => {
-	if (event.key === BLOCKED_KEY || event.key === null) reload()
+	if (event.key === BLOCKED_KEY || event.key === FAVORITES_KEY || event.key === null) reload()
 })
