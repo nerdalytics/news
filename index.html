@@ -43,18 +43,23 @@
 				display: grid;
 				place-items: center;
 				background: light-dark(#ffffff, #0f1012);
-				transition:
-					opacity 0.18s ease,
-					visibility 0.18s;
-			}
-			/* The mark fades in after 150 ms, so a fast load never shows it. */
-			#splash svg {
-				opacity: 0;
-				animation: splash-in 0.2s 0.15s ease forwards;
 			}
 			#splash.is-done {
 				opacity: 0;
 				visibility: hidden;
+			}
+			/* Motion is opt-in, matching the stylesheet. Without it the splash shows and hides instantly. */
+			@media (prefers-reduced-motion: no-preference) {
+				#splash {
+					transition:
+						opacity 0.18s ease,
+						visibility 0.18s;
+				}
+				/* The mark fades in after 150 ms, so a fast load never shows it. */
+				#splash svg {
+					opacity: 0;
+					animation: splash-in 0.2s 0.15s ease forwards;
+				}
 			}
 			@keyframes splash-in {
 				to {
