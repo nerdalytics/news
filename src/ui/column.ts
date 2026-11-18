@@ -4,7 +4,7 @@ import { count, hostOf, timeAgo } from '../format'
 import { isHidden } from '../hidden'
 import { describeError } from '../net'
 import { isRead } from '../read'
-import { getSettings, isBlocked } from '../settings'
+import { getSettings, isBlocked, isFavorite } from '../settings'
 import type { FeedItem, SourceMeta } from '../sources/types'
 import { el, icon } from './dom'
 
@@ -68,12 +68,13 @@ function renderMeta(item: FeedItem, source: SourceMeta): HTMLElement {
 	return meta
 }
 
-/** Marks rows the reader has opened and rows that link to a blocked site, and removes hidden rows. */
+/** Marks rows the reader opened, favorited or blocked, and removes hidden rows. */
 function applyState(row: HTMLElement): void {
 	const { site, url } = row.dataset
 	row.hidden = url !== undefined && isHidden(url)
 	row.classList.toggle('is-read', url !== undefined && isRead(url))
 	row.classList.toggle('is-blocked', site !== undefined && isBlocked(site))
+	row.classList.toggle('is-favorite', site !== undefined && isFavorite(site))
 }
 
 function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIElement {

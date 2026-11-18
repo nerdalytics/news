@@ -152,6 +152,16 @@ button {
 	cursor: not-allowed;
 }
 
+/* The less prominent of two actions, such as blocking next to favoriting. */
+.secondary-btn {
+	min-height: 48px;
+	padding: 12px 20px;
+	border-radius: 999px;
+	color: var(--text);
+	background: var(--surface);
+	font-weight: 600;
+}
+
 .dot {
 	color: var(--muted);
 	opacity: var(--dim-separator);
@@ -523,6 +533,21 @@ button {
 
 .is-blocked .site {
 	text-decoration: line-through;
+}
+
+/* Entries that link to a favorited site carry a star and a faint tint of the accent. */
+.item.is-favorite {
+	background: color-mix(in srgb, var(--accent) 7%, transparent);
+	border-radius: 8px;
+}
+
+.is-favorite .site {
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.is-favorite .site::before {
+	content: "★ ";
 }
 
 .notice {
