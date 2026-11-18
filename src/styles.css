@@ -11,7 +11,10 @@
 	/* A column is never wider than this, so lines stay readable on wide screens. */
 	--column-max: 36rem;
 	--sheet-width: 30rem;
+	--onboarding-width: 80rem;
 	--onboarding-height: 50rem;
+	/* A source card is never narrower than this. The first-run list shows as many as fit. */
+	--source-min: 24rem;
 	--sheet-radius: 20px;
 	/* The smallest comfortable touch target. */
 	--tap: 44px;
@@ -59,6 +62,11 @@
 /* The app has its own pull to refresh, so the browser's reload gesture is switched off where CSS can do that. */
 html {
 	overscroll-behavior-y: contain;
+	/* Opening a dialog hides the document scrollbar. The reserved gutter keeps the page from shifting. */
+	scrollbar-gutter: stable;
+	/* The OS draws the scrollbars; color-scheme makes them follow the light or dark theme. */
+	scrollbar-width: thin;
+	scrollbar-color: auto;
 }
 
 /* A modal dialog does not stop the page behind it from scrolling on iOS. */
@@ -708,19 +716,27 @@ button {
 	overscroll-behavior: contain;
 }
 
-/* One column per cell, so badges, names and handles line up across rows. */
+/*
+ * The list fits as many source cards side by side as the width allows, so a
+ * wide first-run screen shows several columns instead of one long scroll.
+ * Every row uses the same fixed cell sizes, so checks, badges, names and
+ * handles line up across rows and across cards.
+ */
 .src-list {
 	display: grid;
-	grid-template-columns: auto auto minmax(0, 1fr) auto;
-	column-gap: 14px;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--source-min)), 1fr));
+	gap: 0 var(--gutter);
 	list-style: none;
 }
 
 .src {
 	display: grid;
-	grid-column: 1 / -1;
-	grid-template-columns: subgrid;
+	grid-template-columns: auto auto minmax(0, 1fr) auto;
+	column-gap: 14px;
 	align-items: center;
+	/* Uniform rows (two tagline lines plus padding) keep the grid tracks stable
+	   while a drag moves rows between columns. */
+	min-height: 5rem;
 	background: var(--bg);
 	border-radius: 12px;
 }
@@ -740,7 +756,8 @@ button {
 .src-main {
 	display: grid;
 	grid-column: 1 / 4;
-	grid-template-columns: subgrid;
+	grid-template-columns: auto auto minmax(0, 1fr);
+	column-gap: 14px;
 	align-items: center;
 	padding: 9px 0;
 	cursor: pointer;
@@ -986,10 +1003,10 @@ button {
 .onboarding {
 	display: none;
 	grid-template-rows: minmax(0, 1fr) auto;
-	width: min(100%, var(--sheet-width));
+	width: min(100%, var(--onboarding-width));
 	max-width: 100%;
-	height: min(100dvh, var(--onboarding-height));
-	max-height: 100dvh;
+	/* The card grows with its content up to this cap; a wide screen shows the sources in several columns. */
+	max-height: min(100dvh, var(--onboarding-height));
 	margin: auto;
 	padding: 0;
 	/* Browsers give a modal dialog overflow: auto. The body is the only scroller. */
