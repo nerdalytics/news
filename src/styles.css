@@ -27,6 +27,9 @@
 	/* Durations. Motion is opt-in: these stay 0s unless the reader allows motion,
 	   and the Motion section below restores them. */
 	--fast: 0s;
+	/* The short glide of content that follows the finger. It keeps the handover
+	   between a row swipe and a view swipe a movement instead of a jump. */
+	--swipe-follow: 0s;
 	--sheet-move: 0s;
 	--bar-move: 0s;
 	--warning: light-dark(#c2410c, #fb923c);
@@ -415,20 +418,26 @@ button {
 }
 
 /* The content of a row follows the finger by --swipe. The row itself stays, so the label behind it shows. */
-.item > .rank,
-.item > .item-body {
+.item > :is(.rank, .item-body) {
 	translate: var(--swipe, 0px) 0;
-}
-
-.item:not(.is-swiping) > .rank,
-.item:not(.is-swiping) > .item-body {
 	transition: translate var(--fast) ease;
 }
 
-/* Names the action a swipe would carry out if the finger lifted now. */
+/* While the row follows the finger it glides a little, so taking over from a view swipe is a movement, not a jump. */
+.item.is-swiping > :is(.rank, .item-body) {
+	transition-duration: var(--swipe-follow);
+}
+
+/*
+ * Names the action a swipe would carry out if the finger lifted now. It is
+ * fixed and placed by translate alone (--hint-x, --hint-y), so a change of
+ * side, of row, or between row and view glides instead of jumping. The script
+ * centers it on the row for a row swipe and on the screen for a view swipe.
+ */
 .swipe-hint {
-	position: absolute;
+	position: fixed;
 	inset-block: 0;
+	inset-inline-start: 0;
 	display: flex;
 	align-items: center;
 	max-inline-size: 45%;
@@ -436,25 +445,8 @@ button {
 	font-size: 0.875rem;
 	font-weight: 600;
 	pointer-events: none;
-}
-
-.swipe-hint[data-side="end"] {
-	inset-inline-end: 0;
-	text-align: end;
-}
-
-.swipe-hint[data-side="start"] {
-	inset-inline-start: 0;
-}
-
-/*
- * The label of a source swipe sits behind the column, at the center of the
- * screen. It is fixed, because the column is much taller than the screen and
- * an absolute label would center below the fold. The script aligns its inline
- * edge with the column's content, so it keeps the row labels' size and gap.
- */
-.swipe-hint.on-column {
-	position: fixed;
+	translate: var(--hint-x, 0px) var(--hint-y, 0px);
+	transition: translate var(--fast) ease;
 }
 
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
@@ -585,20 +577,23 @@ button {
 }
 
 /*
- * A swipe that switches the source moves the whole column by --col-swipe.
- * The property is separate from --swipe, so the offset does not inherit into
- * the rows and move their content twice.
+ * A swipe that switches the source moves the whole view by --col-swipe on the
+ * deck, so every displayed column travels together. The property is separate
+ * from --swipe, so the offset does not inherit into the rows and move their
+ * content twice.
  */
-.column > .col-head,
-.column > .col-body,
-.column > .col-foot {
+.deck > .column > :is(.col-head, .col-body, .col-foot) {
 	translate: var(--col-swipe, 0px) 0;
+	transition: translate var(--fast) ease;
 }
 
-.column:not(.is-swiping) > .col-head,
-.column:not(.is-swiping) > .col-body,
-.column:not(.is-swiping) > .col-foot {
-	transition: translate var(--fast) ease;
+/*
+ * The view follows the finger only while no row is swiping. :has keeps the row
+ * isolated from the view: the moment a row takes over, the view settles back
+ * at the release speed instead of jumping to zero.
+ */
+.deck.is-swiping:not(:has(.item.is-swiping)) > .column > :is(.col-head, .col-body, .col-foot) {
+	transition-duration: var(--swipe-follow);
 }
 
 .empty {
@@ -1135,6 +1130,8 @@ button {
 @media (prefers-reduced-motion: no-preference) {
 	:root {
 		--fast: 0.15s;
+		/* Snappy, but long enough to see the handover between row and view. */
+		--swipe-follow: 0.08s;
 		--sheet-move: 0.22s;
 		/* The tab bar slides slowly enough to be seen leaving and returning. */
 		--bar-move: 0.4s;
