@@ -21,11 +21,11 @@
 	--dim-disabled: 0.4;
 	--dim-separator: 0.6;
 	--dim-pulse: 0.5;
-	/* Durations */
-	--fast: 0.15s;
-	--sheet-move: 0.22s;
-	/* The tab bar slides slowly enough to be seen leaving and returning. */
-	--bar-move: 0.4s;
+	/* Durations. Motion is opt-in: these stay 0s unless the reader allows motion,
+	   and the Motion section below restores them. */
+	--fast: 0s;
+	--sheet-move: 0s;
+	--bar-move: 0s;
 	--warning: light-dark(#c2410c, #fb923c);
 	--on-warning: light-dark(#ffffff, #1c1206);
 	--bg: light-dark(#ffffff, #0f1012);
@@ -222,7 +222,6 @@ button {
 .pull.is-refreshing {
 	--pull: var(--pull-rest);
 	color: var(--accent);
-	animation: spin 0.8s linear infinite;
 }
 
 .tabs {
@@ -355,10 +354,6 @@ button {
 /* The header button of the column would repeat what the indicator shows. */
 .is-pull-active .reload {
 	visibility: hidden;
-}
-
-.column[data-state="loading"] .reload svg {
-	animation: spin 0.8s linear infinite;
 }
 
 .list {
@@ -635,10 +630,6 @@ button {
 	width: 55%;
 	height: 14px;
 	margin-top: 8px;
-}
-
-.skeleton {
-	animation: pulse 1.2s ease-in-out infinite alternate;
 }
 
 /* Manage sources sheet */
@@ -1081,7 +1072,8 @@ button {
 	-webkit-user-select: text;
 }
 
-@media (hover: hover) {
+/* Hover styles need a primary input that can hover without touching, such as a mouse or trackpad. */
+@media (hover: hover) and (pointer: fine) {
 	.icon-btn:hover {
 		color: var(--text);
 		background: var(--surface);
@@ -1118,13 +1110,28 @@ button {
 	}
 }
 
-@media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-		scroll-behavior: auto !important;
+/*
+ * Motion is opt-in. Without this block every duration stays 0s and nothing
+ * animates, so a reader who prefers reduced motion gets the safe path by
+ * default rather than through an override.
+ */
+@media (prefers-reduced-motion: no-preference) {
+	:root {
+		--fast: 0.15s;
+		--sheet-move: 0.22s;
+		/* The tab bar slides slowly enough to be seen leaving and returning. */
+		--bar-move: 0.4s;
+	}
+
+	.pull.is-refreshing {
+		animation: spin 0.8s linear infinite;
+	}
+
+	.column[data-state="loading"] .reload svg {
+		animation: spin 0.8s linear infinite;
+	}
+
+	.skeleton {
+		animation: pulse 1.2s ease-in-out infinite alternate;
 	}
 }
