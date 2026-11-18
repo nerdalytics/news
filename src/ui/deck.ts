@@ -1,6 +1,6 @@
 import { hide } from '../hidden'
 import { markRead, markUnread } from '../read'
-import { getSettings, isBlocked, setBlocked } from '../settings'
+import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, prefersReducedMotion, whenIdle } from './dom'
@@ -29,6 +29,7 @@ const SWIPE_LABELS: Record<SwipeAction, string> = {
 	block: 'Block site',
 	browser: 'Open in browser',
 	comments: 'Comments',
+	favorite: 'Favorite site',
 	hide: 'Hide',
 	next: 'Next source',
 	previous: 'Previous source',
@@ -119,7 +120,7 @@ export class Deck {
 	/** False if a swipe action has nothing to act on in this row. */
 	swipeApplies(row: HTMLElement, action: SwipeAction): boolean {
 		if (action === 'next' || action === 'previous') return this.order.length > 1
-		if (action === 'block') return row.dataset.site !== undefined
+		if (action === 'block' || action === 'favorite') return row.dataset.site !== undefined
 		if (action === 'comments') return row.querySelector('a.comments') !== null
 		return row.dataset.url !== undefined
 	}
@@ -128,6 +129,8 @@ export class Deck {
 	swipeLabel(row: HTMLElement, action: SwipeAction): string {
 		const site = row.dataset.site
 		if (action === 'block' && site) return isBlocked(site) ? `Unblock ${site}` : `Block ${site}`
+		if (action === 'favorite' && site)
+			return isFavorite(site) ? `Unfavorite ${site}` : `Favorite ${site}`
 		return SWIPE_LABELS[action]
 	}
 
@@ -144,6 +147,7 @@ export class Deck {
 		else if (action === 'unread') markUnread(url)
 		else if (action === 'hide') hide(url)
 		else if (action === 'block' && site) setBlocked(site, !isBlocked(site))
+		else if (action === 'favorite' && site) setFavorite(site, !isFavorite(site))
 		else if (action === 'comments' && comments) this.navigate(comments)
 		else if (action === 'browser') openInBrowser(url)
 		// The same link can appear in several sources.

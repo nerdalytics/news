@@ -92,6 +92,8 @@ describe('swipe', () => {
 		expect(movesSource('previous')).toBe(true)
 		expect(movesSource('read')).toBe(false)
 		expect(movesSource('hide')).toBe(false)
+		expect(movesSource('block')).toBe(false)
+		expect(movesSource('favorite')).toBe(false)
 		expect(movesSource(undefined)).toBe(false)
 	})
 
