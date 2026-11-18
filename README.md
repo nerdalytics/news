@@ -184,8 +184,9 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - Swipes. An entry can be swiped left or right, and each direction has a short
   swipe (64 px) and a long swipe (160 px). The settings sheet assigns one
   action to each of the four. The actions are mark as read, mark as unread,
-  block or unblock the linked site, open the comments, hide the entry, open in
-  the browser, and switch to the next or previous source.
+  block or unblock the linked site, favorite or unfavorite the linked site,
+  open the comments, hide the entry, open in the browser, and switch to the
+  next or previous source.
 - While the finger is down, a label behind the row names the action that
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
