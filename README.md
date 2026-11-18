@@ -196,10 +196,17 @@ one the reader chose. A phone shows one source, a 1440 px window three.
   the center of the screen. The next and previous actions wrap around the ends
   of the reader's list. When every enabled source already fits on screen, the
   swipe does nothing.
-- The handover between a row swipe and a view swipe glides: the target that
-  takes over follows the finger with a short transition, and the one left
-  behind settles back. The label moves to its new place by translation instead
-  of jumping. Without the reader's motion preference, everything stays instant.
+- The handover between a row swipe and a view swipe is one continuous movement.
+  The script writes a single registered CSS custom property, `--dx`, the
+  finger's distance; the styles derive every offset from it with `calc` alone.
+  Up to the source action's distance the row follows the finger; past it the
+  view follows the further travel while the row slides back into place. Nothing
+  transitions while the finger is down, so no layer can lag behind another and
+  smear into a double image, and the handover works the same in both directions.
+  On release the deck transitions `--dx` itself back to zero — the one movement
+  that may animate — and every part glides home together. The two labels (row
+  and view) only crossfade; their positions never animate. Without the reader's
+  motion preference, everything stays instant.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
   the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it

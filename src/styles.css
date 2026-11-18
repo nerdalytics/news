@@ -1,3 +1,14 @@
+/*
+ * The one value every swipe movement derives from: the finger's horizontal
+ * distance. Registered as a length so it interpolates — the release glide
+ * transitions this property alone, and every offset below follows it.
+ */
+@property --dx {
+	syntax: "<length>";
+	inherits: true;
+	initial-value: 0px;
+}
+
 /* Registered as a length, so that scripts read its computed value in pixels. */
 @property --column-min {
 	syntax: "<length>";
@@ -27,9 +38,6 @@
 	/* Durations. Motion is opt-in: these stay 0s unless the reader allows motion,
 	   and the Motion section below restores them. */
 	--fast: 0s;
-	/* The short glide of content that follows the finger. It keeps the handover
-	   between a row swipe and a view swipe a movement instead of a jump. */
-	--swipe-follow: 0s;
 	--sheet-move: 0s;
 	--bar-move: 0s;
 	--warning: light-dark(#c2410c, #fb923c);
@@ -320,10 +328,56 @@ button {
 /*
  * The grid fits as many columns as the width allows. A phone gets one column,
  * a wide screen several. The script displays that many sources and hides the rest.
+ *
+ * The deck also carries the whole swipe motion. The script writes only --dx,
+ * the finger's distance, and discrete data-swipe-mode attributes; every moving
+ * part derives its offset from --dx with calc alone. Nothing here transitions
+ * while the finger is down, so no layer can lag behind another and smear into
+ * a double image — the handover from row to view is one continuous function,
+ * not two animations racing. The script sets --swipe-at (where the view takes
+ * over) and --swipe-max (the travel limit) from the gesture constants.
  */
 .deck {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--column-min)), 1fr));
+	--row-offset: 0px;
+	--view-offset: 0px;
+}
+
+/* A plain row swipe: the row content follows the finger, capped at the limit. */
+.deck[data-swipe-mode="row"] {
+	--row-offset: clamp(calc(-1 * var(--swipe-max)), var(--dx), var(--swipe-max));
+}
+
+/*
+ * A swipe whose far action switches the source. Up to --swipe-at the row
+ * follows the finger. Past it the view takes over and follows the finger's
+ * further travel, while the row slides back to its place in the column over
+ * the next half of --swipe-at, so it rejoins the view and everything travels
+ * together instead of the row hanging behind. Both offsets are pure functions
+ * of --dx computed in the same frame, so the handover is continuous and
+ * seamless in either direction — nothing transitions, nothing lags, nothing
+ * smears into a double image.
+ *
+ * The row term is min(0, max(dx, -2·dx − 3·at)): it equals dx up to the
+ * threshold, then climbs back to 0 by dx = −1.5·at and stays there.
+ */
+.deck[data-swipe-mode="source-left"] {
+	--view-offset: max(calc(-1 * var(--swipe-max)), min(0px, calc(var(--dx) + var(--swipe-at))));
+	--row-offset: min(0px, max(var(--dx), calc(-2 * var(--dx) - 3 * var(--swipe-at))));
+}
+
+.deck[data-swipe-mode="source-right"] {
+	--view-offset: min(var(--swipe-max), max(0px, calc(var(--dx) - var(--swipe-at))));
+	--row-offset: max(0px, min(var(--dx), calc(-2 * var(--dx) + 3 * var(--swipe-at))));
+}
+
+/*
+ * The release: the one movement that may animate. It transitions --dx itself
+ * back to zero; every derived offset glides home with it, together.
+ */
+.deck[data-settling] {
+	transition: --dx var(--fast) ease;
 }
 
 .column {
@@ -424,27 +478,22 @@ button {
 	display: none;
 }
 
-/* The content of a row follows the finger by --swipe. The row itself stays, so the label behind it shows. */
-.item > :is(.rank, .item-body) {
-	translate: var(--swipe, 0px) 0;
-	transition: translate var(--fast) ease;
-}
-
 /*
- * While this row follows the finger, its content must sit exactly under it.
- * A transition would chase every new value instead of landing on it, so the
- * content trails the hand and smears into a double image. Only when the view
- * takes over does this row glide back, at the short release speed.
+ * The content of the swiped row follows --row-offset, derived from --dx on the
+ * deck. The row itself stays, so the label behind it shows. No transition:
+ * during the drag the value is already under the finger, and on release the
+ * deck animates --dx, which this offset follows.
  */
-.has-swipe .item.is-swiping > :is(.rank, .item-body) {
-	transition-duration: 0s;
+.item[data-swiping] > :is(.rank, .item-body) {
+	translate: var(--row-offset) 0;
 }
 
 /*
- * Names the action a swipe would carry out if the finger lifted now. It is
- * fixed and placed by translate alone (--hint-x, --hint-y), so a change of
- * side, of row, or between row and view glides instead of jumping. The script
- * centers it on the row for a row swipe and on the screen for a view swipe.
+ * Names the action a swipe would carry out if the finger lifted now. Two
+ * labels exist: one anchored to the row, one centered on the screen for a
+ * source swipe. The script places each once when its anchor changes and then
+ * only crossfades them — opacity may transition, position never does, so a
+ * label can never trail the finger and smear.
  */
 .swipe-hint {
 	position: fixed;
@@ -457,13 +506,13 @@ button {
 	font-size: 0.875rem;
 	font-weight: 600;
 	pointer-events: none;
+	opacity: 0;
 	translate: var(--hint-x, 0px) var(--hint-y, 0px);
-	transition: translate var(--fast) ease;
+	transition: opacity var(--fast) ease;
 }
 
-/* While a swipe is on, the label sits where the finger is now; gliding toward each new place would smear it too. */
-.has-swipe .is-swiping > .swipe-hint {
-	transition-duration: 0s;
+.swipe-hint.is-visible {
+	opacity: 1;
 }
 
 /* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
@@ -594,29 +643,13 @@ button {
 }
 
 /*
- * A swipe that switches the source moves the whole view by --col-swipe on the
- * deck, so every displayed column travels together. The property is separate
- * from --swipe, so the offset does not inherit into the rows and move their
- * content twice.
+ * A swipe that switches the source moves the whole view: every displayed
+ * column travels together by --view-offset, derived from --dx on the deck.
+ * Like the row offset it never transitions on its own — the deck animates
+ * --dx once on release and this follows.
  */
 .deck > .column > :is(.col-head, .col-body, .col-foot) {
-	translate: var(--col-swipe, 0px) 0;
-	transition: translate var(--fast) ease;
-}
-
-/*
- * The view follows the finger only while no row is swiping. While it is
- * followed, its columns sit exactly under the finger — a transition there
- * would trail the hand and smear into a double image. When a row takes over,
- * :has keeps the view gliding back at the release speed instead of jumping to
- * zero.
- */
-.has-swipe .deck.is-swiping > .column > :is(.col-head, .col-body, .col-foot) {
-	transition-duration: 0s;
-}
-
-.deck.is-swiping:not(:has(.item.is-swiping)) > .column > :is(.col-head, .col-body, .col-foot) {
-	transition-duration: var(--swipe-follow);
+	translate: var(--view-offset) 0;
 }
 
 .empty {
@@ -1153,8 +1186,6 @@ button {
 @media (prefers-reduced-motion: no-preference) {
 	:root {
 		--fast: 0.15s;
-		/* Snappy, but long enough to see the handover between row and view. */
-		--swipe-follow: 0.08s;
 		--sheet-move: 0.22s;
 		/* The tab bar slides slowly enough to be seen leaving and returning. */
 		--bar-move: 0.4s;

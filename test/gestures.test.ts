@@ -17,10 +17,8 @@ import {
 	type SwipeSettings,
 	startsSwipe,
 	swipeAction,
-	swipeMoves,
-	swipeOffset,
-	swipePending,
 	swipeSlot,
+	swipeTrack,
 } from '../src/ui/gestures'
 
 describe('swipe', () => {
@@ -46,7 +44,7 @@ describe('swipe', () => {
 	it('does nothing when no swipe has an action', () => {
 		expect(swipeAction(-200, {})).toBeUndefined()
 		expect(swipeAction(200, {})).toBeUndefined()
-		expect(swipeMoves(-200, {})).toBe(false)
+		expect(swipeTrack(-200, {})).toBeUndefined()
 	})
 
 	it('treats a long movement as the short swipe if the long one has no action', () => {
@@ -60,8 +58,8 @@ describe('swipe', () => {
 
 	it('moves the row only in a direction that has an action', () => {
 		const leftOnly: SwipeSettings = { leftLong: 'comments' }
-		expect(swipeMoves(-30, leftOnly)).toBe(true)
-		expect(swipeMoves(30, leftOnly)).toBe(false)
+		expect(swipeTrack(-30, leftOnly)).toEqual({ kind: 'row' })
+		expect(swipeTrack(30, leftOnly)).toBeUndefined()
 		expect(swipeAction(200, leftOnly)).toBeUndefined()
 	})
 
@@ -73,10 +71,7 @@ describe('swipe', () => {
 		expect(startsSwipe(5, 60)).toBe(false)
 	})
 
-	it('moves the row with the finger up to a limit beyond the long distance', () => {
-		expect(swipeOffset(-40)).toBe(-40)
-		expect(swipeOffset(-500)).toBe(-SWIPE_MAX_PX)
-		expect(swipeOffset(500)).toBe(SWIPE_MAX_PX)
+	it('keeps the travel limit beyond the long distance', () => {
 		expect(SWIPE_MAX_PX).toBeGreaterThan(SWIPE_LONG_PX)
 	})
 
@@ -84,7 +79,7 @@ describe('swipe', () => {
 		const navigate: SwipeSettings = { left: 'next', right: 'previous' }
 		expect(swipeAction(-SWIPE_SHORT_PX, navigate)).toBe('next')
 		expect(swipeAction(SWIPE_SHORT_PX, navigate)).toBe('previous')
-		expect(swipeMoves(-30, navigate)).toBe(true)
+		expect(swipeTrack(-30, navigate)).toEqual({ kind: 'source', at: SWIPE_SHORT_PX })
 	})
 
 	it('marks only next and previous as source actions', () => {
@@ -97,13 +92,22 @@ describe('swipe', () => {
 		expect(movesSource(undefined)).toBe(false)
 	})
 
-	it('names the first action of a direction before a threshold is reached', () => {
-		expect(swipePending(-30, { left: 'next' })).toBe('next')
-		expect(swipePending(30, { right: 'read', rightLong: 'previous' })).toBe('read')
-		// Without a short action, the long one decides what moves from the start.
-		expect(swipePending(-30, { leftLong: 'next' })).toBe('next')
-		expect(swipePending(-30, {})).toBeUndefined()
-		expect(swipePending(0, { left: 'next', right: 'read' })).toBeUndefined()
+	it('decides once per direction what the gesture moves', () => {
+		// The far action decides: a source action hands the gesture to the view.
+		expect(swipeTrack(-30, { left: 'read', leftLong: 'next' })).toEqual({
+			kind: 'source',
+			at: SWIPE_LONG_PX,
+		})
+		expect(swipeTrack(30, { right: 'unread', rightLong: 'previous' })).toEqual({
+			kind: 'source',
+			at: SWIPE_LONG_PX,
+		})
+		// Without a short action, the long one decides from the start.
+		expect(swipeTrack(-30, { leftLong: 'next' })).toEqual({ kind: 'source', at: SWIPE_LONG_PX })
+		// A row action beyond a short source action keeps the row following.
+		expect(swipeTrack(30, { right: 'previous', rightLong: 'read' })).toEqual({ kind: 'row' })
+		expect(swipeTrack(-30, { left: 'read', leftLong: 'hide' })).toEqual({ kind: 'row' })
+		expect(swipeTrack(0, { left: 'next', right: 'read' })).toBeUndefined()
 	})
 })
 

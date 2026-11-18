@@ -1,13 +1,12 @@
 import { el } from './dom'
 import {
 	movesSource,
+	SWIPE_MAX_PX,
 	type SwipeAction,
 	type SwipeSettings,
 	startsSwipe,
 	swipeAction,
-	swipeMoves,
-	swipeOffset,
-	swipePending,
+	swipeTrack,
 } from './gestures'
 
 interface SwipeOptions {
@@ -23,35 +22,37 @@ interface SwipeOptions {
 
 /** A swipe that ends on a link must not open it. Clicks are ignored for this long afterwards. */
 const CLICK_SUPPRESS_MS = 400
+/** Longer than the release glide (--fast), so the cleanup never cuts it short. */
+const SETTLE_MS = 200
 
 /**
  * Horizontal swipes on entries. The rows have `touch-action: pan-y`, so the
  * browser keeps handling vertical scrolling itself and hands horizontal
  * movement to these pointer events. No listener here blocks scrolling.
  *
- * The content of the row follows the finger. Behind it a label names the
- * action the swipe would carry out if the finger lifted now. The label changes
- * when the finger passes from the short to the long distance.
+ * The script does not move anything. It writes one value, --dx, the finger's
+ * distance, and the styles derive every offset from it with calc alone: the
+ * row content follows it directly, and a swipe whose far action switches the
+ * source hands over to the whole view at that action's distance — the view
+ * follows the further travel while the row slides back, all in the same frame.
+ * Because nothing transitions while the finger is down, no layer can lag
+ * behind another and smear into a double image, and the handover works the
+ * same in both directions. On release the deck transitions --dx itself back
+ * to zero, the one movement that may animate, and every part glides home
+ * together.
  *
- * A swipe that switches the source moves the whole view instead — every
- * displayed column travels together — with the label behind the view. The
- * target follows the current action, so a gesture can pass from a row action
- * to a source action and back. The styles glide between the two targets, and
- * the label glides to its new place, instead of jumping.
- *
- * While a target follows the finger, nothing may animate toward it: a CSS
- * transition chases each new value instead of landing on it, so the content
- * trails the finger and smears into a double image while the hand moves.
- * During the drag the followed element therefore carries `is-swiping`, which
- * keeps its transitions at 0s; only the element that is *not* followed keeps
- * its short glide, so it settles as the other takes over. When the finger
- * lifts, the class goes away before the offset resets, and the return home is
- * the one movement that may animate.
+ * Two labels name the action the swipe would carry out: one anchored to the
+ * row, one centered on the screen for a source swipe. Each is placed once
+ * when its anchor appears; only their opacity crossfades, so a label never
+ * chases a position either.
  */
 export function enableSwipe(options: SwipeOptions): void {
 	const { root } = options
-	const hint = el('span', 'swipe-hint')
-	hint.setAttribute('aria-hidden', 'true')
+	root.style.setProperty('--swipe-max', `${SWIPE_MAX_PX}px`)
+	const rowHint = el('span', 'swipe-hint')
+	const viewHint = el('span', 'swipe-hint')
+	for (const hint of [rowHint, viewHint]) hint.setAttribute('aria-hidden', 'true')
+
 	let row: HTMLElement | null = null
 	let column: HTMLElement | null = null
 	let pointer = -1
@@ -60,88 +61,119 @@ export function enableSwipe(options: SwipeOptions): void {
 	let dx = 0
 	let swiping = false
 	let suppressClicksUntil = 0
+	let lastMode: string | undefined
+	let lastAction: SwipeAction | undefined
+	let settleTimer = 0
 
 	const enabled = (): boolean => Object.values(options.settings()).some(Boolean)
 
-	/** The action for the current finger position, if it applies to this row. */
-	const current = (): SwipeAction | undefined => {
-		const action = swipeAction(dx, options.settings())
-		return row && action && options.applies(row, action) ? action : undefined
+	/** The settings without the actions that make no sense for this row. */
+	const applicable = (): SwipeSettings => {
+		const settings = options.settings()
+		if (!row) return {}
+		const filtered: SwipeSettings = {}
+		for (const [slot, action] of Object.entries(settings)) {
+			if (action && options.applies(row, action)) filtered[slot as keyof SwipeSettings] = action
+		}
+		return filtered
 	}
 
-	const clearRow = (): void => {
-		if (!row) return
-		row.classList.remove('is-swiping')
-		row.style.removeProperty('--swipe')
-		delete row.dataset.swipe
-	}
-
-	const clearView = (): void => {
-		root.classList.remove('is-swiping')
-		root.style.removeProperty('--col-swipe')
-		delete root.dataset.swipe
-	}
-
-	/**
-	 * The label is fixed and placed by translate alone, so every change of
-	 * place — the side, the row, or row to view — is a movement the styles can
-	 * transition. It stays in the root for the whole gesture; moving it between
-	 * parents would restart it instantly.
-	 */
-	const placeHint = (onColumn: boolean): void => {
-		if (!row || !column) return
-		const anchor = onColumn ? column : row
+	/** Places a hint at the near or far edge of its anchor, by the swipe direction. */
+	const place = (
+		hint: HTMLElement,
+		anchor: HTMLElement,
+		padded: boolean,
+		centered: boolean
+	): void => {
 		const rect = anchor.getBoundingClientRect()
-		// The column's content sits inside its gutter; the row already spans the content.
-		const pad = onColumn ? getComputedStyle(column) : undefined
+		const pad = padded ? getComputedStyle(anchor) : undefined
 		const start = rect.left + (pad ? Number.parseFloat(pad.paddingLeft) : 0)
 		const end = rect.right - (pad ? Number.parseFloat(pad.paddingRight) : 0)
 		const x = dx < 0 ? end - hint.offsetWidth : start
 		// A view swipe centers the label on the screen, a row swipe on the row.
-		const y = onColumn ? 0 : rect.top + rect.height / 2 - document.documentElement.clientHeight / 2
+		const y = centered ? 0 : rect.top + rect.height / 2 - document.documentElement.clientHeight / 2
 		hint.style.setProperty('--hint-x', `${x}px`)
 		hint.style.setProperty('--hint-y', `${y}px`)
 	}
 
-	const reset = (): void => {
-		clearRow()
-		clearView()
-		hint.remove()
-		hint.style.removeProperty('--hint-x')
-		hint.style.removeProperty('--hint-y')
-		row = null
-		column = null
-		pointer = -1
-		swiping = false
+	/** Shows the label of the current action on its hint and hides the other. */
+	const showHint = (action: SwipeAction | undefined): void => {
+		if (!row || !column) return
+		rowHint.classList.remove('is-visible')
+		viewHint.classList.remove('is-visible')
+		if (!action) return
+		const onColumn = movesSource(action)
+		const shown = onColumn ? viewHint : rowHint
+		shown.textContent = options.label(row, action)
+		if (onColumn) place(shown, column, true, true)
+		else place(shown, row, false, false)
+		shown.classList.add('is-visible')
 	}
 
 	const draw = (): void => {
 		if (!row || !column) return
-		const settings = options.settings()
-		const moves = swipeMoves(dx, settings)
-		const action = current()
-		// Before a threshold is reached, the first action of the direction decides what moves.
-		const onColumn = movesSource(action ?? swipePending(dx, settings))
-		const offset = `${moves ? swipeOffset(dx) : 0}px`
-		const target = onColumn ? root : row
-		// Only the followed element carries is-swiping, which pins it to the finger.
-		if (onColumn) clearRow()
-		else clearView()
-		target.classList.add('is-swiping')
-		target.style.setProperty(onColumn ? '--col-swipe' : '--swipe', offset)
-		if (hint.parentElement !== root) root.append(hint)
-		hint.textContent = action ? options.label(row, action) : ''
-		placeHint(onColumn)
-		if (action) target.dataset.swipe = action
-		else delete target.dataset.swipe
+		const settings = applicable()
+		const track = swipeTrack(dx, settings)
+		const mode = track && (track.kind === 'row' ? 'row' : dx < 0 ? 'source-left' : 'source-right')
+		if (mode !== lastMode) {
+			if (mode) root.dataset.swipeMode = mode
+			else delete root.dataset.swipeMode
+			if (track?.kind === 'source') root.style.setProperty('--swipe-at', `${track.at}px`)
+			lastMode = mode
+		}
+		root.style.setProperty('--dx', `${dx}px`)
+		const action = swipeAction(dx, settings)
+		if (action !== lastAction) {
+			showHint(action)
+			lastAction = action
+		}
+	}
+
+	/** Ends the gesture state and takes the hints and derived offsets away. */
+	const cleanup = (): void => {
+		clearTimeout(settleTimer)
+		delete root.dataset.settling
+		delete root.dataset.swipeMode
+		root.style.removeProperty('--dx')
+		root.style.removeProperty('--swipe-at')
+		row?.removeAttribute('data-swiping')
+		rowHint.remove()
+		viewHint.remove()
+		rowHint.classList.remove('is-visible')
+		viewHint.classList.remove('is-visible')
+		row = null
+		column = null
+		pointer = -1
+		swiping = false
+		lastMode = undefined
+		lastAction = undefined
+	}
+
+	/**
+	 * Lets go. The deck animates --dx back to zero and every derived offset
+	 * glides home with it; the state stays until that glide is over, so a
+	 * follow-up gesture can interrupt it cleanly.
+	 */
+	const release = (commit: boolean): void => {
+		if (!row) return
+		const settings = applicable()
+		const action = commit && swiping ? swipeAction(dx, settings) : undefined
+		const target = row
+		if (swiping) suppressClicksUntil = performance.now() + CLICK_SUPPRESS_MS
+		rowHint.classList.remove('is-visible')
+		viewHint.classList.remove('is-visible')
+		root.dataset.settling = ''
+		root.style.setProperty('--dx', '0px')
+		pointer = -1
+		swiping = false
+		settleTimer = window.setTimeout(cleanup, SETTLE_MS)
+		if (action) options.onAction(target, action)
 	}
 
 	root.addEventListener('pointerdown', (event) => {
 		if (event.pointerType === 'mouse' || !event.isPrimary || !enabled()) return
 		// The previous gesture may still be gliding home; start from a clean state.
-		clearRow()
-		clearView()
-		hint.remove()
+		cleanup()
 		row = (event.target as Element).closest<HTMLElement>('.item[data-url]')
 		if (!row) return
 		column = row.closest<HTMLElement>('.column')
@@ -157,7 +189,8 @@ export function enableSwipe(options: SwipeOptions): void {
 		if (!swiping) {
 			if (!startsSwipe(dx, event.clientY - startY)) return
 			swiping = true
-			root.classList.add('is-swiping')
+			row.dataset.swiping = ''
+			root.append(rowHint, viewHint)
 			// Keeps the movement with this row when the finger leaves it.
 			row.setPointerCapture(pointer)
 		}
@@ -166,15 +199,11 @@ export function enableSwipe(options: SwipeOptions): void {
 
 	root.addEventListener('pointerup', (event) => {
 		if (!row || event.pointerId !== pointer) return
-		const action = swiping ? current() : undefined
-		const target = row
-		if (swiping) suppressClicksUntil = performance.now() + CLICK_SUPPRESS_MS
-		reset()
-		if (action) options.onAction(target, action)
+		release(true)
 	})
 
 	// The browser cancels the pointer when it takes over for vertical scrolling.
-	root.addEventListener('pointercancel', reset)
+	root.addEventListener('pointercancel', () => release(false))
 
 	root.addEventListener(
 		'click',

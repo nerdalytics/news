@@ -37,18 +37,11 @@ export const SWIPE_DOMINANCE = 1.5
 export const SWIPE_SHORT_PX = 64
 /** Lifting the finger after this distance carries out the long swipe. */
 export const SWIPE_LONG_PX = 160
-/** The row follows the finger up to this distance. */
+/** The row and the view follow the finger up to this distance. */
 export const SWIPE_MAX_PX = 208
 
 export function startsSwipe(dx: number, dy: number): boolean {
 	return Math.abs(dx) > SLOP_PX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE
-}
-
-/** True if either swipe in the direction of `dx` has an action. Only then does the row move. */
-export function swipeMoves(dx: number, settings: SwipeSettings): boolean {
-	if (dx < 0) return Boolean(settings.left || settings.leftLong)
-	if (dx > 0) return Boolean(settings.right || settings.rightLong)
-	return false
 }
 
 /**
@@ -71,20 +64,25 @@ export function swipeAction(dx: number, settings: SwipeSettings): SwipeAction | 
 }
 
 /**
- * The action a swipe in this direction carries out first, regardless of the
- * distance. It tells which element the gesture moves before a threshold is
- * reached: the column for a source action, the row otherwise.
+ * What a swipe in the direction of `dx` moves, decided once per direction so
+ * the motion never changes target mid-gesture. The far action decides: if it
+ * switches the source, the view takes over at that action's distance (`at`);
+ * otherwise the row follows the finger. A direction without any action moves
+ * nothing.
  */
-export function swipePending(dx: number, settings: SwipeSettings): SwipeAction | undefined {
+export type SwipeTrack = { kind: 'row' } | { kind: 'source'; at: number } | undefined
+
+export function swipeTrack(dx: number, settings: SwipeSettings): SwipeTrack {
 	if (dx === 0) return undefined
 	const [short, long]: [SwipeSlot, SwipeSlot] =
 		dx < 0 ? ['left', 'leftLong'] : ['right', 'rightLong']
-	return settings[short] ?? settings[long]
-}
-
-/** How far the row moves for a finger movement of `dx`. */
-export function swipeOffset(dx: number): number {
-	return Math.max(-SWIPE_MAX_PX, Math.min(SWIPE_MAX_PX, dx))
+	if (settings[long] && movesSource(settings[long])) return { kind: 'source', at: SWIPE_LONG_PX }
+	// A lone short source action hands over at the short distance. With a row
+	// action beyond it, the row keeps following; the short action still commits.
+	if (settings[short] && movesSource(settings[short]) && !settings[long])
+		return { kind: 'source', at: SWIPE_SHORT_PX }
+	if (settings[short] || settings[long]) return { kind: 'row' }
+	return undefined
 }
 
 /** The indicator moves this fraction of the finger's distance. */
