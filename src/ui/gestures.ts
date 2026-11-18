@@ -8,6 +8,7 @@ export const SWIPE_ACTIONS = [
 	'read',
 	'unread',
 	'block',
+	'favorite',
 	'comments',
 	'hide',
 	'browser',

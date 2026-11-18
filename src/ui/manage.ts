@@ -77,6 +77,7 @@ const ACTION_LABELS: Record<SwipeAction, string> = {
 	block: 'Block the site',
 	browser: 'Open in the browser',
 	comments: 'Open the comments',
+	favorite: 'Favorite the site',
 	hide: 'Hide the entry',
 	next: 'Next source',
 	previous: 'Previous source',
