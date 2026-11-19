@@ -208,18 +208,19 @@ function build(): HTMLDialogElement {
 		onChange: (next) => updateSettings({ sources: withHiddenSources(next) }),
 		scroller: body,
 	})
-	body.append(
-		...sources.nodes,
+	const prefs = el('div', 'prefs')
+	prefs.append(
 		renderThemePicker(),
 		renderNewTabSwitch(),
 		renderSwipeSettings(),
+		renderReset(),
 		el(
 			'p',
 			'note',
 			'TheNews saves these settings in this browser, in cookies and local storage. It has no accounts and no server of its own.'
-		),
-		renderReset()
+		)
 	)
+	body.append(...sources.nodes, prefs)
 
 	sheet.append(head, body)
 	document.body.append(sheet)

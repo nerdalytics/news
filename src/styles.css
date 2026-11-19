@@ -1038,6 +1038,36 @@ button {
 	font-size: 0.8125rem;
 }
 
+/*
+ * Wide screens: the settings sheet stops being a narrow bottom strip and
+ * becomes a centred card like the first-run screen, so the source list spreads
+ * into several columns and the preferences sit side by side instead of one
+ * long scroll. 50rem is two --source-min columns (24rem each) plus the gutter.
+ * The small favorite/block action sheet (.action) keeps its compact shape.
+ */
+@media (min-width: 50rem) {
+	.sheet:not(.action) {
+		width: min(100%, var(--onboarding-width));
+		max-height: min(100dvh, var(--onboarding-height));
+		margin: auto;
+		border-radius: var(--sheet-radius);
+		box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
+	}
+
+	/* The four preference sections pair into two columns; a ragged third
+	   column would leave the tall Swipe section beside empty cells. */
+	.prefs {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0 var(--gutter);
+		align-items: start;
+	}
+
+	.prefs > .note {
+		grid-column: 1 / -1;
+	}
+}
+
 /* Block and unblock option for a linked site */
 
 .action-body {
