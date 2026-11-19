@@ -1,13 +1,11 @@
 # TheNews
 
-TheNews puts the top 20 entries of Hacker News, GitHub and sixteen other
-sources on one page. No account, no sign-up — open it, pick your sources,
-read.
+TheNews puts the top 20 entries of Hacker News, GitHub and other sources on
+one page. No account, no sign-up — open it, pick your sources, read.
 
 **Open TheNews: <https://nerdalytics.github.io/news/>**
 
-It works in any modern browser, on a phone or a desktop. On a phone you can
-add it to your home screen and it runs like an app.
+On a phone you can add it to your home screen and it runs like an app.
 
 ## Getting started
 
@@ -41,19 +39,12 @@ any time in the settings.
 
 Good to know:
 
-- Most sources are read live from your browser. Four of them — Lobsters,
-  BetaList, DevHunt and Smol Launch — are fetched on a schedule, every one to
-  three hours, so their lists can lag a little behind the source's own site.
-  If one of them stops updating for more than three days it disappears from
-  your list until it recovers. Your choice is remembered.
-- Product Hunt needs an API token that is not set up yet, so it does not
-  appear in the app.
-- DevHunt's list starts at rank 41 because its public API does not offer the
-  top 40.
+- The lists of Lobsters, BetaList, DevHunt and Smol Launch update only every
+  few hours, so they can lag a little behind the source's own site. If one
+  of them stops updating for three days it disappears from your list until
+  it recovers. Your choice is remembered.
 - Hacker News job posts are not shown.
-- GitHub and Stack Overflow limit how often one IP address may ask. On a
-  shared connection, a mobile network for example, you can hit that limit.
-  The source then shows a message with a **Try again** button.
+- If a source cannot load, it shows a message and a **Try again** button.
 
 ## Reading
 
@@ -65,10 +56,9 @@ Good to know:
 - On a wide screen several sources sit side by side; on a phone you see one
   at a time. The tab bar at the bottom jumps between sources and hides
   itself while you scroll down.
-- Feeds are cached in your browser, so a page you have visited before shows
-  its entries immediately and refreshes in the background.
-- When a new version of TheNews ships, the page updates itself the next time
-  you come back to it.
+- A source you have visited before shows its entries immediately and
+  refreshes in the background.
+- The page updates itself automatically when a new version is available.
 
 ## Swipe gestures
 
@@ -105,7 +95,7 @@ favorite `news.example.com`.
 
 ## Settings
 
-The settings button in the tab bar opens a sheet where you can:
+The settings button in the tab bar lets you:
 
 - Switch sources on and off and drag them into any order.
 - Choose the theme: follow the system, or stay fixed on light or dark.
@@ -117,20 +107,19 @@ The settings button in the tab bar opens a sheet where you can:
 
 ## Your data
 
-TheNews has no accounts and no server of its own. Everything it remembers —
-your sources and their order, the theme, the swipe actions, favorite and
-blocked sites, opened and hidden entries, cached feeds — is stored in your
-browser, in cookies and local storage.
+TheNews keeps everything in your browser: your sources and their order, the
+theme, the swipe actions, favorite and blocked sites, and the entries you
+have opened or hidden. There is no account, and your choices are not sent
+anywhere.
 
-Safari deletes data stored by a website after seven days without a visit. If
-that happens, TheNews shows the first-run screen again and you pick your
-sources once more. A copy added to the home screen is exempt from this rule.
+Safari forgets a site's stored choices after about a week without a visit,
+so TheNews may ask you to pick your sources again. Adding it to the home
+screen avoids this.
 
 ## Reporting a problem
 
-Open an issue at <https://github.com/nerdalytics/news/issues>. If something
-fails on a phone, append `?debug` to the address: TheNews then shows errors
-and the duration of every feed request at the top of the page.
+Something not working? Report it at
+<https://github.com/nerdalytics/news/issues>.
 
 ## Development
 
