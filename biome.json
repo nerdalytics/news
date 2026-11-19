@@ -8,7 +8,15 @@
 		}
 	},
 	"files": {
-		"includes": ["**/*.ts", "**/*.json", "**/*.css", "!dist", "!node_modules"]
+		"includes": [
+			"**/*.ts",
+			"**/*.json",
+			"**/*.css",
+			"!dist",
+			"!node_modules",
+			"!.agents",
+			"!skills-lock.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
