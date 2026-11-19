@@ -68,3 +68,53 @@ export function decodeXml(text) {
 		return ENTITIES[body] ?? match
 	})
 }
+
+/** Unwraps CDATA sections so their text decodes and strips like any other. */
+function unwrapCdata(text) {
+	return text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+}
+
+/** The decoded text of the first `<name>` element in a block, or an empty string. */
+function xmlTag(block, name) {
+	const match = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`).exec(block)
+	return match ? decodeXml(unwrapCdata(match[1]).trim()) : ''
+}
+
+/** The href of an Atom link, preferring the alternate over self and enclosure links. */
+function atomLink(block) {
+	const alternate =
+		/<link[^>]*rel="alternate"[^>]*href="([^"]+)"/.exec(block) ??
+		/<link[^>]*href="([^"]+)"[^>]*rel="alternate"/.exec(block)
+	const any = /<link[^>]*href="([^"]+)"/.exec(block)
+	return decodeXml((alternate ?? any)?.[1] ?? '')
+}
+
+/** Reduces an HTML excerpt to plain text. */
+function stripHtml(text) {
+	return text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Parses an RSS 2.0 or Atom feed into entries. Titles and excerpts arrive as
+ * HTML or CDATA, so they are decoded and stripped to plain text. Entries
+ * without a title or a link are dropped; `validate` still applies the limit.
+ */
+export function parseFeed(xml) {
+	const items = []
+	for (const block of xml.split(/<item[\s>]|<entry[\s>]/).slice(1)) {
+		const title = stripHtml(xmlTag(block, 'title'))
+		const url = xmlTag(block, 'link') || atomLink(block)
+		if (!title || !url) continue
+		const item = { id: xmlTag(block, 'guid') || xmlTag(block, 'id') || url, title, url }
+		const time = Date.parse(
+			xmlTag(block, 'pubDate') || xmlTag(block, 'published') || xmlTag(block, 'updated')
+		)
+		if (!Number.isNaN(time)) item.time = time
+		const description = stripHtml(
+			xmlTag(block, 'description') || xmlTag(block, 'summary') || xmlTag(block, 'content')
+		)
+		if (description) item.description = description
+		items.push(item)
+	}
+	return items
+}
