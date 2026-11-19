@@ -26,20 +26,23 @@ const CLICK_SUPPRESS_MS = 400
 const SETTLE_MS = 200
 
 /**
- * Horizontal swipes on entries. The rows have `touch-action: pan-y`, so the
- * browser keeps handling vertical scrolling itself and hands horizontal
- * movement to these pointer events. No listener here blocks scrolling.
+ * Horizontal swipes on entries, by touch, pen or mouse drag. The rows have
+ * `touch-action: pan-y`, so the browser keeps handling vertical scrolling
+ * itself and hands horizontal movement to these pointer events. No listener
+ * here blocks scrolling. A press that never passes the swipe threshold stays a
+ * normal click, so links still open.
  *
  * The script does not move anything. It writes one value, --dx, the finger's
- * distance, and the styles derive every offset from it with calc alone: the
- * row content follows it directly, and a swipe whose far action switches the
- * source hands over to the whole view at that action's distance — the view
- * follows the further travel while the row slides back, all in the same frame.
- * Because nothing transitions while the finger is down, no layer can lag
- * behind another and smear into a double image, and the handover works the
- * same in both directions. On release the deck transitions --dx itself back
- * to zero, the one movement that may animate, and every part glides home
- * together.
+ * distance, and the styles derive every offset from it with calc alone. The
+ * swiped row's on-screen place is always the finger's: a plain row swipe moves
+ * the row content directly, and a swipe whose far action switches the source
+ * hands over to the whole view at that action's distance — the view is --dx
+ * minus the row offset, so it starts from rest, catches up to the finger as the
+ * row slides back to its place, and then carries everything together. The row
+ * never reverses and never lags. Because nothing transitions while the finger
+ * is down, no layer can smear into a double image, and the handover works the
+ * same in both directions. On release the deck transitions --dx itself back to
+ * zero, the one movement that may animate, and every part glides home together.
  *
  * Two labels name the action the swipe would carry out: one anchored to the
  * row, one centered on the screen for a source swipe. Each is placed once
@@ -118,7 +121,11 @@ export function enableSwipe(options: SwipeOptions): void {
 		if (mode !== lastMode) {
 			if (mode) root.dataset.swipeMode = mode
 			else delete root.dataset.swipeMode
-			if (track?.kind === 'source') root.style.setProperty('--swipe-at', `${track.at}px`)
+			if (track?.kind === 'source') {
+				root.style.setProperty('--swipe-at', `${track.at}px`)
+				// The slope that slides the row home exactly at the travel limit.
+				root.style.setProperty('--swipe-rejoin', `${SWIPE_MAX_PX / (SWIPE_MAX_PX - track.at)}`)
+			}
 			lastMode = mode
 		}
 		root.style.setProperty('--dx', `${dx}px`)
@@ -136,6 +143,7 @@ export function enableSwipe(options: SwipeOptions): void {
 		delete root.dataset.swipeMode
 		root.style.removeProperty('--dx')
 		root.style.removeProperty('--swipe-at')
+		root.style.removeProperty('--swipe-rejoin')
 		row?.removeAttribute('data-swiping')
 		rowHint.remove()
 		viewHint.remove()
@@ -171,7 +179,9 @@ export function enableSwipe(options: SwipeOptions): void {
 	}
 
 	root.addEventListener('pointerdown', (event) => {
-		if (event.pointerType === 'mouse' || !event.isPrimary || !enabled()) return
+		// Touch, pen and the primary mouse button all swipe; a click without a
+		// drag never passes startsSwipe, so links still open normally.
+		if (!event.isPrimary || event.button !== 0 || !enabled()) return
 		// The previous gesture may still be gliding home; start from a clean state.
 		cleanup()
 		row = (event.target as Element).closest<HTMLElement>('.item[data-url]')
@@ -204,6 +214,12 @@ export function enableSwipe(options: SwipeOptions): void {
 
 	// The browser cancels the pointer when it takes over for vertical scrolling.
 	root.addEventListener('pointercancel', () => release(false))
+
+	// A mouse drag on a link would otherwise start the browser's own drag-and-drop
+	// ghost instead of a swipe. Rows with swipe actions are not draggable.
+	root.addEventListener('dragstart', (event) => {
+		if (enabled()) event.preventDefault()
+	})
 
 	root.addEventListener(
 		'click',

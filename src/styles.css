@@ -350,26 +350,36 @@ button {
 }
 
 /*
- * A swipe whose far action switches the source. Up to --swipe-at the row
- * follows the finger. Past it the view takes over and follows the finger's
- * further travel, while the row slides back to its place in the column over
- * the next half of --swipe-at, so it rejoins the view and everything travels
- * together instead of the row hanging behind. Both offsets are pure functions
- * of --dx computed in the same frame, so the handover is continuous and
- * seamless in either direction — nothing transitions, nothing lags, nothing
- * smears into a double image.
+ * A swipe whose far action switches the source. The swiped row's on-screen
+ * place is always the finger's: the view offset is the finger's distance minus
+ * the row offset, so view + row = --dx. The row therefore never reverses and
+ * never lags the finger, and the view — which carries every other row — starts
+ * from rest at the handover and catches up to the finger as the row slides
+ * back to its place in the column. Once the row is home, the whole view travels
+ * under the finger together.
  *
- * The row term is min(0, max(dx, -2·dx − 3·at)): it equals dx up to the
- * threshold, then climbs back to 0 by dx = −1.5·at and stays there.
+ * Up to --swipe-at the row alone follows the finger (view stays 0). Past it the
+ * row offset climbs from --dx back to 0, finishing exactly at the travel limit
+ * --swipe-max, so the view is never capped while the row is still sliding back
+ * (which would drag the row backward). The script sets --swipe-rejoin to
+ * max / (max − at), the slope that lands the row home at the limit. All of it is
+ * one function of --dx computed in the same frame: nothing transitions, nothing
+ * lags, nothing smears into a double image.
  */
 .deck[data-swipe-mode="source-left"] {
-	--view-offset: max(calc(-1 * var(--swipe-max)), min(0px, calc(var(--dx) + var(--swipe-at))));
-	--row-offset: min(0px, max(var(--dx), calc(-2 * var(--dx) - 3 * var(--swipe-at))));
+	--row-offset: min(
+		0px,
+		max(var(--dx), calc(var(--dx) - var(--swipe-rejoin) * (var(--dx) + var(--swipe-at))))
+	);
+	--view-offset: max(calc(-1 * var(--swipe-max)), calc(var(--dx) - var(--row-offset)));
 }
 
 .deck[data-swipe-mode="source-right"] {
-	--view-offset: min(var(--swipe-max), max(0px, calc(var(--dx) - var(--swipe-at))));
-	--row-offset: max(0px, min(var(--dx), calc(-2 * var(--dx) + 3 * var(--swipe-at))));
+	--row-offset: max(
+		0px,
+		min(var(--dx), calc(var(--dx) - var(--swipe-rejoin) * (var(--dx) - var(--swipe-at))))
+	);
+	--view-offset: min(var(--swipe-max), calc(var(--dx) - var(--row-offset)));
 }
 
 /*
@@ -515,9 +525,12 @@ button {
 	opacity: 1;
 }
 
-/* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script. */
+/* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script.
+   Rows with swipe actions are not text-selectable, so a mouse drag swipes instead of selecting. */
 .has-swipe .item {
 	touch-action: pan-y pinch-zoom;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 /* Entries that link to a blocked site stay in the list, dimmed. */

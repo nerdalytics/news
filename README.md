@@ -186,7 +186,9 @@ one the reader chose. A phone shows one source, a 1440 px window three.
   action to each of the four. The actions are mark as read, mark as unread,
   block or unblock the linked site, favorite or unfavorite the linked site,
   open the comments, hide the entry, open in the browser, and switch to the
-  next or previous source.
+  next or previous source. The same swipes work with a mouse drag on a desktop;
+  a press that never moves far enough stays a normal click, and swipeable rows
+  are not text-selectable so a drag swipes instead of selecting.
 - While the finger is down, a label behind the row names the action that
   lifting the finger would carry out. A long movement falls back to the short
   swipe if the long one has no action.
@@ -199,21 +201,24 @@ one the reader chose. A phone shows one source, a 1440 px window three.
 - The handover between a row swipe and a view swipe is one continuous movement.
   The script writes a single registered CSS custom property, `--dx`, the
   finger's distance; the styles derive every offset from it with `calc` alone.
-  Up to the source action's distance the row follows the finger; past it the
-  view follows the further travel while the row slides back into place. Nothing
-  transitions while the finger is down, so no layer can lag behind another and
-  smear into a double image, and the handover works the same in both directions.
-  On release the deck transitions `--dx` itself back to zero — the one movement
-  that may animate — and every part glides home together. The two labels (row
-  and view) only crossfade; their positions never animate. Without the reader's
-  motion preference, everything stays instant.
+  The swiped row's place on screen is always the finger's: up to the source
+  action's distance the row alone follows the finger, and past it the row keeps
+  following the finger while it slides back to its place in the column. The view
+  is the finger's distance minus the row's offset, so it starts from rest at the
+  handover and catches up to the finger, then carries everything together. The
+  row never reverses and never lags. Nothing transitions while the finger is
+  down, so no layer can smear into a double image, and the handover works the
+  same in both directions. On release the deck transitions `--dx` itself back to
+  zero — the one movement that may animate — and every part glides home
+  together. The two labels (row and view) only crossfade; their positions never
+  animate. Without the reader's motion preference, everything stays instant.
 - A hidden entry stays hidden until the reader chooses "Show them again" in
   the settings sheet. TheNews keeps the 500 most recently hidden entries.
 - "Open in the browser" opens a new tab. In a home screen web app on iOS it
   uses the `x-safari-https:` address to hand the link to Safari. Apple does
   not document that address, and it was not tested on a device.
-- A tap within 0.4 seconds after a swipe is ignored, so that the swipe does not
-  open the link.
+- A tap or click within 0.4 seconds after a swipe is ignored, so that the swipe
+  does not open the link.
 - The tab bar hides after the page has scrolled down by 8 px and shows again
   after 8 px upwards. It is always shown within 64 px of the top and within
   24 px of the end of the page.
