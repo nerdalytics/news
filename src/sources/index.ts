@@ -346,18 +346,6 @@ export const SOURCES: readonly SourceMeta[] = [
 		ttl: 60,
 	},
 	{
-		id: 'lapaninja',
-		name: 'Lapa Ninja',
-		tagline: 'Newly featured landing pages',
-		mark: 'LN',
-		badge: ['#6d28d9', '#ffffff'],
-		accent: ['#6d28d9', '#a78bfa'],
-		home: 'https://www.lapa.ninja/',
-		comments: false,
-		hosted: true,
-		ttl: 60,
-	},
-	{
 		id: 'landbook',
 		name: 'Land-book',
 		tagline: 'Newly featured websites',
