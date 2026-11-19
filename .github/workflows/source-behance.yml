@@ -1,0 +1,16 @@
+name: "Source: Behance"
+
+# Every three hours. The featured projects refresh through the day.
+on:
+  schedule:
+    - cron: "8 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: behance

@@ -1,0 +1,16 @@
+name: "Source: Netflix Tech Blog"
+
+# Every three hours. The blog posts a few times a month.
+on:
+  schedule:
+    - cron: "22 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: netflixtech

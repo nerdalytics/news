@@ -357,6 +357,30 @@ export const SOURCES: readonly SourceMeta[] = [
 		hosted: true,
 		ttl: 60,
 	},
+	{
+		id: 'behance',
+		name: 'Behance',
+		tagline: 'Featured design projects',
+		mark: 'Be',
+		badge: ['#1769ff', '#ffffff'],
+		accent: ['#1769ff', '#5b9bff'],
+		home: 'https://www.behance.net/',
+		comments: false,
+		hosted: true,
+		ttl: 60,
+	},
+	{
+		id: 'netflixtech',
+		name: 'Netflix Tech Blog',
+		tagline: 'Latest engineering posts',
+		mark: 'N',
+		badge: ['#e50914', '#ffffff'],
+		accent: ['#e50914', '#ff6b6b'],
+		home: 'https://netflixtechblog.com/',
+		comments: false,
+		hosted: true,
+		ttl: 60,
+	},
 ]
 
 const BY_ID = new Map(SOURCES.map((source) => [source.id, source]))
