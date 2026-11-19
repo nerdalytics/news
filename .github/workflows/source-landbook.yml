@@ -1,0 +1,16 @@
+name: "Source: Land-book"
+
+# Every three hours. A curated gallery adds a few entries a day.
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: landbook

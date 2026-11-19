@@ -1,0 +1,16 @@
+name: "Source: WIRED"
+
+# Hourly. A news feed publishes throughout the day.
+on:
+  schedule:
+    - cron: "35 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: wired

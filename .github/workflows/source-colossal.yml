@@ -1,0 +1,16 @@
+name: "Source: Colossal"
+
+# Every three hours. The blog posts a few times a week.
+on:
+  schedule:
+    - cron: "15 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: ./.github/workflows/hosted-source.yml
+    with:
+      source: colossal
