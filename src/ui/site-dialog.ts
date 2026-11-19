@@ -1,5 +1,5 @@
 import { isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
-import { el } from './dom'
+import { el, enableOutsideDismiss } from './dom'
 
 let dialog: HTMLDialogElement | undefined
 let site = ''
@@ -44,10 +44,8 @@ function build(): HTMLDialogElement {
 	sheet.setAttribute('aria-labelledby', 'site-title')
 	// In browsers that support `closedby`, a click outside or Esc closes the dialog.
 	sheet.setAttribute('closedby', 'any')
-	// In other browsers, close on a backdrop click. Its event target is the dialog element.
-	sheet.addEventListener('click', (event) => {
-		if (event.target === sheet) sheet.close()
-	})
+	// In browsers without `closedby`, close on an outside press-and-release.
+	enableOutsideDismiss(sheet)
 	document.body.append(sheet)
 	return sheet
 }

@@ -9,7 +9,7 @@ import {
 	withHiddenSources,
 } from '../settings'
 import { sourceById } from '../sources/index'
-import { el } from './dom'
+import { el, enableOutsideDismiss } from './dom'
 import { SWIPE_ACTIONS, type SwipeAction, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
 
@@ -190,10 +190,8 @@ function build(): HTMLDialogElement {
 	// In browsers that support `closedby`, a click outside, Esc or the Android
 	// back gesture closes the dialog.
 	sheet.setAttribute('closedby', 'any')
-	// In other browsers, close on a backdrop click. Its event target is the dialog element.
-	sheet.addEventListener('click', (event) => {
-		if (event.target === sheet) sheet.close()
-	})
+	// In browsers without `closedby`, close on an outside press-and-release.
+	enableOutsideDismiss(sheet)
 
 	const head = el('header', 'sheet-head')
 	const title = el('h2', undefined, 'Manage sources')

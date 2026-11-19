@@ -87,7 +87,21 @@ html {
 	scrollbar-gutter: stable;
 }
 
-/* A modal dialog does not stop the page behind it from scrolling on iOS. */
+/*
+ * Scroll containment for modal dialogs: overscroll-behavior stops a gesture in
+ * the dialog or on its backdrop from chaining to the page. Safari does not
+ * support it, so the html lock below is the fallback there; scrollbar-gutter
+ * above keeps the page from shifting when the lock hides the scrollbar.
+ */
+dialog:modal {
+	overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
 html:has(dialog[open]) {
 	overflow: hidden;
 }
@@ -1039,23 +1053,25 @@ button {
 }
 
 /*
- * Wide screens: the settings sheet stops being a narrow bottom strip and
- * becomes a centred card like the first-run screen, so the source list spreads
- * into several columns and the preferences sit side by side instead of one
- * long scroll. 50rem is two --source-min columns (24rem each) plus the gutter.
- * The small favorite/block action sheet (.action) keeps its compact shape.
+ * The settings sheet is a centred card like the first-run screen on every
+ * screen size, and a query container so its contents adapt to the sheet's own
+ * width rather than the viewport. The source list auto-fits columns; the
+ * preferences pair into two once the sheet is wide enough. 50rem is two
+ * --source-min columns (24rem each) plus the gutter. The compact
+ * favorite/block action sheet (.action) keeps the base bottom-strip shape.
  */
-@media (min-width: 50rem) {
-	.sheet:not(.action) {
-		width: min(100%, var(--onboarding-width));
-		max-height: min(100dvh, var(--onboarding-height));
-		margin: auto;
-		border-radius: var(--sheet-radius);
-		box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
-	}
+.sheet:not(.action) {
+	width: min(100%, var(--onboarding-width));
+	max-height: min(100dvh, var(--onboarding-height));
+	margin: auto;
+	border-radius: var(--sheet-radius);
+	box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
+	container-type: inline-size;
+}
 
-	/* The four preference sections pair into two columns; a ragged third
-	   column would leave the tall Swipe section beside empty cells. */
+/* The four preference sections pair into two columns; a ragged third column
+   would leave the tall Swipe section beside empty cells. */
+@container (min-width: 50rem) {
 	.prefs {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);

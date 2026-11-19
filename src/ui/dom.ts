@@ -30,6 +30,33 @@ export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+/**
+ * Light-dismiss fallback for browsers without `closedby` (Safari). It tests the
+ * pointer position rather than the event target, because the dialog is also the
+ * target for clicks on its own padding and the gaps between its children. Both
+ * the press and the release must land outside, so a text-selection drag that
+ * ends on the backdrop does not dismiss the dialog.
+ */
+export function enableOutsideDismiss(dialog: HTMLDialogElement): void {
+	if ('closedBy' in HTMLDialogElement.prototype) return
+	const outside = (event: PointerEvent): boolean => {
+		const rect = dialog.getBoundingClientRect()
+		return (
+			event.clientX < rect.left ||
+			event.clientX > rect.right ||
+			event.clientY < rect.top ||
+			event.clientY > rect.bottom
+		)
+	}
+	let pressedOutside = false
+	dialog.addEventListener('pointerdown', (event) => {
+		pressedOutside = outside(event)
+	})
+	dialog.addEventListener('pointerup', (event) => {
+		if (pressedOutside && outside(event)) dialog.close()
+	})
+}
+
 /** The task runs after this long even if the browser never becomes idle. */
 const IDLE_TIMEOUT_MS = 1500
 /** Safari has no `requestIdleCallback`. There the task runs after this delay. */
