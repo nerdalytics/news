@@ -1,7 +1,7 @@
 import type { SourceSetting } from '../settings'
 import { sourceById } from '../sources/index'
 import type { SourceMeta } from '../sources/types'
-import { el, icon } from './dom'
+import { el, icon, popBadge } from './dom'
 import { enableReorder } from './reorder'
 
 interface SourceListOptions {
@@ -64,7 +64,15 @@ export function createSourceList(options: SourceListOptions): SourceList {
 		live.textContent = `${name}, position ${position} of ${list.children.length}`
 	}
 
-	list.addEventListener('change', () => options.onChange(read()))
+	list.addEventListener('change', (event) => {
+		const row = (event.target as Element).closest<HTMLElement>('.src')
+		if (row) popBadge(row)
+		options.onChange(read())
+	})
+	list.addEventListener('animationend', (event) => {
+		const row = (event.target as Element).closest<HTMLElement>('.src')
+		row?.classList.remove('is-tapped')
+	})
 	enableReorder(list, {
 		onChange: () => options.onChange(read()),
 		onMove: announce,

@@ -4,7 +4,7 @@ import { enabledIds, getSettings, isFirstVisit, type Settings, subscribe } from 
 import { hostedSources, sourceById } from './sources/index'
 import { autoHideBar } from './ui/bar'
 import { Deck } from './ui/deck'
-import { whenIdle } from './ui/dom'
+import { crossfade, whenIdle } from './ui/dom'
 import { enablePullToRefresh } from './ui/pull'
 import { enableSwipe } from './ui/swipe'
 import { watchForUpdates } from './update'
@@ -28,15 +28,23 @@ function hideSplash(): void {
 	document.getElementById('splash')?.classList.add('is-done')
 }
 
+let appliedTheme: Settings['theme'] | undefined
+
 function applyTheme(theme: Settings['theme']): void {
-	const root = document.documentElement
-	if (theme === 'auto') delete root.dataset.theme
-	else root.dataset.theme = theme
-	// Set the browser's toolbar colour to match the chosen theme.
-	for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-		const system = meta.media.includes('dark') ? 'dark' : 'light'
-		meta.content = THEME_COLOR[theme === 'auto' ? system : theme]
+	const change = (): void => {
+		const root = document.documentElement
+		if (theme === 'auto') delete root.dataset.theme
+		else root.dataset.theme = theme
+		// Set the browser's toolbar colour to match the chosen theme.
+		for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+			const system = meta.media.includes('dark') ? 'dark' : 'light'
+			meta.content = THEME_COLOR[theme === 'auto' ? system : theme]
+		}
 	}
+	// Crossfade a real theme change, but not every settings apply nor the first paint.
+	if (appliedTheme !== undefined && appliedTheme !== theme) crossfade(change)
+	else change()
+	appliedTheme = theme
 }
 
 /** The dialog is a separate chunk. The browser fetches it when the reader first points at, focuses or clicks the button. */
