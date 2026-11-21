@@ -80,6 +80,8 @@ function applyState(row: HTMLElement): void {
 function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIElement {
 	const row = el('li', 'item')
 	row.dataset.url = item.url
+	// The entrance stagger derives its delay from this position.
+	row.style.setProperty('--i', String(index))
 	const site = siteOf(item, source)
 	if (site) row.dataset.site = site
 	applyState(row)
@@ -206,12 +208,15 @@ export class Column {
 	}
 
 	private render(feed: Feed): void {
+		// Only the first paint staggers in; a later refresh swaps without re-animating.
+		const entering = this.shown === undefined
 		this.shown = feed
 		this.el.dataset.state = 'ready'
 		if (feed.items.length === 0) {
 			this.body.replaceChildren(el('p', 'notice', 'This source returned no entries.'))
 		} else {
 			const list = el('ol', 'list')
+			if (entering) list.classList.add('is-new')
 			list.append(...feed.items.map((item, index) => renderItem(item, index, this.source)))
 			this.body.replaceChildren(list)
 		}

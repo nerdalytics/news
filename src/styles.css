@@ -247,7 +247,8 @@ button {
 	rotate: calc(var(--pull, 0px) * 4deg);
 	transition:
 		translate var(--fast) ease,
-		color var(--fast);
+		color var(--fast),
+		scale var(--fast);
 }
 
 /* The indicator follows the finger directly. */
@@ -257,6 +258,8 @@ button {
 
 .pull.is-ready {
 	color: var(--accent);
+	/* A pull that reached the commit point grows a touch, so the release feels armed. */
+	scale: 1.08;
 }
 
 .pull.is-refreshing {
@@ -462,6 +465,17 @@ button {
 	grid-template-columns: 40px minmax(0, 1fr);
 	column-gap: 8px;
 	padding: 14px 0;
+	transition:
+		background-color var(--fast),
+		opacity var(--fast),
+		translate var(--fast),
+		display var(--fast);
+	transition-behavior: allow-discrete;
+}
+
+/* The read and blocked marks dim the row's parts; let the dim glide, not snap. */
+.item > * {
+	transition: opacity var(--fast);
 }
 
 .rank {
@@ -479,6 +493,7 @@ button {
 	font-weight: 600;
 	line-height: 1.35;
 	overflow-wrap: anywhere;
+	transition: color var(--fast);
 }
 
 /* This layer makes the whole row open the item. The comments link sits above it. */
@@ -497,9 +512,13 @@ button {
 	opacity: var(--dim-read);
 }
 
-/* An entry the reader hid with a swipe. */
+/* An entry the reader hid with a swipe. It fades and lifts away before display
+   none takes it out of the list. Firefox cannot transition display, so there it
+   simply disappears, which is the behavior it had before. */
 .item[hidden] {
 	display: none;
+	opacity: 0;
+	translate: 0 -8px;
 }
 
 /*
@@ -635,6 +654,7 @@ button {
 
 .is-favorite .site::before {
 	content: "★ ";
+	display: inline-block;
 }
 
 .notice {
@@ -1237,6 +1257,31 @@ button {
 	}
 }
 
+@keyframes star-pop {
+	0% {
+		scale: 0;
+	}
+	70% {
+		scale: 1.25;
+	}
+	100% {
+		scale: 1;
+	}
+}
+
+@keyframes row-in {
+	from {
+		opacity: 0;
+		translate: 0 8px;
+	}
+}
+
+@keyframes check-pop {
+	from {
+		scale: 0;
+	}
+}
+
 /*
  * Motion is opt-in. Without this block every duration stays 0s and nothing
  * animates, so a reader who prefers reduced motion gets the safe path by
@@ -1260,5 +1305,23 @@ button {
 
 	.skeleton {
 		animation: pulse 1.2s ease-in-out infinite alternate;
+	}
+
+	/* Rows arrive one beat apart. The beat is a fifth of the row's own animation,
+	   and no row waits longer than that animation, so a long list never trails. */
+	.list.is-new .item {
+		--stagger-step: calc(var(--fast) / 5);
+		/* Backwards, not both: once a row has arrived it must release opacity and
+		   translate so the hide-exit transition below can still move them. */
+		animation: row-in var(--fast) ease backwards;
+		animation-delay: min(calc(var(--i) * var(--stagger-step)), var(--fast));
+	}
+
+	.is-favorite .site::before {
+		animation: star-pop var(--fast) ease;
+	}
+
+	.check:checked::after {
+		animation: check-pop var(--fast) ease;
 	}
 }
