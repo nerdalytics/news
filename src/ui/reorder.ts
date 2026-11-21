@@ -15,6 +15,33 @@ function rowOf(target: EventTarget | null): HTMLElement | null {
 	return handle?.closest<HTMLElement>('li') ?? null
 }
 
+/** Runs a reorder mutation and glides the pushed rows from their old slot to the
+   new one (FLIP). The dragged row is excluded; it follows the pointer itself. The
+   glide lasts one --micro beat, so reduced motion (0s) skips it entirely. */
+function glidePush(list: HTMLElement, dragged: HTMLElement, mutate: () => void): void {
+	const children = Array.from(list.children) as HTMLElement[]
+	for (const child of children) {
+		if (child !== dragged) for (const animation of child.getAnimations()) animation.cancel()
+	}
+	const before = new Map(children.map((child) => [child, child.getBoundingClientRect()]))
+	mutate()
+	const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000
+	if (!(ms > 0)) return
+	for (const child of children) {
+		if (child === dragged) continue
+		const old = before.get(child)
+		if (!old) continue
+		const now = child.getBoundingClientRect()
+		const dx = old.left - now.left
+		const dy = old.top - now.top
+		if (dx === 0 && dy === 0) continue
+		child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+			duration: ms,
+			easing: 'ease',
+		})
+	}
+}
+
 /**
  * Adds drag-to-reorder to a list whose rows contain a `.handle` button.
  *
@@ -76,7 +103,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 			const hitIndex = children.indexOf(hit)
 			const ref: Element | null = before && from > hitIndex ? hit : hit.nextElementSibling
 			if (ref === current) break
-			list.insertBefore(current, ref)
+			glidePush(list, current, () => list.insertBefore(current, ref))
 			moved = true
 			options.onMove(current)
 			// The slot moved by the difference of the two rects (the transform is the
@@ -150,8 +177,8 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 					: null
 		if (!sibling) return
 		event.preventDefault()
-		if (event.key === 'ArrowUp') sibling.before(target)
-		else sibling.after(target)
+		if (event.key === 'ArrowUp') glidePush(list, target, () => sibling.before(target))
+		else glidePush(list, target, () => sibling.after(target))
 		// Moving a node removes focus from it, so focus the handle again.
 		target.querySelector<HTMLElement>('.handle')?.focus()
 		options.onMove(target)

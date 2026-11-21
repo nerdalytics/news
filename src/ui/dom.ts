@@ -65,23 +65,6 @@ export function slideView(update: () => void, type: 'forward' | 'backward'): voi
 }
 
 /**
- * Crossfades a whole-page state change such as the theme. Same fallbacks as
- * slideView: instant under reduced motion or where view transitions are absent.
- */
-export function crossfade(update: () => void): void {
-	const doc = document as unknown as ViewTransitionDocument
-	if (prefersReducedMotion() || typeof doc.startViewTransition !== 'function') {
-		update()
-		return
-	}
-	try {
-		doc.startViewTransition({ update })
-	} catch {
-		update()
-	}
-}
-
-/**
  * Light-dismiss fallback for browsers without `closedby` (Safari). It tests the
  * pointer position rather than the event target, because the dialog is also the
  * target for clicks on its own padding and the gaps between its children. Both
