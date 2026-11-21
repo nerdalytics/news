@@ -36,7 +36,7 @@ time in the settings.
 | BetaList | Newest startups | none |
 | DevHunt | This week's launches, from rank 41 | none |
 | Smol Launch | This week's ranking | comments |
-| Product Hunt | Today's top products, not available yet | comments |
+| Product Hunt | Today's top products | comments |
 
 Good to know:
 
