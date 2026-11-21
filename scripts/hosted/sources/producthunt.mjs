@@ -24,12 +24,13 @@ export default async function fetchItems() {
 	})
 	if (errors?.length) throw new Error(`Product Hunt answered: ${errors[0].message}`)
 	return data.posts.edges.map(({ node }) => ({
+		// The entry opens the product's own site; the comment count opens the PH discussion.
 		comments: { count: node.commentsCount, label: 'comment', url: node.url },
 		description: node.tagline,
 		id: node.id,
 		score: { label: 'upvote', value: node.votesCount },
 		time: Date.parse(node.createdAt),
 		title: node.name,
-		url: node.url,
+		url: node.website || node.url,
 	}))
 }
