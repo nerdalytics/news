@@ -108,6 +108,12 @@ dialog:modal {
 dialog::backdrop {
 	overflow: hidden;
 	overscroll-behavior: contain;
+	/* Frost the page behind the sheet. iOS blurs the content under the notch with
+	   native status-bar vibrancy, but that blur vanishes once a modal dialog takes
+	   the top layer, leaving a hard cut-off. Blurring the backdrop keeps the page
+	   behind (notch included) soft while the sheet is open. */
+	-webkit-backdrop-filter: blur(20px);
+	backdrop-filter: blur(20px);
 }
 
 html:has(dialog[open]) {
