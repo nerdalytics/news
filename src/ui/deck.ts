@@ -3,8 +3,8 @@ import { markRead, markUnread } from '../read'
 import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
-import { el, prefersReducedMotion, whenIdle } from './dom'
-import type { SwipeAction } from './gestures'
+import { el, prefersReducedMotion, slideView, whenIdle } from './dom'
+import { navDirection, type SwipeAction } from './gestures'
 import { capacity, windowStart, windowStep } from './layout'
 import { openInBrowser } from './open'
 
@@ -298,20 +298,31 @@ export class Deck {
 		event.preventDefault()
 		// Tapping the tab of a source that is already displayed scrolls to the top.
 		if (this.visible.has(id)) scrollTo({ behavior: scrollBehavior(), top: 0 })
-		else this.show(id)
+		else this.show(id, true)
 		this.writeHash(id)
 	}
 
-	/** Displays a source and restores the scroll position the reader left there. */
-	private show(id: string): void {
+	/** Displays a source and restores the scroll position the reader left there.
+	   A tap slides the deck; a swipe already glides via --dx, so it updates at once. */
+	private show(id: string, animate = false): void {
 		if (!this.columns.has(id)) return
-		const previous = this.window()[0]
-		if (previous) this.scrollTops.set(previous, scrollY)
-		this.current = id
-		this.applyLayout()
-		const first = this.window()[0]
-		scrollTo({ behavior: 'instant', top: (first && this.scrollTops.get(first)) || 0 })
-		this.options.onJump()
+		const from = this.current ? this.order.indexOf(this.current) : 0
+		const to = this.order.indexOf(id)
+		const update = (): void => {
+			const previous = this.window()[0]
+			if (previous) this.scrollTops.set(previous, scrollY)
+			this.current = id
+			this.applyLayout()
+			const first = this.window()[0]
+			scrollTo({ behavior: 'instant', top: (first && this.scrollTops.get(first)) || 0 })
+			this.options.onJump()
+		}
+		// Never start a transition while a swipe is still gliding home.
+		if (animate && !this.options.deck.hasAttribute('data-settling')) {
+			slideView(update, navDirection(from, to))
+		} else {
+			update()
+		}
 	}
 
 	private markTabs(): void {

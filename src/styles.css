@@ -1282,6 +1282,30 @@ button {
 	}
 }
 
+@keyframes slide-to-left {
+	to {
+		translate: -100% 0;
+	}
+}
+
+@keyframes slide-from-right {
+	from {
+		translate: 100% 0;
+	}
+}
+
+@keyframes slide-to-right {
+	to {
+		translate: 100% 0;
+	}
+}
+
+@keyframes slide-from-left {
+	from {
+		translate: -100% 0;
+	}
+}
+
 /*
  * Motion is opt-in. Without this block every duration stays 0s and nothing
  * animates, so a reader who prefers reduced motion gets the safe path by
@@ -1323,5 +1347,40 @@ button {
 
 	.check:checked::after {
 		animation: check-pop var(--fast) ease;
+	}
+
+	/* A tab tap slides the deck to the new source while the bar and page stay put.
+	   Only the tap path starts a transition; the swipe already glides via --dx.
+	   Where view transitions are unsupported the script swaps the source at once. */
+	.deck {
+		view-transition-name: deck;
+	}
+
+	::view-transition-group(deck) {
+		overflow: clip;
+		animation-duration: var(--sheet-move);
+		animation-timing-function: ease-in-out;
+	}
+
+	::view-transition-old(deck),
+	::view-transition-new(deck) {
+		animation-duration: var(--sheet-move);
+		animation-timing-function: ease-in-out;
+	}
+
+	html:active-view-transition-type(forward)::view-transition-old(deck) {
+		animation-name: slide-to-left;
+	}
+
+	html:active-view-transition-type(forward)::view-transition-new(deck) {
+		animation-name: slide-from-right;
+	}
+
+	html:active-view-transition-type(backward)::view-transition-old(deck) {
+		animation-name: slide-to-right;
+	}
+
+	html:active-view-transition-type(backward)::view-transition-new(deck) {
+		animation-name: slide-from-left;
 	}
 }

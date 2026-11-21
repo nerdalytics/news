@@ -5,6 +5,7 @@ import {
 	BAR_TOP_ZONE_PX,
 	barHides,
 	movesSource,
+	navDirection,
 	PULL_COMMIT_PX,
 	PULL_MAX_PX,
 	PULL_RESISTANCE,
@@ -90,6 +91,12 @@ describe('swipe', () => {
 		expect(movesSource('block')).toBe(false)
 		expect(movesSource('favorite')).toBe(false)
 		expect(movesSource(undefined)).toBe(false)
+	})
+
+	it('slides forward to a later source and backward to an earlier one', () => {
+		expect(navDirection(0, 3)).toBe('forward')
+		expect(navDirection(3, 0)).toBe('backward')
+		expect(navDirection(2, 2)).toBe('forward')
 	})
 
 	it('decides once per direction what the gesture moves', () => {

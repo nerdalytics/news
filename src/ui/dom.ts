@@ -30,6 +30,31 @@ export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+/** The View Transitions options form, typed locally so the helper works whether
+   or not the DOM lib ships it. */
+type ViewTransitionDocument = {
+	startViewTransition?: (options: { update: () => void; types?: string[] }) => unknown
+}
+
+/**
+ * Runs a DOM update inside a directional view transition where the browser
+ * supports it and the reader allows motion. Otherwise the update runs at once,
+ * so the view still changes instantly in older browsers, under reduced motion,
+ * or where a browser rejects the options form. The update runs exactly once.
+ */
+export function slideView(update: () => void, type: 'forward' | 'backward'): void {
+	const doc = document as unknown as ViewTransitionDocument
+	if (prefersReducedMotion() || typeof doc.startViewTransition !== 'function') {
+		update()
+		return
+	}
+	try {
+		doc.startViewTransition({ update, types: [type] })
+	} catch {
+		update()
+	}
+}
+
 /**
  * Light-dismiss fallback for browsers without `closedby` (Safari). It tests the
  * pointer position rather than the event target, because the dialog is also the

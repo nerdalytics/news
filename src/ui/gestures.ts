@@ -22,6 +22,11 @@ export function movesSource(action: SwipeAction | undefined): boolean {
 	return action === 'next' || action === 'previous'
 }
 
+/** The slide direction when the view moves from one source index to another. */
+export function navDirection(from: number, to: number): 'forward' | 'backward' {
+	return to >= from ? 'forward' : 'backward'
+}
+
 /** The four swipes: two directions, each short or long. */
 export const SWIPE_SLOTS = ['left', 'leftLong', 'right', 'rightLong'] as const
 export type SwipeSlot = (typeof SWIPE_SLOTS)[number]
