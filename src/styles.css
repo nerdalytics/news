@@ -16,6 +16,13 @@
 	initial-value: 384px;
 }
 
+/* Registered as a time, so the reorder glide reads its computed value in seconds. */
+@property --micro {
+	syntax: "<time>";
+	inherits: true;
+	initial-value: 0s;
+}
+
 :root {
 	/* A column is never narrower than this. The deck shows as many columns as fit. */
 	--column-min: 24rem;
@@ -222,7 +229,11 @@ button {
 	padding: 0 8px var(--safe-bottom) 0;
 	background: var(--bg);
 	border-top: 1px solid var(--line);
-	transition: translate var(--bar-move) ease;
+	transition:
+		translate var(--bar-move) ease,
+		background-color var(--micro),
+		color var(--micro),
+		border-color var(--micro);
 }
 
 /* Scrolling down moves the bar out of view. Scrolling up brings it back. */
@@ -249,7 +260,8 @@ button {
 	transition:
 		translate var(--fast) ease,
 		color var(--fast),
-		scale var(--fast);
+		scale var(--fast),
+		background-color var(--micro);
 }
 
 /* The indicator follows the finger directly. */
@@ -447,13 +459,8 @@ button {
 	font-size: 0.875rem;
 }
 
-.reload {
+.col-settings {
 	margin: -4px -10px 0 0;
-}
-
-/* The header button of the column would repeat what the indicator shows. */
-.is-pull-active .reload {
-	visibility: hidden;
 }
 
 .list {
@@ -476,7 +483,9 @@ button {
 
 /* The read and blocked marks dim the row's parts; let the dim glide, not snap. */
 .item > * {
-	transition: opacity var(--micro);
+	transition:
+		opacity var(--micro),
+		color var(--micro);
 }
 
 .rank {
@@ -760,7 +769,9 @@ button {
 		translate var(--sheet-move) ease,
 		opacity var(--sheet-move) ease,
 		overlay var(--sheet-move) allow-discrete,
-		display var(--sheet-move) allow-discrete;
+		display var(--sheet-move) allow-discrete,
+		background-color var(--micro),
+		color var(--micro);
 }
 
 .sheet[open] {
@@ -1343,11 +1354,35 @@ button {
 		--bar-move: 0.4s;
 	}
 
-	.pull.is-refreshing {
-		animation: spin 0.8s linear infinite;
+	/* The theme glide: colours interpolate so light/dark never snaps. Unlike an
+	   opacity crossfade this keeps the settings dialog opaque, so the sources
+	   behind it never show through. */
+	body {
+		transition:
+			background-color var(--micro),
+			color var(--micro);
 	}
 
-	.column[data-state="loading"] .reload svg {
+	.col-title,
+	.col-tagline,
+	.col-foot,
+	.desc,
+	.meta,
+	.comments,
+	.site,
+	.notice,
+	.empty p {
+		transition: color var(--micro);
+	}
+
+	.segmented,
+	.segmented span,
+	.select,
+	.src {
+		transition: background-color var(--micro);
+	}
+
+	.pull.is-refreshing {
 		animation: spin 0.8s linear infinite;
 	}
 

@@ -225,12 +225,18 @@ function build(): HTMLDialogElement {
 	return sheet
 }
 
-export function openManageDialog(): void {
+export function openManageDialog(focusSource?: string): void {
 	// The swipe settings and the hidden count are drawn when the sheet is built, so build it anew each time.
 	dialog?.remove()
 	dialog = build()
 	sources?.render(listedSources())
 	dialog.showModal()
+	// A column's settings button lands the reader on that source's row.
+	if (focusSource) {
+		dialog
+			.querySelector<HTMLElement>(`.src[data-id="${focusSource}"]`)
+			?.scrollIntoView({ block: 'center' })
+	}
 	// Finds hosted sources whose first feed has arrived since the last look.
 	void checkHosted()
 }

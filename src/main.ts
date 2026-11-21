@@ -4,7 +4,7 @@ import { enabledIds, getSettings, isFirstVisit, type Settings, subscribe } from 
 import { hostedSources, sourceById } from './sources/index'
 import { autoHideBar } from './ui/bar'
 import { Deck } from './ui/deck'
-import { crossfade, whenIdle } from './ui/dom'
+import { whenIdle } from './ui/dom'
 import { enablePullToRefresh } from './ui/pull'
 import { enableSwipe } from './ui/swipe'
 import { watchForUpdates } from './update'
@@ -28,23 +28,15 @@ function hideSplash(): void {
 	document.getElementById('splash')?.classList.add('is-done')
 }
 
-let appliedTheme: Settings['theme'] | undefined
-
 function applyTheme(theme: Settings['theme']): void {
-	const change = (): void => {
-		const root = document.documentElement
-		if (theme === 'auto') delete root.dataset.theme
-		else root.dataset.theme = theme
-		// Set the browser's toolbar colour to match the chosen theme.
-		for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-			const system = meta.media.includes('dark') ? 'dark' : 'light'
-			meta.content = THEME_COLOR[theme === 'auto' ? system : theme]
-		}
+	const root = document.documentElement
+	if (theme === 'auto') delete root.dataset.theme
+	else root.dataset.theme = theme
+	// Set the browser's toolbar colour to match the chosen theme.
+	for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+		const system = meta.media.includes('dark') ? 'dark' : 'light'
+		meta.content = THEME_COLOR[theme === 'auto' ? system : theme]
 	}
-	// Crossfade a real theme change, but not every settings apply nor the first paint.
-	if (appliedTheme !== undefined && appliedTheme !== theme) crossfade(change)
-	else change()
-	appliedTheme = theme
 }
 
 /** The dialog is a separate chunk. The browser fetches it when the reader first points at, focuses or clicks the button. */
@@ -52,19 +44,13 @@ function loadManage(): Promise<typeof import('./ui/manage')> {
 	return import('./ui/manage')
 }
 
-async function openManage(): Promise<void> {
+async function openManage(sourceId?: string): Promise<void> {
 	const { openManageDialog } = await loadManage()
-	openManageDialog()
+	openManageDialog(sourceId)
 }
 
 // `?debug` shows errors and request timings on the page.
 if (new URLSearchParams(location.search).has('debug')) void import('./debug')
-
-const manageButton = required<HTMLButtonElement>('#manage')
-manageButton.addEventListener('click', () => void openManage())
-// Fetch the chunk when the pointer enters the button or the keyboard focuses it.
-manageButton.addEventListener('pointerenter', () => void loadManage(), { once: true })
-manageButton.addEventListener('focus', () => void loadManage(), { once: true })
 
 async function openSite(site: string): Promise<void> {
 	const { openSiteDialog } = await import('./ui/site-dialog')
@@ -78,7 +64,7 @@ const deck = new Deck({
 	deck: deckElement,
 	onFirstSettled: hideSplash,
 	onJump: () => bar.reset(),
-	onManage: () => void openManage(),
+	onManage: (sourceId) => void openManage(sourceId),
 	onSite: (site) => void openSite(site),
 	tabs: required<HTMLElement>('#tabs'),
 })

@@ -122,7 +122,9 @@ export class Column {
 	constructor(
 		readonly source: SourceMeta,
 		/** Called each time the column has shown content or an error. */
-		private readonly onSettled: () => void
+		private readonly onSettled: () => void,
+		/** Opens the settings sheet scrolled to this source. */
+		private readonly onSettings: (id: string) => void
 	) {
 		this.el = el('section', 'column')
 		this.el.id = `source-${source.id}`
@@ -174,12 +176,12 @@ export class Column {
 		const title = el('h2', 'col-title', this.source.name)
 		title.id = `title-${this.source.id}`
 		titles.append(title, el('p', 'col-tagline', this.source.tagline))
-		const reload = el('button', 'icon-btn reload')
-		reload.type = 'button'
-		reload.setAttribute('aria-label', `Refresh ${this.source.name}`)
-		reload.append(icon('refresh'))
-		reload.addEventListener('click', () => void this.refresh())
-		head.append(titles, reload)
+		const settings = el('button', 'icon-btn col-settings')
+		settings.type = 'button'
+		settings.setAttribute('aria-label', `Settings for ${this.source.name}`)
+		settings.append(icon('sliders'))
+		settings.addEventListener('click', () => this.onSettings(this.source.id))
+		head.append(titles, settings)
 		return head
 	}
 

@@ -13,7 +13,7 @@ interface DeckOptions {
 	tabs: HTMLElement
 	/** Called when the first column shows content or an error. */
 	onFirstSettled: () => void
-	onManage: () => void
+	onManage: (sourceId?: string) => void
 	/** The reader tapped the name of a linked site. */
 	onSite: (site: string) => void
 	/** The deck scrolled the page itself, for example to restore a position. */
@@ -212,7 +212,11 @@ export class Deck {
 	private create(id: string): Column | undefined {
 		const source = sourceById(id)
 		if (!source) return undefined
-		const column = new Column(source, () => this.onSettled())
+		const column = new Column(
+			source,
+			() => this.onSettled(),
+			(id) => this.options.onManage(id)
+		)
 		this.columns.set(id, column)
 		return column
 	}
