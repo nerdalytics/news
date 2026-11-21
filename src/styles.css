@@ -1351,12 +1351,23 @@ button {
 
 	/* A tab tap slides the deck to the new source while the bar and page stay put.
 	   Only the tap path starts a transition; the swipe already glides via --dx.
-	   Where view transitions are unsupported the script swaps the source at once. */
+	   Where view transitions are unsupported the script swaps the source at once.
+	   The overlay paints in the top layer, above the fixed bar's own z-index, so
+	   the bar is captured too and its group stacked above the deck's to stay on top. */
+	.bar {
+		view-transition-name: bar;
+	}
+
 	.deck {
 		view-transition-name: deck;
 	}
 
+	::view-transition-group(bar) {
+		z-index: 10;
+	}
+
 	::view-transition-group(deck) {
+		z-index: 1;
 		overflow: clip;
 		animation-duration: var(--sheet-move);
 		animation-timing-function: ease-in-out;
