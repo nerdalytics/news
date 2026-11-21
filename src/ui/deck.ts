@@ -3,9 +3,9 @@ import { markRead, markUnread } from '../read'
 import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
 import { sourceById } from '../sources/index'
 import { Column } from './column'
-import { el, prefersReducedMotion, slideView, whenIdle } from './dom'
+import { el, popBadge, prefersReducedMotion, slideView, whenIdle } from './dom'
 import { navDirection, type SwipeAction } from './gestures'
-import { capacity, windowStart, windowStep } from './layout'
+import { capacity, topsChanged, windowStart, windowStep } from './layout'
 import { openInBrowser } from './open'
 
 interface DeckOptions {
@@ -64,6 +64,8 @@ export class Deck {
 	private visible = new Set<string>()
 	/** The page scroll position the reader left, keyed by the first displayed source. */
 	private readonly scrollTops = new Map<string, number>()
+	/** The top entry id the reader last saw per source, to spot new arrivals on re-visit. */
+	private readonly lastSeenTop = new Map<string, string>()
 	private order: string[] = []
 	/** The source the reader chose last. It is always displayed. */
 	private current: string | undefined
@@ -203,6 +205,7 @@ export class Deck {
 			this.columns.delete(id)
 			this.visible.delete(id)
 			this.scrollTops.delete(id)
+			this.lastSeenTop.delete(id)
 		}
 	}
 
@@ -248,6 +251,7 @@ export class Deck {
 			const tab = el('a', 'tab')
 			tab.href = `#${id}`
 			tab.dataset.id = id
+			tab.addEventListener('animationend', () => tab.classList.remove('is-tapped'))
 			const badge = el('span', 'badge', source.mark)
 			badge.style.setProperty('--badge-bg', source.badge[0])
 			badge.style.setProperty('--badge-fg', source.badge[1])
@@ -296,6 +300,7 @@ export class Deck {
 		const id = tab?.dataset.id
 		if (!id || event.metaKey || event.ctrlKey || event.shiftKey) return
 		event.preventDefault()
+		if (tab) popBadge(tab)
 		// Tapping the tab of a source that is already displayed scrolls to the top.
 		if (this.visible.has(id)) scrollTo({ behavior: scrollBehavior(), top: 0 })
 		else this.show(id, true)
@@ -314,7 +319,12 @@ export class Deck {
 			this.current = id
 			this.applyLayout()
 			const first = this.window()[0]
-			scrollTo({ behavior: 'instant', top: (first && this.scrollTops.get(first)) || 0 })
+			const top = this.columns.get(id)?.topItemId()
+			const seen = this.lastSeenTop.get(id)
+			// New arrivals since the reader last looked start at the top; an unchanged feed keeps their place.
+			const target = topsChanged(top, seen) ? 0 : (first && this.scrollTops.get(first)) || 0
+			scrollTo({ behavior: 'instant', top: target })
+			if (top !== undefined) this.lastSeenTop.set(id, top)
 			this.options.onJump()
 		}
 		// Never start a transition while a swipe is still gliding home.

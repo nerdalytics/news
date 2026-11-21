@@ -27,3 +27,9 @@ export function windowStep(index: number, count: number, size: number, delta: 1 
 	if (next > last) return 0
 	return next
 }
+
+/** Whether a source's top entry changed since the reader last saw it. A re-visit then
+   starts at the top to show the new arrivals; an unchanged feed keeps the reader's place. */
+export function topsChanged(top: string | undefined, seen: string | undefined): boolean {
+	return top !== undefined && top !== seen
+}

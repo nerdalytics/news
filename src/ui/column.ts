@@ -157,6 +157,11 @@ export class Column {
 		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) applyState(row)
 	}
 
+	/** The id of the top entry currently shown, if the feed has loaded. */
+	topItemId(): string | undefined {
+		return this.shown?.items[0]?.id
+	}
+
 	setNewTab(newTab: boolean): void {
 		for (const link of this.el.querySelectorAll<HTMLAnchorElement>('.list a')) {
 			link.target = newTab ? '_blank' : ''

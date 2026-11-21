@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { capacity, windowStart, windowStep } from '../src/ui/layout'
+import { capacity, topsChanged, windowStart, windowStep } from '../src/ui/layout'
 
 describe('capacity', () => {
 	const COLUMN_MIN = 352
@@ -71,5 +71,24 @@ describe('windowStep', () => {
 		expect(windowStep(1, 2, 4, 1)).toBe(0)
 		expect(windowStep(1, 2, 4, -1)).toBe(0)
 		expect(windowStep(0, 1, 1, 1)).toBe(0)
+	})
+})
+
+describe('topsChanged', () => {
+	it('starts at the top on a first visit', () => {
+		expect(topsChanged('a', undefined)).toBe(true)
+	})
+
+	it('starts at the top when a new entry arrived', () => {
+		expect(topsChanged('b', 'a')).toBe(true)
+	})
+
+	it('keeps the place when the top entry is unchanged', () => {
+		expect(topsChanged('a', 'a')).toBe(false)
+	})
+
+	it('keeps the place when the feed has not loaded yet', () => {
+		expect(topsChanged(undefined, 'a')).toBe(false)
+		expect(topsChanged(undefined, undefined)).toBe(false)
 	})
 })

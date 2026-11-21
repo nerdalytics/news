@@ -26,6 +26,15 @@ export function icon(name: keyof typeof ICONS): HTMLSpanElement {
 	return wrapper
 }
 
+/** Restarts the badge pop on an element so a tap or a tick visibly answers. The
+   caller removes `is-tapped` again on animationend. */
+export function popBadge(node: HTMLElement): void {
+	node.classList.remove('is-tapped')
+	// Reflow so a rapid second tap restarts the pop instead of being ignored.
+	void node.offsetWidth
+	node.classList.add('is-tapped')
+}
+
 export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
@@ -50,6 +59,23 @@ export function slideView(update: () => void, type: 'forward' | 'backward'): voi
 	}
 	try {
 		doc.startViewTransition({ update, types: [type] })
+	} catch {
+		update()
+	}
+}
+
+/**
+ * Crossfades a whole-page state change such as the theme. Same fallbacks as
+ * slideView: instant under reduced motion or where view transitions are absent.
+ */
+export function crossfade(update: () => void): void {
+	const doc = document as unknown as ViewTransitionDocument
+	if (prefersReducedMotion() || typeof doc.startViewTransition !== 'function') {
+		update()
+		return
+	}
+	try {
+		doc.startViewTransition({ update })
 	} catch {
 		update()
 	}
