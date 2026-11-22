@@ -82,19 +82,18 @@ export function enableSwipe(options: SwipeOptions): void {
 	}
 
 	/** Places a hint at the near or far edge of its anchor, by the swipe direction. */
-	const place = (
-		hint: HTMLElement,
-		anchor: HTMLElement,
-		padded: boolean,
-		centered: boolean
-	): void => {
+	const place = (hint: HTMLElement, anchor: HTMLElement, padded: boolean): void => {
 		const rect = anchor.getBoundingClientRect()
 		const pad = padded ? getComputedStyle(anchor) : undefined
 		const start = rect.left + (pad ? Number.parseFloat(pad.paddingLeft) : 0)
 		const end = rect.right - (pad ? Number.parseFloat(pad.paddingRight) : 0)
 		const x = dx < 0 ? end - hint.offsetWidth : start
-		// A view swipe centers the label on the screen, a row swipe on the row.
-		const y = centered ? 0 : rect.top + rect.height / 2 - document.documentElement.clientHeight / 2
+		// Every hint sits at the swiped row's centre, so switching between a row
+		// action and a source action never jumps the label vertically.
+		const rowRect = row?.getBoundingClientRect()
+		const y = rowRect
+			? rowRect.top + rowRect.height / 2 - document.documentElement.clientHeight / 2
+			: 0
 		hint.style.setProperty('--hint-x', `${x}px`)
 		hint.style.setProperty('--hint-y', `${y}px`)
 	}
@@ -108,8 +107,8 @@ export function enableSwipe(options: SwipeOptions): void {
 		const onColumn = movesSource(action)
 		const shown = onColumn ? viewHint : rowHint
 		shown.textContent = options.label(row, action)
-		if (onColumn) place(shown, column, true, true)
-		else place(shown, row, false, false)
+		if (onColumn) place(shown, column, true)
+		else place(shown, row, false)
 		shown.classList.add('is-visible')
 	}
 
@@ -170,6 +169,13 @@ export function enableSwipe(options: SwipeOptions): void {
 		if (swiping) suppressClicksUntil = performance.now() + CLICK_SUPPRESS_MS
 		rowHint.classList.remove('is-visible')
 		viewHint.classList.remove('is-visible')
+		if (action && movesSource(action)) {
+			// A source swipe glides the column in from full travel, so a short swipe
+			// moves the view just as visibly as a long one. Set it without a
+			// transition, then let the settling glide carry it home.
+			root.style.setProperty('--dx', `${dx < 0 ? -SWIPE_MAX_PX : SWIPE_MAX_PX}px`)
+			void root.offsetWidth
+		}
 		root.dataset.settling = ''
 		root.style.setProperty('--dx', '0px')
 		pointer = -1
