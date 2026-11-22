@@ -5,14 +5,11 @@ import { el, icon, popBadge } from './dom'
 import { enableReorder } from './reorder'
 
 interface SourceListOptions {
-	/** The element that scrolls when the list is taller than the screen. */
 	scroller: HTMLElement
-	/** Called after the reader toggled a source or changed the order. */
 	onChange: (sources: SourceSetting[]) => void
 }
 
 export interface SourceList {
-	/** The list element and a live region that announces moves to screen readers. */
 	nodes: [HTMLUListElement, HTMLElement]
 	render(sources: readonly SourceSetting[]): void
 	read(): SourceSetting[]
@@ -46,7 +43,6 @@ function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {
 	return row
 }
 
-/** The list of all sources with a checkbox and a drag handle per row. */
 export function createSourceList(options: SourceListOptions): SourceList {
 	const list = el('ul', 'src-list')
 	const live = el('p', 'visually-hidden')

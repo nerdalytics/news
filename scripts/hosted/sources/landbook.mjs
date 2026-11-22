@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Land-book's RSS feed of newly featured websites. */
 const ENDPOINT = 'https://land-book.com/feed/'
 
 export default async function fetchItems() {

@@ -1,14 +1,10 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-/** A request that takes longer than this fails the run. */
 const TIMEOUT_MS = 20_000
-/** A feed with fewer entries than this is not published. The last good feed stays in place. */
 const MIN_ITEMS = 5
-/** The app shows at most this many entries per source. */
 export const LIMIT = 20
 
-/** Tells the source who is asking. Inside a workflow it names the repository. */
 function userAgent() {
 	const repository = process.env.GITHUB_REPOSITORY
 	return repository ? `feed-fetcher (+https://github.com/${repository})` : 'feed-fetcher'
@@ -41,7 +37,6 @@ function isHttpUrl(value) {
 	}
 }
 
-/** Keeps the entries that have a title and a web address. Throws if too few remain. */
 export function validate(items) {
 	const valid = items.filter((item) => typeof item?.title === 'string' && item.title && isHttpUrl(item.url))
 	if (valid.length < MIN_ITEMS) {
@@ -50,7 +45,6 @@ export function validate(items) {
 	return valid.slice(0, LIMIT)
 }
 
-/** Writes the feed file the app reads. `generatedAt` is in epoch milliseconds. */
 export async function writeFeed(path, source, items) {
 	const feed = { generatedAt: Date.now(), items: validate(items), source }
 	await mkdir(dirname(path), { recursive: true })
@@ -60,7 +54,6 @@ export async function writeFeed(path, source, items) {
 
 const ENTITIES = { amp: '&', apos: "'", gt: '>', lt: '<', quot: '"' }
 
-/** Decodes the XML entities of a text node or an attribute value. */
 export function decodeXml(text) {
 	return text.replace(/&(#\d+|#x[0-9a-fA-F]+|[a-z]+);/g, (match, body) => {
 		if (body.startsWith('#x')) return String.fromCodePoint(Number.parseInt(body.slice(2), 16))
@@ -69,18 +62,15 @@ export function decodeXml(text) {
 	})
 }
 
-/** Unwraps CDATA sections so their text decodes and strips like any other. */
 function unwrapCdata(text) {
 	return text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
 }
 
-/** The decoded text of the first `<name>` element in a block, or an empty string. */
 function xmlTag(block, name) {
 	const match = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`).exec(block)
 	return match ? decodeXml(unwrapCdata(match[1]).trim()) : ''
 }
 
-/** The href of an Atom link, preferring the alternate over self and enclosure links. */
 function atomLink(block) {
 	const alternate =
 		/<link[^>]*rel="alternate"[^>]*href="([^"]+)"/.exec(block) ??

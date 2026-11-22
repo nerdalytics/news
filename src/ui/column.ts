@@ -24,13 +24,11 @@ function timeElement(time: number): HTMLTimeElement {
 	return node
 }
 
-/** Returns the host an item links to, unless the link stays on the source's own site. */
 export function siteOf(item: FeedItem, source: SourceMeta): string | undefined {
 	const host = hostOf(item.url)
 	return host === hostOf(source.home) ? undefined : host
 }
 
-/** A button that opens the block and unblock option for a linked site. */
 function siteButton(site: string, label: string): HTMLButtonElement {
 	const button = el('button', 'site', label)
 	button.type = 'button'
@@ -40,7 +38,6 @@ function siteButton(site: string, label: string): HTMLButtonElement {
 	return button
 }
 
-/** The last entry of the meta row. It is the item's tag, or the linked site as a button. */
 function tagOf(item: FeedItem, source: SourceMeta): Node | string | undefined {
 	const site = siteOf(item, source)
 	return site ? siteButton(site, item.tag ?? site) : item.tag
@@ -68,7 +65,6 @@ function renderMeta(item: FeedItem, source: SourceMeta): HTMLElement {
 	return meta
 }
 
-/** Marks rows the reader opened, favorited or blocked, and removes hidden rows. */
 function applyState(row: HTMLElement): void {
 	const { site, url } = row.dataset
 	row.hidden = url !== undefined && isHidden(url)
@@ -80,7 +76,6 @@ function applyState(row: HTMLElement): void {
 function renderItem(item: FeedItem, index: number, source: SourceMeta): HTMLLIElement {
 	const row = el('li', 'item')
 	row.dataset.url = item.url
-	// The entrance stagger derives its delay from this position.
 	row.style.setProperty('--i', String(index))
 	const site = siteOf(item, source)
 	if (site) row.dataset.site = site
@@ -111,7 +106,6 @@ function updatedLabel(fetchedAt: number): string {
 	return age === 'now' ? 'Updated just now' : `Updated ${age} ago`
 }
 
-/** Renders one source as a header, up to twenty rows and a footer. It manages its own loading and error states. */
 export class Column {
 	readonly el: HTMLElement
 	private readonly body: HTMLElement
@@ -121,9 +115,7 @@ export class Column {
 
 	constructor(
 		readonly source: SourceMeta,
-		/** Called each time the column has shown content or an error. */
 		private readonly onSettled: () => void,
-		/** Opens the settings sheet scrolled to this source. */
 		private readonly onSettings: (id: string) => void
 	) {
 		this.el = el('section', 'column')
@@ -134,32 +126,26 @@ export class Column {
 		this.foot = el('footer', 'col-foot')
 		this.el.append(this.renderHead(), this.body, this.foot)
 		this.el.setAttribute('aria-labelledby', `title-${source.id}`)
-		// Show cached entries immediately, also in columns that are off screen.
 		const cached = peek(source.id)
 		if (cached) this.render(cached)
 	}
 
-	/** Call when the column is on screen. Shows the cached feed and fetches if it is missing or stale. */
 	activate(): Promise<void> {
 		return this.revalidate('high')
 	}
 
-	/** Fetches the feed again, even if the cached copy is still fresh. */
 	refresh(): Promise<void> {
 		return this.load('high')
 	}
 
-	/** Call when the reader is likely to open the column next. Fetches at low priority. */
 	prefetch(): Promise<void> {
 		return this.revalidate('low')
 	}
 
-	/** Re-applies the read and blocked marks after either list changed. */
 	restyle(): void {
 		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) applyState(row)
 	}
 
-	/** The id of the top entry currently shown, if the feed has loaded. */
 	topItemId(): string | undefined {
 		return this.shown?.items[0]?.id
 	}
@@ -185,7 +171,6 @@ export class Column {
 		return head
 	}
 
-	/** Resolves when the column shows a fresh feed or an error. It never rejects. */
 	private revalidate(priority: RequestPriority): Promise<void> {
 		const cached = peek(this.source.id)
 		if (cached && cached !== this.shown) this.render(cached)
@@ -194,7 +179,6 @@ export class Column {
 		return this.load(priority)
 	}
 
-	/** Concurrent calls share the request that is already running. */
 	private load(priority: RequestPriority): Promise<void> {
 		this.pending ??= this.fetch(priority).finally(() => {
 			this.pending = undefined
@@ -215,7 +199,6 @@ export class Column {
 	}
 
 	private render(feed: Feed): void {
-		// Only the first paint staggers in; a later refresh swaps without re-animating.
 		const entering = this.shown === undefined
 		this.shown = feed
 		this.el.dataset.state = 'ready'
@@ -243,7 +226,6 @@ export class Column {
 			this.foot.replaceChildren()
 			return
 		}
-		// A hosted feed is as old as the workflow run that produced it, not as the last download.
 		const updated = updatedLabel(generatedAt(this.source.id) ?? this.shown.fetchedAt)
 		const home = el('a', undefined, hostOf(this.source.home))
 		home.href = this.source.home
@@ -258,7 +240,6 @@ export class Column {
 
 	private renderError(message: string): void {
 		this.el.dataset.state = 'error'
-		// Keep the entries that are on screen and report the failed refresh in the footer.
 		if (this.shown) {
 			this.renderFoot(message)
 			return

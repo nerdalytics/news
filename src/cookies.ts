@@ -1,10 +1,8 @@
 import { DAY, SECOND } from './time'
 
-/** Chrome caps cookie lifetime at 400 days. */
 const MAX_AGE_MS = 400 * DAY
 const MAX_AGE_SECONDS = MAX_AGE_MS / SECOND
 
-/** The directory the app is served from, e.g. `/news/` on GitHub Pages. */
 function cookiePath(): string {
 	return new URL('.', document.baseURI).pathname
 }
@@ -16,14 +14,11 @@ export function parseCookies(header: string): Map<string, string> {
 		if (split < 1) continue
 		try {
 			cookies.set(pair.slice(0, split), decodeURIComponent(pair.slice(split + 1)))
-		} catch {
-			// Skip a malformed value. Another page on this origin may have set it.
-		}
+		} catch {}
 	}
 	return cookies
 }
 
-/** Reads synchronously, because the app needs the settings before the first paint. */
 export function readCookie(name: string): string | undefined {
 	return parseCookies(document.cookie).get(name)
 }
@@ -63,7 +58,6 @@ export async function deleteCookie(name: string): Promise<void> {
 	await cookieStore.delete({ name, path: cookiePath() }).catch(() => deleteLegacy(name))
 }
 
-/** Calls back when one of the named cookies changes, in this tab or in another. */
 export function onCookieChange(names: readonly string[], callback: () => void): void {
 	if (!('cookieStore' in window)) return
 	cookieStore.addEventListener('change', (event) => {

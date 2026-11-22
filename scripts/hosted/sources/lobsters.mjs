@@ -1,6 +1,5 @@
 import { getJson } from '../lib.mjs'
 
-/** The hottest stories, as on the Lobsters front page. */
 const ENDPOINT = 'https://lobste.rs/hottest.json'
 
 export default async function fetchItems() {
@@ -11,7 +10,6 @@ export default async function fetchItems() {
 		score: { label: 'point', value: story.score },
 		time: Date.parse(story.created_at),
 		title: story.title,
-		// Text posts have no link, so the discussion is the entry.
 		url: story.url || story.comments_url,
 	}))
 }

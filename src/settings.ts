@@ -17,18 +17,11 @@ export interface SourceSetting {
 }
 
 export interface Settings {
-	/** Every source of the catalogue, in the reader's order. */
 	sources: readonly SourceSetting[]
 	theme: Theme
 	newTab: boolean
-	/** The action assigned to each swipe on an entry. No swipe has an action by default. */
 	swipe: SwipeSettings
-	/**
-	 * Hosts of linked sites the reader blocked, oldest first. This list is kept
-	 * in `localStorage`, because it can outgrow the 4096 bytes of a cookie.
-	 */
 	blocked: readonly string[]
-	/** Hosts of linked sites the reader favorited. Their entries are highlighted. */
 	favorites: readonly string[]
 }
 
@@ -49,12 +42,6 @@ function allOff(catalogue: readonly SourceMeta[]): SourceSetting[] {
 	return catalogue.map((source) => ({ enabled: false, id: source.id }))
 }
 
-/**
- * The cookie lists ids in display order, joined by `.`. A `-` prefix marks a
- * disabled source, as in `hn.github.-devto`. The parser drops ids that are no
- * longer in the catalogue. It appends catalogue sources that the cookie does not
- * mention and switches them off.
- */
 export function parseSources(
 	raw: string | undefined,
 	catalogue: readonly SourceMeta[] = SOURCES
@@ -81,7 +68,6 @@ export function parseTheme(raw: string | undefined): Theme {
 	return raw === 'light' || raw === 'dark' ? raw : 'auto'
 }
 
-/** Accepts a stored list and keeps the entries that are host names, without duplicates. */
 function parseHosts(stored: unknown): string[] {
 	if (!Array.isArray(stored)) return []
 	const hosts = stored.filter((host) => typeof host === 'string' && HOST_PATTERN.test(host))
@@ -100,7 +86,6 @@ function readHosts(key: string): string[] {
 	try {
 		return parseHosts(JSON.parse(localStorage.getItem(key) ?? '[]'))
 	} catch {
-		// Storage can be blocked, and stored data can be invalid. Start with an empty list.
 		return []
 	}
 }
@@ -108,12 +93,9 @@ function readHosts(key: string): string[] {
 function writeHosts(key: string, hosts: readonly string[]): void {
 	try {
 		localStorage.setItem(key, JSON.stringify(hosts))
-	} catch {
-		// Writing fails when storage is full or blocked. The list still applies to this visit.
-	}
+	} catch {}
 }
 
-/** Joins a swipe and its action inside the cookie, as in `left_read`. */
 const ASSIGNMENT = '_'
 function parseAssignment(token: string): [SwipeSlot, SwipeAction] | undefined {
 	const [slot, action] = token.split(ASSIGNMENT)
@@ -122,10 +104,6 @@ function parseAssignment(token: string): [SwipeSlot, SwipeAction] | undefined {
 	return knownSlot && knownAction ? [knownSlot, knownAction] : undefined
 }
 
-/**
- * The cookie lists the swipes that have an action, joined by `.`, as in
- * `left_read.leftlong_hide.right_unread`. Unknown swipes and actions are dropped.
- */
 export function parseSwipe(raw: string | undefined): SwipeSettings {
 	const swipe: SwipeSettings = {}
 	for (const token of (raw ?? '').split(SEPARATOR)) {
@@ -142,7 +120,6 @@ export function serializeSwipe(swipe: SwipeSettings): string {
 	}).join(SEPARATOR)
 }
 
-/** Keeps the entries the list in the settings does not show, such as hosted sources without a feed. */
 export function withHiddenSources(visible: readonly SourceSetting[]): SourceSetting[] {
 	const shown = new Set(visible.map((source) => source.id))
 	return [...visible, ...current.sources.filter((source) => !shown.has(source.id))]
@@ -159,7 +136,6 @@ function read(): Settings {
 	}
 }
 
-/** True until the reader has chosen sources once, which creates the sources cookie. */
 export function isFirstVisit(): boolean {
 	return readCookie(COOKIE.sources) === undefined
 }
@@ -200,7 +176,6 @@ export function isBlocked(host: string): boolean {
 	return current.blocked.includes(host)
 }
 
-/** Blocks or unblocks the host of a linked site. */
 export function setBlocked(host: string, blocked: boolean): void {
 	const others = current.blocked.filter((entry) => entry !== host)
 	updateSettings({ blocked: blocked ? [...others, host] : others })
@@ -210,7 +185,6 @@ export function isFavorite(host: string): boolean {
 	return current.favorites.includes(host)
 }
 
-/** Favorites or unfavorites the host of a linked site. */
 export function setFavorite(host: string, favorite: boolean): void {
 	const others = current.favorites.filter((entry) => entry !== host)
 	updateSettings({ favorites: favorite ? [...others, host] : others })
@@ -227,7 +201,6 @@ function sameSettings(a: Settings, b: Settings): boolean {
 	)
 }
 
-/** Applies settings that another tab changed. */
 function reload(): void {
 	const next = read()
 	if (sameSettings(current, next)) return
@@ -236,7 +209,6 @@ function reload(): void {
 }
 
 onCookieChange(COOKIE_NAMES, reload)
-// The `storage` event fires in the other tabs of this site, not in the one that wrote.
 addEventListener('storage', (event) => {
 	if (event.key === BLOCKED_KEY || event.key === FAVORITES_KEY || event.key === null) reload()
 })

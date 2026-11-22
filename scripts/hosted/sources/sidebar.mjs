@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Sidebar's RSS feed of daily design links. */
 const ENDPOINT = 'https://sidebar.io/feed.xml'
 
 export default async function fetchItems() {

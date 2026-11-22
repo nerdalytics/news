@@ -1,22 +1,15 @@
-/*
- * The one value every swipe movement derives from: the finger's horizontal
- * distance. Registered as a length so it interpolates — the release glide
- * transitions this property alone, and every offset below follows it.
- */
 @property --dx {
 	syntax: "<length>";
 	inherits: true;
 	initial-value: 0px;
 }
 
-/* Registered as a length, so that scripts read its computed value in pixels. */
 @property --column-min {
 	syntax: "<length>";
 	inherits: true;
 	initial-value: 384px;
 }
 
-/* Registered as a time, so the reorder glide reads its computed value in seconds. */
 @property --micro {
 	syntax: "<time>";
 	inherits: true;
@@ -24,26 +17,19 @@
 }
 
 :root {
-	/* A column is never narrower than this. The deck shows as many columns as fit. */
 	--column-min: 24rem;
-	/* A column is never wider than this, so lines stay readable on wide screens. */
 	--column-max: 36rem;
 	--sheet-width: 30rem;
 	--onboarding-width: 80rem;
 	--onboarding-height: 50rem;
-	/* A source card is never narrower than this. The first-run list shows as many as fit. */
 	--source-min: 24rem;
 	--sheet-radius: 20px;
-	/* The smallest comfortable touch target. */
 	--tap: 44px;
-	/* Opacity levels */
 	--dim-blocked: 0.4;
 	--dim-read: 0.5;
 	--dim-disabled: 0.4;
 	--dim-separator: 0.6;
 	--dim-pulse: 0.5;
-	/* Durations. Motion is opt-in: these stay 0s unless the reader allows motion,
-	   and the Motion section below restores them. */
 	--fast: 0s;
 	--micro: 0s;
 	--sheet-move: 0s;
@@ -78,29 +64,11 @@
 	box-sizing: border-box;
 }
 
-/*
- * One concept for every scroller: the operating system draws the bars and
- * decides their width and look — overlay bars on iOS/macOS, classic bars on
- * Windows/Linux — and because nothing overrides that anywhere in this file,
- * every bar is the same. The document used to set `scrollbar-width: thin`,
- * which shrank only the bars of elements inside it (the splash screen) while
- * the settings sheet kept the default ones; that was the inconsistency. No
- * visible scroller may set a scrollbar-* property or a ::-webkit-scrollbar
- * rule. The single sanctioned exception is the bottom tab strip below, whose
- * bar is hidden entirely (a chrome element, not content).
- */
 html {
 	overscroll-behavior-y: contain;
-	/* Opening a dialog hides the document scrollbar. The reserved gutter keeps the page from shifting. */
 	scrollbar-gutter: stable;
 }
 
-/*
- * Scroll containment for modal dialogs: overscroll-behavior stops a gesture in
- * the dialog or on its backdrop from chaining to the page. Safari does not
- * support it, so the html lock below is the fallback there; scrollbar-gutter
- * above keeps the page from shifting when the lock hides the scrollbar.
- */
 dialog:modal {
 	overscroll-behavior: contain;
 }
@@ -108,10 +76,6 @@ dialog:modal {
 dialog::backdrop {
 	overflow: hidden;
 	overscroll-behavior: contain;
-	/* Frost the page behind the sheet. iOS blurs the content under the notch with
-	   native status-bar vibrancy, but that blur vanishes once a modal dialog takes
-	   the top layer, leaving a hard cut-off. Blurring the backdrop keeps the page
-	   behind (notch included) soft while the sheet is open. */
 	-webkit-backdrop-filter: blur(20px);
 	backdrop-filter: blur(20px);
 }
@@ -120,7 +84,6 @@ html:has(dialog[open]) {
 	overflow: hidden;
 }
 
-/* On phones the document scrolls. The padding keeps content clear of the fixed bar. */
 body {
 	min-height: 100dvh;
 	margin: 0;
@@ -206,7 +169,6 @@ button {
 	cursor: not-allowed;
 }
 
-/* The less prominent of two actions, such as blocking next to favoriting. */
 .secondary-btn {
 	min-height: 48px;
 	padding: 12px 20px;
@@ -220,8 +182,6 @@ button {
 	color: var(--muted);
 	opacity: var(--dim-separator);
 }
-
-/* Bar. It is fixed to the bottom edge at every width. */
 
 .bar {
 	position: fixed;
@@ -242,12 +202,10 @@ button {
 		border-color var(--micro);
 }
 
-/* Scrolling down moves the bar out of view. Scrolling up brings it back. */
 .bar.is-hidden {
 	translate: 0 100%;
 }
 
-/* Pull to refresh. The indicator rests above the top edge and comes down by --pull. */
 .pull {
 	position: fixed;
 	inset: 0 auto auto 50%;
@@ -270,14 +228,12 @@ button {
 		background-color var(--micro);
 }
 
-/* The indicator follows the finger directly. */
 .pull.is-pulling {
 	transition: none;
 }
 
 .pull.is-ready {
 	color: var(--accent);
-	/* A pull that reached the commit point grows a touch, so the release feels armed. */
 	scale: 1.15;
 }
 
@@ -309,7 +265,6 @@ button {
 	padding: 6px 4px 10px;
 }
 
-/* Auto margins centre the tabs. They resolve to zero when the strip overflows and scrolls. */
 .tab:first-child {
 	margin-inline-start: auto;
 }
@@ -327,7 +282,6 @@ button {
 	border-radius: 50%;
 	color: var(--badge-fg);
 	background: var(--badge-bg);
-	/* Keeps dark badges visible on the dark theme. */
 	box-shadow: inset 0 0 0 1px light-dark(transparent, rgb(255 255 255 / 0.16));
 	font-size: 0.8125rem;
 	font-weight: 800;
@@ -340,7 +294,6 @@ button {
 	transform: scale(0.94);
 }
 
-/* A dot marks the source that is on screen. */
 .tab::after {
 	content: "";
 	position: absolute;
@@ -359,20 +312,6 @@ button {
 	opacity: 1;
 }
 
-/* Deck and columns */
-
-/*
- * The grid fits as many columns as the width allows. A phone gets one column,
- * a wide screen several. The script displays that many sources and hides the rest.
- *
- * The deck also carries the whole swipe motion. The script writes only --dx,
- * the finger's distance, and discrete data-swipe-mode attributes; every moving
- * part derives its offset from --dx with calc alone. Nothing here transitions
- * while the finger is down, so no layer can lag behind another and smear into
- * a double image — the handover from row to view is one continuous function,
- * not two animations racing. The script sets --swipe-at (where the view takes
- * over) and --swipe-max (the travel limit) from the gesture constants.
- */
 .deck {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--column-min)), 1fr));
@@ -380,28 +319,10 @@ button {
 	--view-offset: 0px;
 }
 
-/* A plain row swipe: the row content follows the finger, capped at the limit. */
 .deck[data-swipe-mode="row"] {
 	--row-offset: clamp(calc(-1 * var(--swipe-max)), var(--dx), var(--swipe-max));
 }
 
-/*
- * A swipe whose far action switches the source. The swiped row's on-screen
- * place is always the finger's: the view offset is the finger's distance minus
- * the row offset, so view + row = --dx. The row therefore never reverses and
- * never lags the finger, and the view — which carries every other row — starts
- * from rest at the handover and catches up to the finger as the row slides
- * back to its place in the column. Once the row is home, the whole view travels
- * under the finger together.
- *
- * Up to --swipe-at the row alone follows the finger (view stays 0). Past it the
- * row offset climbs from --dx back to 0, finishing exactly at the travel limit
- * --swipe-max, so the view is never capped while the row is still sliding back
- * (which would drag the row backward). The script sets --swipe-rejoin to
- * max / (max − at), the slope that lands the row home at the limit. All of it is
- * one function of --dx computed in the same frame: nothing transitions, nothing
- * lags, nothing smears into a double image.
- */
 .deck[data-swipe-mode="source-left"] {
 	--row-offset: min(
 		0px,
@@ -418,10 +339,6 @@ button {
 	--view-offset: min(var(--swipe-max), calc(var(--dx) - var(--row-offset)));
 }
 
-/*
- * The release: the one movement that may animate. It transitions --dx itself
- * back to zero; every derived offset glides home with it, together.
- */
 .deck[data-settling] {
 	transition: --dx var(--fast) ease;
 }
@@ -433,12 +350,10 @@ button {
 	max-inline-size: var(--column-max);
 	justify-self: center;
 	padding: 0 var(--gutter);
-	/* Nothing in a column may widen the page. */
 	overflow-x: clip;
 	--brand: light-dark(var(--brand-light), var(--brand-dark));
 }
 
-/* A line separates columns that sit side by side. */
 .column:not([hidden]) ~ .column:not([hidden]) {
 	border-inline-start: 1px solid var(--line);
 }
@@ -487,7 +402,6 @@ button {
 	transition-behavior: allow-discrete;
 }
 
-/* The read and blocked marks dim the row's parts; let the dim glide, not snap. */
 .item > * {
 	transition:
 		opacity var(--micro),
@@ -512,14 +426,12 @@ button {
 	transition: color var(--micro);
 }
 
-/* This layer makes the whole row open the item. The comments link sits above it. */
 .title::after {
 	content: "";
 	position: absolute;
 	inset: 0;
 }
 
-/* Entries the reader opened or marked as read. */
 .is-read .title {
 	color: var(--text-visited);
 }
@@ -528,32 +440,16 @@ button {
 	opacity: var(--dim-read);
 }
 
-/* An entry the reader hid with a swipe. It fades and lifts away before display
-   none takes it out of the list. Firefox cannot transition display, so there it
-   simply disappears, which is the behavior it had before. */
 .item[hidden] {
 	display: none;
 	opacity: 0;
 	translate: 0 -8px;
 }
 
-/*
- * The content of the swiped row follows --row-offset, derived from --dx on the
- * deck. The row itself stays, so the label behind it shows. No transition:
- * during the drag the value is already under the finger, and on release the
- * deck animates --dx, which this offset follows.
- */
 .item[data-swiping] > :is(.rank, .item-body) {
 	translate: var(--row-offset) 0;
 }
 
-/*
- * Names the action a swipe would carry out if the finger lifted now. Two
- * labels exist: one anchored to the row, one centered on the screen for a
- * source swipe. The script places each once when its anchor changes and then
- * only crossfades them — opacity may transition, position never does, so a
- * label can never trail the finger and smear.
- */
 .swipe-hint {
 	position: fixed;
 	inset-block: 0;
@@ -574,15 +470,12 @@ button {
 	opacity: 1;
 }
 
-/* While a swipe gesture is on, the browser scrolls vertically and leaves horizontal movement to the script.
-   Rows with swipe actions are not text-selectable, so a mouse drag swipes instead of selecting. */
 .has-swipe .item {
 	touch-action: pan-y pinch-zoom;
 	user-select: none;
 	-webkit-user-select: none;
 }
 
-/* Entries that link to a blocked site stay in the list, dimmed. */
 .is-blocked > * {
 	opacity: var(--dim-blocked);
 }
@@ -620,7 +513,6 @@ button {
 	white-space: nowrap;
 }
 
-/* The meta row stays on one line. Counts and age keep their width, and the last entry truncates. */
 .meta > * {
 	flex: none;
 }
@@ -635,18 +527,15 @@ button {
 .comments {
 	position: relative;
 	z-index: 1;
-	/* Enlarges the touch target without changing the layout. */
 	margin: -10px -6px;
 	padding: 10px 6px;
 	color: var(--text);
 	font-weight: 500;
 }
 
-/* The name of the linked site. Tapping it opens the block option. */
 .site {
 	position: relative;
 	z-index: 1;
-	/* Enlarges the touch target. The row ends here, so the target does not grow past the right edge. */
 	margin: -10px 0 -10px -6px;
 	padding: 10px 0 10px 6px;
 	white-space: nowrap;
@@ -657,7 +546,6 @@ button {
 	text-decoration: line-through;
 }
 
-/* Entries that link to a favorited site carry a star and a faint tint of the accent. */
 .item.is-favorite {
 	background: color-mix(in srgb, var(--accent) 7%, transparent);
 	border-radius: 8px;
@@ -705,12 +593,6 @@ button {
 	color: var(--danger);
 }
 
-/*
- * A swipe that switches the source moves the whole view: every displayed
- * column travels together by --view-offset, derived from --dx on the deck.
- * Like the row offset it never transitions on its own — the deck animates
- * --dx once on release and this follows.
- */
 .deck > .column > :is(.col-head, .col-body, .col-foot) {
 	translate: var(--view-offset) 0;
 }
@@ -730,8 +612,6 @@ button {
 	margin-bottom: 8px;
 	color: var(--muted);
 }
-
-/* Skeleton */
 
 .bone {
 	display: block;
@@ -754,15 +634,12 @@ button {
 	margin-top: 8px;
 }
 
-/* Manage sources sheet */
-
 .sheet {
 	display: none;
 	flex-direction: column;
 	width: min(100%, var(--sheet-width));
 	max-width: 100%;
 	max-height: calc(100dvh - var(--safe-top) - 24px);
-	/* Anchored to the bottom edge and centred when the screen is wider than the sheet. */
 	margin: auto auto 0;
 	padding: 0;
 	overflow: hidden;
@@ -824,7 +701,6 @@ button {
 }
 
 .sheet-body {
-	/* The list's live region is absolute; this keeps it inside the scroller. */
 	position: relative;
 	min-height: 0;
 	padding: 0 var(--gutter) calc(var(--safe-bottom) + 24px);
@@ -832,12 +708,6 @@ button {
 	overscroll-behavior: contain;
 }
 
-/*
- * The list fits as many source cards side by side as the width allows, so a
- * wide first-run screen shows several columns instead of one long scroll.
- * Every row uses the same fixed cell sizes, so checks, badges, names and
- * handles line up across rows and across cards.
- */
 .src-list {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--source-min)), 1fr));
@@ -850,8 +720,6 @@ button {
 	grid-template-columns: auto auto minmax(0, 1fr) auto;
 	column-gap: 14px;
 	align-items: center;
-	/* Uniform rows (two tagline lines plus padding) keep the grid tracks stable
-	   while a drag moves rows between columns. */
 	min-height: 5rem;
 	background: var(--bg);
 	border-radius: 12px;
@@ -935,7 +803,6 @@ button {
 	height: 44px;
 	color: var(--muted);
 	cursor: grab;
-	/* Touches on the handle drag the row. Touches elsewhere in the sheet scroll it. */
 	touch-action: none;
 }
 
@@ -1073,7 +940,6 @@ button {
 	font-size: 0.875rem;
 }
 
-/* Orange marks an action that deletes data. */
 .warning-btn {
 	width: 100%;
 	min-height: 48px;
@@ -1090,14 +956,6 @@ button {
 	font-size: 0.8125rem;
 }
 
-/*
- * The settings sheet is a centred card like the first-run screen on every
- * screen size, and a query container so its contents adapt to the sheet's own
- * width rather than the viewport. The source list auto-fits columns; the
- * preferences pair into two once the sheet is wide enough. 50rem is two
- * --source-min columns (24rem each) plus the gutter. The compact
- * favorite/block action sheet (.action) keeps the base bottom-strip shape.
- */
 .sheet:not(.action) {
 	width: min(100%, var(--onboarding-width));
 	max-height: min(100dvh, var(--onboarding-height));
@@ -1107,8 +965,6 @@ button {
 	container-type: inline-size;
 }
 
-/* The four preference sections pair into two columns; a ragged third column
-   would leave the tall Swipe section beside empty cells. */
 @container (min-width: 50rem) {
 	.prefs {
 		display: grid;
@@ -1121,8 +977,6 @@ button {
 		grid-column: 1 / -1;
 	}
 }
-
-/* Block and unblock option for a linked site */
 
 .action-body {
 	display: grid;
@@ -1146,23 +1000,18 @@ button {
 	min-height: 44px;
 }
 
-/* First-run screen */
-
 .onboarding {
 	display: none;
 	grid-template-rows: minmax(0, 1fr) auto;
 	width: min(100%, var(--onboarding-width));
 	max-width: 100%;
-	/* The card grows with its content up to this cap; a wide screen shows the sources in several columns. */
 	max-height: min(100dvh, var(--onboarding-height));
 	margin: auto;
 	padding: 0;
-	/* Browsers give a modal dialog overflow: auto. The body is the only scroller. */
 	overflow: hidden;
 	color: var(--text);
 	background: var(--bg);
 	border: 0;
-	/* The backdrop has the page colour, so the corners and the shadow only show when the screen is larger than the dialog. */
 	border-radius: var(--sheet-radius);
 	box-shadow: 0 16px 60px rgb(0 0 0 / 0.3);
 }
@@ -1176,7 +1025,6 @@ button {
 }
 
 .onboarding-body {
-	/* The list's live region is absolute; this keeps it inside the scroller. */
 	position: relative;
 	min-height: 0;
 	padding: calc(var(--safe-top) + 32px) var(--gutter) 16px;
@@ -1214,8 +1062,6 @@ button {
 	text-align: center;
 }
 
-/* Panel of the `?debug` mode */
-
 .debug {
 	position: fixed;
 	inset: 0 0 auto;
@@ -1237,7 +1083,6 @@ button {
 	-webkit-user-select: text;
 }
 
-/* Hover styles need a primary input that can hover without touching, such as a mouse or trackpad. */
 @media (hover: hover) and (pointer: fine) {
 	.icon-btn:hover {
 		color: var(--text);
@@ -1260,8 +1105,6 @@ button {
 		color: var(--text);
 	}
 }
-
-/* Motion */
 
 @keyframes spin {
 	to {
@@ -1345,24 +1188,14 @@ button {
 	}
 }
 
-/*
- * Motion is opt-in. Without this block every duration stays 0s and nothing
- * animates, so a reader who prefers reduced motion gets the safe path by
- * default rather than through an override.
- */
 @media (prefers-reduced-motion: no-preference) {
 	:root {
 		--fast: 0.15s;
-		/* The state marks and pops run at twice the quick beat so they are noticed. */
 		--micro: calc(var(--fast) * 2);
 		--sheet-move: 0.22s;
-		/* The tab bar slides slowly enough to be seen leaving and returning. */
 		--bar-move: 0.4s;
 	}
 
-	/* The theme glide: colours interpolate so light/dark never snaps. Unlike an
-	   opacity crossfade this keeps the settings dialog opaque, so the sources
-	   behind it never show through. */
 	body {
 		transition:
 			background-color var(--micro),
@@ -1396,12 +1229,8 @@ button {
 		animation: pulse 1.2s ease-in-out infinite alternate;
 	}
 
-	/* Rows arrive one beat apart. The beat is a sixth of the row's own animation,
-	   and no row waits longer than that animation, so a long list never trails. */
 	.list.is-new .item {
 		--stagger-step: calc(var(--micro) / 6);
-		/* Backwards, not both: once a row has arrived it must release opacity and
-		   translate so the hide-exit transition below can still move them. */
 		animation: row-in var(--micro) ease backwards;
 		animation-delay: min(calc(var(--i) * var(--stagger-step)), var(--micro));
 	}
@@ -1422,11 +1251,6 @@ button {
 		animation: badge-pop var(--micro) ease;
 	}
 
-	/* A tab tap slides the deck to the new source while the bar and page stay put.
-	   Only the tap path starts a transition; the swipe already glides via --dx.
-	   Where view transitions are unsupported the script swaps the source at once.
-	   The overlay paints in the top layer, above the fixed bar's own z-index, so
-	   the bar is captured too and its group stacked above the deck's to stay on top. */
 	.bar {
 		view-transition-name: bar;
 	}

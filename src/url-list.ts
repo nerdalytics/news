@@ -1,7 +1,3 @@
-/**
- * A list of URLs in `localStorage` that keeps the most recent entries. The
- * read marks and the hidden entries are two such lists.
- */
 export interface UrlList {
 	has(url: string): boolean
 	add(url: string): void
@@ -18,7 +14,6 @@ export function createUrlList(key: string, maxEntries: number): UrlList {
 			const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '[]')
 			return new Set(Array.isArray(stored) ? stored.filter((url) => typeof url === 'string') : [])
 		} catch {
-			// Storage can be blocked, and stored data can be invalid. Start with an empty list.
 			return new Set()
 		}
 	}
@@ -26,9 +21,7 @@ export function createUrlList(key: string, maxEntries: number): UrlList {
 	const save = (entries: Set<string>): void => {
 		try {
 			localStorage.setItem(key, JSON.stringify([...entries]))
-		} catch {
-			// Writing fails when storage is full or blocked. The list still serves this visit.
-		}
+		} catch {}
 	}
 
 	const current = (): Set<string> => {
@@ -39,7 +32,6 @@ export function createUrlList(key: string, maxEntries: number): UrlList {
 	return {
 		add(url) {
 			const entries = current()
-			// Re-adding moves the URL to the end, so the oldest entries drop out first.
 			entries.delete(url)
 			entries.add(url)
 			urls = new Set([...entries].slice(-maxEntries))

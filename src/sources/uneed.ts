@@ -2,16 +2,13 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Uneed's documented read API. Returns today's ranking. */
 const ENDPOINT = `https://mcp.uneed.best/v1/trending?period=daily&limit=${LIMIT}`
 
 interface Tool {
 	slug: string
 	name: string
 	description?: string | null
-	/** The product's own site. */
 	url?: string | null
-	/** The product's page on Uneed. */
 	uneed_url?: string | null
 	vote_count?: number
 }

@@ -2,26 +2,14 @@ import { el, icon } from './dom'
 import { PULL_COMMIT_PX, pullCommits, pullDistance, SLOP_PX } from './gestures'
 
 interface PullOptions {
-	/** Touches that start inside this element can pull. */
 	root: HTMLElement
-	/** Refreshes the column the pull started in. The indicator spins until the promise settles. */
 	onRefresh: (column: HTMLElement) => Promise<void>
 }
 
-/**
- * Pull to refresh. A pull that starts at the top of the page brings down an
- * indicator. Releasing it far enough refreshes the column under the finger.
- *
- * The `touchmove` listener has to be able to cancel the browser's own
- * overscroll, so it cannot be passive. It is attached only while a touch that
- * started at the top of the page is down. Scrolling anywhere else runs
- * without it.
- */
 export function enablePullToRefresh(options: PullOptions): void {
 	const indicator = el('div', 'pull')
 	indicator.setAttribute('aria-hidden', 'true')
 	indicator.append(icon('refresh'))
-	// While a feed loads, the indicator waits where a pull commits.
 	indicator.style.setProperty('--pull-rest', `${PULL_COMMIT_PX}px`)
 	document.body.append(indicator)
 
@@ -32,7 +20,6 @@ export function enablePullToRefresh(options: PullOptions): void {
 	let pulling = false
 	let refreshing = false
 
-	/** The header button would repeat what the indicator shows, so it steps aside. */
 	const setActive = (active: boolean): void => {
 		document.documentElement.classList.toggle('is-pull-active', active)
 	}
@@ -54,9 +41,7 @@ export function enablePullToRefresh(options: PullOptions): void {
 	async function refresh(target: HTMLElement): Promise<void> {
 		refreshing = true
 		indicator.classList.add('is-refreshing')
-		await options.onRefresh(target).catch(() => {
-			// The column shows the error itself.
-		})
+		await options.onRefresh(target).catch(() => {})
 		indicator.classList.remove('is-refreshing')
 		refreshing = false
 		setActive(false)
@@ -69,7 +54,6 @@ export function enablePullToRefresh(options: PullOptions): void {
 		const dx = touch.clientX - startX
 		const dy = touch.clientY - startY
 		if (!pulling) {
-			// Any other movement is a normal scroll or a swipe. Stop listening.
 			if (dy < 0 || Math.abs(dx) > Math.abs(dy)) {
 				release()
 				return
@@ -79,7 +63,6 @@ export function enablePullToRefresh(options: PullOptions): void {
 			indicator.classList.add('is-pulling')
 			setActive(true)
 		}
-		// Stops the browser's own overscroll and its page reload gesture.
 		if (event.cancelable) event.preventDefault()
 		place(pullDistance(dy))
 	}

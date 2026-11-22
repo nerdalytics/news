@@ -1,6 +1,5 @@
 import { decodeXml, getText } from '../lib.mjs'
 
-/** BetaList's Atom feed of newly listed startups. */
 const ENDPOINT = 'https://betalist.com/startups/feed_original'
 
 function tag(entry, name) {
@@ -8,7 +7,6 @@ function tag(entry, name) {
 	return match ? decodeXml(match[1].trim()) : ''
 }
 
-/** Drops the tracking parameters the feed adds to every link. */
 function withoutTracking(link) {
 	const url = new URL(link)
 	for (const key of [...url.searchParams.keys()]) {

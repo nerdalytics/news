@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const KEY = 'thenews:read:v1'
 
-/** The module keeps its list in memory, so every test loads a fresh copy. */
 async function load(): Promise<typeof import('../src/read')> {
 	vi.resetModules()
 	return import('../src/read')
@@ -37,7 +36,6 @@ describe('read links', () => {
 	it('keeps the 500 most recently opened links', async () => {
 		const read = await load()
 		for (let index = 0; index < 510; index++) read.markRead(`https://example.com/${index}`)
-		// Opening an old link again moves it to the recent end of the list.
 		read.markRead('https://example.com/20')
 		expect(read.isRead('https://example.com/9')).toBe(false)
 		expect(read.isRead('https://example.com/20')).toBe(true)

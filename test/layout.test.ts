@@ -51,14 +51,10 @@ describe('windowStep', () => {
 	})
 
 	it('moves the view even when the swipe starts in a later column', () => {
-		// The deck steps from the first displayed source, not from the swiped one.
-		// With sources 2, 3 and 4 displayed, a previous swipe in the right column
-		// must move the view to 1, not land on 3, which is already displayed.
 		expect(windowStep(2, 9, 3, -1)).toBe(1)
 	})
 
 	it('wraps around the ends instead of staying on the last window', () => {
-		// The last full window shows sources 4 and 5; next wraps to the first.
 		expect(windowStep(4, 6, 2, 1)).toBe(0)
 		expect(windowStep(5, 6, 2, 1)).toBe(0)
 		expect(windowStep(0, 6, 2, -1)).toBe(4)

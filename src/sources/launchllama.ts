@@ -2,16 +2,13 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/** Launch Llama's documented read API. Returns the week's products with the most upvotes. */
 const ENDPOINT = `https://kxdushqmihjyuddcwkpw.supabase.co/functions/v1/api-v1/products/top?n=${LIMIT}&period=week`
 
 interface Product {
 	id: string
 	name: string
 	tagline?: string | null
-	/** The product's own site. */
 	website_url?: string | null
-	/** The product's page on Launch Llama. */
 	url?: string | null
 	upvotes?: number
 	created_at?: string

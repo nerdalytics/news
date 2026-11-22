@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, type Mock, vi } from 'vitest'
 import { enableOutsideDismiss } from '../src/ui/dom'
 
-// jsdom does no layout and does not implement dialog.close, so both are stubbed.
-// The rect is a fixed box (100,100)-(300,300).
 function makeDialog(): { dialog: HTMLDialogElement; close: Mock } {
 	const dialog = document.createElement('dialog')
 	const close = vi.fn()

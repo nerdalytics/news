@@ -100,7 +100,6 @@ describe('swipe', () => {
 	})
 
 	it('decides once per direction what the gesture moves', () => {
-		// The far action decides: a source action hands the gesture to the view.
 		expect(swipeTrack(-30, { left: 'read', leftLong: 'next' })).toEqual({
 			kind: 'source',
 			at: SWIPE_LONG_PX,
@@ -109,9 +108,7 @@ describe('swipe', () => {
 			kind: 'source',
 			at: SWIPE_LONG_PX,
 		})
-		// Without a short action, the long one decides from the start.
 		expect(swipeTrack(-30, { leftLong: 'next' })).toEqual({ kind: 'source', at: SWIPE_LONG_PX })
-		// A row action beyond a short source action keeps the row following.
 		expect(swipeTrack(30, { right: 'previous', rightLong: 'read' })).toEqual({ kind: 'row' })
 		expect(swipeTrack(-30, { left: 'read', leftLong: 'hide' })).toEqual({ kind: 'row' })
 		expect(swipeTrack(0, { left: 'next', right: 'read' })).toBeUndefined()
@@ -131,7 +128,6 @@ describe('pull to refresh', () => {
 	it('commits once the indicator reaches the commit distance', () => {
 		expect(pullCommits(PULL_COMMIT_PX - 1)).toBe(false)
 		expect(pullCommits(PULL_COMMIT_PX)).toBe(true)
-		// The limit must lie beyond the commit distance, or a pull could never commit.
 		expect(PULL_MAX_PX).toBeGreaterThan(PULL_COMMIT_PX)
 	})
 })
@@ -158,7 +154,6 @@ describe('tab bar', () => {
 	it('shows at the end of the page, even while scrolling down', () => {
 		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX)).toBe(false)
 		expect(barHides(40, below, 0)).toBe(false)
-		// The last few pixels arrive as a movement below the tolerance.
 		expect(barHides(2, below, 0)).toBe(false)
 		expect(barHides(40, below, BAR_BOTTOM_ZONE_PX + 1)).toBe(true)
 	})

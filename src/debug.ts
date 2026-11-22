@@ -1,7 +1,3 @@
-/**
- * Loaded only with `?debug` in the URL. Shows uncaught errors and the duration
- * of every feed request on the page, for devices without a reachable console.
- */
 import { SECOND } from './time'
 
 const panel = document.createElement('pre')

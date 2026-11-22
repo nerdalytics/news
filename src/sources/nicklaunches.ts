@@ -2,20 +2,13 @@ import { safeUrl } from '../format'
 import { getJson } from '../net'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/**
- * Nick Launches' documented read API. Returns this week's launches, ranked by
- * upvotes. The trailing slash matters: without it the server redirects, and the
- * redirect carries no CORS header.
- */
 const ENDPOINT = 'https://nicklaunches.com/api/v1/feed/week/'
 
 interface Product {
 	slug: string
 	name: string
 	tagline?: string | null
-	/** The product's own site. */
 	url?: string | null
-	/** The product's page on Nick Launches, with its comments. */
 	productUrl?: string | null
 	upvotes?: number
 	commentCount?: number

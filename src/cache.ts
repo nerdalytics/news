@@ -4,12 +4,10 @@ import { DAY, MINUTE } from './time'
 
 export interface Feed {
 	items: FeedItem[]
-	/** Epoch milliseconds. */
 	fetchedAt: number
 }
 
 const KEY_PREFIX = 'thenews:feed:v1:'
-/** The app discards cached feeds older than this. */
 const MAX_AGE_MS = 7 * DAY
 
 const memory = new Map<string, Feed>()
@@ -25,7 +23,6 @@ function readStored(id: string): Feed | undefined {
 		const feed: unknown = JSON.parse(localStorage.getItem(KEY_PREFIX + id) ?? 'null')
 		return isFeed(feed) ? feed : undefined
 	} catch {
-		// Storage can be blocked, for example in private mode, and stored data can be invalid.
 		return undefined
 	}
 }
@@ -33,12 +30,9 @@ function readStored(id: string): Feed | undefined {
 function writeStored(id: string, feed: Feed): void {
 	try {
 		localStorage.setItem(KEY_PREFIX + id, JSON.stringify(feed))
-	} catch {
-		// Writing fails when storage is full or blocked. The in-memory copy still serves this visit.
-	}
+	} catch {}
 }
 
-/** Returns the cached feed of a source without a network request. */
 export function peek(id: string, now = Date.now()): Feed | undefined {
 	const feed = memory.get(id) ?? readStored(id)
 	if (!feed || now - feed.fetchedAt > MAX_AGE_MS) return undefined
@@ -58,7 +52,6 @@ async function fetchFeed(source: SourceMeta, priority: RequestPriority): Promise
 	return feed
 }
 
-/** Reports the outcome of a fetch to the `?debug` panel. Nothing listens otherwise. */
 function report(id: string, startedAt: number, error?: unknown): void {
 	const detail = {
 		id,
@@ -80,7 +73,6 @@ async function timedFetch(source: SourceMeta, priority: RequestPriority): Promis
 	}
 }
 
-/** Fetches a source. Concurrent calls for the same source share one request. */
 export function refresh(source: SourceMeta, priority: RequestPriority): Promise<Feed> {
 	const pending = inflight.get(source.id)
 	if (pending) return pending

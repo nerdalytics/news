@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Site Inspire's RSS feed of newly featured websites. */
 const ENDPOINT = 'https://www.siteinspire.com/websites/feed'
 
 export default async function fetchItems() {

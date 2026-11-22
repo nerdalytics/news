@@ -10,26 +10,18 @@ import { createSourceList } from './source-list'
 const MARK =
 	'<svg viewBox="0 0 64 64" width="48" height="48" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#f0652f"/><path d="M18 22h28M18 32h20M18 42h12" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>'
 
-/** Fetches the chosen sources while the reader is still choosing. */
 function warmUp(sources: readonly SourceSetting[], started: Set<string>): void {
 	for (const { enabled, id } of sources) {
 		const source = sourceById(id)
 		if (!enabled || !source || started.has(id)) continue
 		started.add(id)
-		refresh(source, 'low').catch(() => {
-			// The column reports the error and offers a retry once it is on screen.
-		})
+		refresh(source, 'low').catch(() => {})
 	}
 }
 
-/**
- * The first-run screen. No source is on until the reader picks one, and the
- * settings cookie is written only when the reader confirms.
- */
 export function showOnboarding(): void {
 	const screen = el('dialog', 'onboarding')
 	screen.setAttribute('aria-labelledby', 'onboarding-title')
-	// The reader has to choose, so Esc does not close this dialog.
 	screen.addEventListener('cancel', (event) => event.preventDefault())
 
 	const body = el('div', 'onboarding-body')
@@ -58,14 +50,12 @@ export function showOnboarding(): void {
 		},
 		scroller: body,
 	})
-	/** A hosted source is offered only once its feed has been read. */
 	const offered = (sources: readonly SourceSetting[]): SourceSetting[] =>
 		sources.filter((setting) => {
 			const source = sourceById(setting.id)
 			return source !== undefined && isAvailable(source)
 		})
 	list.render(offered(getSettings().sources))
-	// Hosted sources join the list when their feeds arrive. The choices made so far are kept.
 	onAvailabilityChange(() => {
 		if (screen.isConnected) list.render(offered(withHiddenSources(list.read())))
 	})

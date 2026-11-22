@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Behance's RSS feed of featured projects. */
 const ENDPOINT = 'https://www.behance.net/feeds/projects'
 
 export default async function fetchItems() {

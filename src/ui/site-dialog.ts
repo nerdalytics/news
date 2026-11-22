@@ -42,15 +42,12 @@ function render(): void {
 function build(): HTMLDialogElement {
 	const sheet = el('dialog', 'sheet action')
 	sheet.setAttribute('aria-labelledby', 'site-title')
-	// In browsers that support `closedby`, a click outside or Esc closes the dialog.
 	sheet.setAttribute('closedby', 'any')
-	// In browsers without `closedby`, close on an outside press-and-release.
 	enableOutsideDismiss(sheet)
 	document.body.append(sheet)
 	return sheet
 }
 
-/** Offers to favorite or block a linked site, and to undo either. */
 export function openSiteDialog(host: string): void {
 	site = host
 	dialog ??= build()

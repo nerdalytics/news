@@ -3,10 +3,6 @@ import { getJson } from '../net'
 import { DAY } from '../time'
 import { type FeedItem, LIMIT, type SourceAdapter } from './types'
 
-/**
- * GitHub has no API for github.com/trending. This adapter uses the Search API
- * and asks for repositories created in the last week, ordered by stars.
- */
 const SEARCH_URL = 'https://api.github.com/search/repositories'
 const WINDOW_DAYS = 7
 

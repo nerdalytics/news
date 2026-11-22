@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** WIRED's RSS feed of latest stories. */
 const ENDPOINT = 'https://www.wired.com/feed/rss'
 
 export default async function fetchItems() {

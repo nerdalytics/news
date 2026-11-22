@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Creative Boom's RSS feed of latest articles. */
 const ENDPOINT = 'https://www.creativeboom.com/feed/'
 
 export default async function fetchItems() {

@@ -1,9 +1,5 @@
 import { getJson, LIMIT } from '../lib.mjs'
 
-/**
- * Product Hunt's GraphQL API. It needs a developer token, which the workflow
- * passes in from the repository secret `PRODUCTHUNT_TOKEN`.
- */
 const ENDPOINT = 'https://api.producthunt.com/v2/api/graphql'
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -24,7 +20,6 @@ export default async function fetchItems() {
 	})
 	if (errors?.length) throw new Error(`Product Hunt answered: ${errors[0].message}`)
 	return data.posts.edges.map(({ node }) => ({
-		// The entry opens the product's own site; the comment count opens the PH discussion.
 		comments: { count: node.commentsCount, label: 'comment', url: node.url },
 		description: node.tagline,
 		id: node.id,

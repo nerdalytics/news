@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** TechCrunch's RSS feed of latest articles. */
 const ENDPOINT = 'https://techcrunch.com/feed/'
 
 export default async function fetchItems() {

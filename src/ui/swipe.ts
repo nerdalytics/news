@@ -10,45 +10,16 @@ import {
 } from './gestures'
 
 interface SwipeOptions {
-	/** Rows inside this element can be swiped. */
 	root: HTMLElement
 	settings: () => SwipeSettings
-	/** False if the action makes no sense for this row, for example comments on a row without any. */
 	applies: (row: HTMLElement, action: SwipeAction) => boolean
-	/** The words shown behind the row while the swipe would carry out this action. */
 	label: (row: HTMLElement, action: SwipeAction) => string
 	onAction: (row: HTMLElement, action: SwipeAction) => void
 }
 
-/** A swipe that ends on a link must not open it. Clicks are ignored for this long afterwards. */
 const CLICK_SUPPRESS_MS = 400
-/** Longer than the release glide (--fast), so the cleanup never cuts it short. */
 const SETTLE_MS = 200
 
-/**
- * Horizontal swipes on entries, by touch, pen or mouse drag. The rows have
- * `touch-action: pan-y`, so the browser keeps handling vertical scrolling
- * itself and hands horizontal movement to these pointer events. No listener
- * here blocks scrolling. A press that never passes the swipe threshold stays a
- * normal click, so links still open.
- *
- * The script does not move anything. It writes one value, --dx, the finger's
- * distance, and the styles derive every offset from it with calc alone. The
- * swiped row's on-screen place is always the finger's: a plain row swipe moves
- * the row content directly, and a swipe whose far action switches the source
- * hands over to the whole view at that action's distance — the view is --dx
- * minus the row offset, so it starts from rest, catches up to the finger as the
- * row slides back to its place, and then carries everything together. The row
- * never reverses and never lags. Because nothing transitions while the finger
- * is down, no layer can smear into a double image, and the handover works the
- * same in both directions. On release the deck transitions --dx itself back to
- * zero, the one movement that may animate, and every part glides home together.
- *
- * Two labels name the action the swipe would carry out: one anchored to the
- * row, one centered on the screen for a source swipe. Each is placed once
- * when its anchor appears; only their opacity crossfades, so a label never
- * chases a position either.
- */
 export function enableSwipe(options: SwipeOptions): void {
 	const { root } = options
 	root.style.setProperty('--swipe-max', `${SWIPE_MAX_PX}px`)
@@ -70,7 +41,6 @@ export function enableSwipe(options: SwipeOptions): void {
 
 	const enabled = (): boolean => Object.values(options.settings()).some(Boolean)
 
-	/** The settings without the actions that make no sense for this row. */
 	const applicable = (): SwipeSettings => {
 		const settings = options.settings()
 		if (!row) return {}
@@ -81,15 +51,12 @@ export function enableSwipe(options: SwipeOptions): void {
 		return filtered
 	}
 
-	/** Places a hint at the near or far edge of its anchor, by the swipe direction. */
 	const place = (hint: HTMLElement, anchor: HTMLElement, padded: boolean): void => {
 		const rect = anchor.getBoundingClientRect()
 		const pad = padded ? getComputedStyle(anchor) : undefined
 		const start = rect.left + (pad ? Number.parseFloat(pad.paddingLeft) : 0)
 		const end = rect.right - (pad ? Number.parseFloat(pad.paddingRight) : 0)
 		const x = dx < 0 ? end - hint.offsetWidth : start
-		// Every hint sits at the swiped row's centre, so switching between a row
-		// action and a source action never jumps the label vertically.
 		const rowRect = row?.getBoundingClientRect()
 		const y = rowRect
 			? rowRect.top + rowRect.height / 2 - document.documentElement.clientHeight / 2
@@ -98,7 +65,6 @@ export function enableSwipe(options: SwipeOptions): void {
 		hint.style.setProperty('--hint-y', `${y}px`)
 	}
 
-	/** Shows the label of the current action on its hint and hides the other. */
 	const showHint = (action: SwipeAction | undefined): void => {
 		if (!row || !column) return
 		rowHint.classList.remove('is-visible')
@@ -122,7 +88,6 @@ export function enableSwipe(options: SwipeOptions): void {
 			else delete root.dataset.swipeMode
 			if (track?.kind === 'source') {
 				root.style.setProperty('--swipe-at', `${track.at}px`)
-				// The slope that slides the row home exactly at the travel limit.
 				root.style.setProperty('--swipe-rejoin', `${SWIPE_MAX_PX / (SWIPE_MAX_PX - track.at)}`)
 			}
 			lastMode = mode
@@ -135,7 +100,6 @@ export function enableSwipe(options: SwipeOptions): void {
 		}
 	}
 
-	/** Ends the gesture state and takes the hints and derived offsets away. */
 	const cleanup = (): void => {
 		clearTimeout(settleTimer)
 		delete root.dataset.settling
@@ -156,11 +120,6 @@ export function enableSwipe(options: SwipeOptions): void {
 		lastAction = undefined
 	}
 
-	/**
-	 * Lets go. The deck animates --dx back to zero and every derived offset
-	 * glides home with it; the state stays until that glide is over, so a
-	 * follow-up gesture can interrupt it cleanly.
-	 */
 	const release = (commit: boolean): void => {
 		if (!row) return
 		const settings = applicable()
@@ -170,9 +129,6 @@ export function enableSwipe(options: SwipeOptions): void {
 		rowHint.classList.remove('is-visible')
 		viewHint.classList.remove('is-visible')
 		if (action && movesSource(action)) {
-			// A source swipe glides the column in from full travel, so a short swipe
-			// moves the view just as visibly as a long one. Set it without a
-			// transition, then let the settling glide carry it home.
 			root.style.setProperty('--dx', `${dx < 0 ? -SWIPE_MAX_PX : SWIPE_MAX_PX}px`)
 			void root.offsetWidth
 		}
@@ -185,10 +141,7 @@ export function enableSwipe(options: SwipeOptions): void {
 	}
 
 	root.addEventListener('pointerdown', (event) => {
-		// Touch, pen and the primary mouse button all swipe; a click without a
-		// drag never passes startsSwipe, so links still open normally.
 		if (!event.isPrimary || event.button !== 0 || !enabled()) return
-		// The previous gesture may still be gliding home; start from a clean state.
 		cleanup()
 		row = (event.target as Element).closest<HTMLElement>('.item[data-url]')
 		if (!row) return
@@ -207,7 +160,6 @@ export function enableSwipe(options: SwipeOptions): void {
 			swiping = true
 			row.dataset.swiping = ''
 			root.append(rowHint, viewHint)
-			// Keeps the movement with this row when the finger leaves it.
 			row.setPointerCapture(pointer)
 		}
 		draw()
@@ -218,11 +170,8 @@ export function enableSwipe(options: SwipeOptions): void {
 		release(true)
 	})
 
-	// The browser cancels the pointer when it takes over for vertical scrolling.
 	root.addEventListener('pointercancel', () => release(false))
 
-	// A mouse drag on a link would otherwise start the browser's own drag-and-drop
-	// ghost instead of a swipe. Rows with swipe actions are not draggable.
 	root.addEventListener('dragstart', (event) => {
 		if (enabled()) event.preventDefault()
 	})

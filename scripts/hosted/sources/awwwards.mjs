@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Awwwards' FeedBurner feed of the sites of the day. */
 const ENDPOINT = 'http://feeds.feedburner.com/awwwards-sites-of-the-day'
 
 export default async function fetchItems() {

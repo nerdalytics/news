@@ -5,7 +5,6 @@ const HOUR = 60 * 60 * 1000
 const lobsters = sourceById('lobsters')!
 const hn = sourceById('hn')!
 
-/** The module keeps its state in memory, so every test loads a fresh copy. */
 async function load(): Promise<typeof import('../src/availability')> {
 	vi.resetModules()
 	return import('../src/availability')
@@ -51,7 +50,6 @@ describe('availability of sources', () => {
 		availability.onAvailabilityChange(listener)
 		availability.setGeneratedAt('lobsters', Date.now() - HOUR)
 		expect(listener).toHaveBeenCalledTimes(1)
-		// A newer feed of a source that is already listed changes nothing on screen.
 		availability.setGeneratedAt('lobsters', Date.now())
 		expect(listener).toHaveBeenCalledTimes(1)
 		availability.setGeneratedAt('lobsters', undefined)

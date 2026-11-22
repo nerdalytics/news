@@ -1,6 +1,5 @@
 import { getJson } from '../lib.mjs'
 
-/** Smol Launch's documented read API. Its documentation asks clients to cache responses for an hour. */
 const API = 'https://smollaunch.com/api/v1'
 
 export default async function fetchItems() {

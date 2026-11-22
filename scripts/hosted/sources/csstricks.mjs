@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** CSS-Tricks' RSS feed, served through FeedBurner. */
 const ENDPOINT = 'http://feeds.feedburner.com/CssTricks'
 
 export default async function fetchItems() {

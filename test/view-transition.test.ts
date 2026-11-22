@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { slideView } from '../src/ui/dom'
 
-// jsdom implements neither view transitions nor a real matchMedia, so both are
-// stubbed per test. The update must run exactly once on every path.
 type TransitionDocument = {
 	startViewTransition?: (options: { update: () => void; types?: string[] }) => unknown
 }
@@ -12,7 +10,6 @@ function stubStart(start: (options: { update: () => void; types?: string[] }) =>
 }
 
 beforeEach(() => {
-	// This jsdom env exposes no matchMedia; default to motion allowed.
 	vi.stubGlobal(
 		'matchMedia',
 		vi.fn(() => ({ matches: false }))

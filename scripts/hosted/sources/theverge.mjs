@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** The Verge's Atom feed. It carries only the ten most recent stories. */
 const ENDPOINT = 'https://www.theverge.com/rss/index.xml'
 
 export default async function fetchItems() {

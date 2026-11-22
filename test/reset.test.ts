@@ -4,7 +4,6 @@ import { startFresh } from '../src/reset'
 
 describe('startFresh', () => {
 	beforeEach(() => {
-		// jsdom cannot navigate. The reload is replaced by a spy.
 		vi.stubGlobal('location', { ...location, pathname: '/news/', replace: vi.fn() })
 	})
 

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseFeed } from '../scripts/hosted/lib.mjs'
 
-// The fixtures use the field names of the live feeds, checked on 2026-11-19.
-// Their content is invented.
-
 describe('hosted feed parser', () => {
 	const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>

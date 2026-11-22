@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Booooooom's RSS feed of latest posts. */
 const ENDPOINT = 'https://www.booooooom.com/feed/'
 
 export default async function fetchItems() {

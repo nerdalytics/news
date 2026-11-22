@@ -1,6 +1,5 @@
 import { getText, parseFeed } from '../lib.mjs'
 
-/** Colossal's RSS feed of latest posts. */
 const ENDPOINT = 'https://www.thisiscolossal.com/feed/'
 
 export default async function fetchItems() {

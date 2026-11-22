@@ -14,9 +14,6 @@ import { LIMIT } from '../src/sources/types'
 import * as uneed from '../src/sources/uneed'
 import * as wikipedia from '../src/sources/wikipedia'
 
-// The fixtures use the field names of the live responses, checked on 2026-11-15.
-// Their content is invented.
-
 describe('Hacker News', () => {
 	const hits = [
 		{

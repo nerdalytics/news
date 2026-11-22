@@ -14,13 +14,6 @@ import type { SourceAdapter, SourceMeta } from './types'
 import uneed from './uneed'
 import wikipedia from './wikipedia'
 
-/**
- * The catalogue. Readers can enable only the sources listed here.
- *
- * A direct source uses a public endpoint that sends CORS headers, so the
- * browser reads it itself. A hosted source is fetched by a GitHub workflow of
- * this repository, and the browser reads the feed file that workflow publishes.
- */
 export const SOURCES: readonly SourceMeta[] = [
 	{
 		id: 'hn',
@@ -393,7 +386,6 @@ export function sourceById(id: string): SourceMeta | undefined {
 	return BY_ID.get(id)
 }
 
-/** The adapters of the direct sources are a few hundred bytes each, so they ship in the main bundle. */
 const ADAPTERS: Record<string, SourceAdapter> = {
 	devto,
 	github,
