@@ -23,6 +23,11 @@ and are global rather than per source.
   to `fresh`; highlights already granted this visit survive re-renders (a resize or a
   refresh returning the same feed must not strip them). Renders while hidden (prefetch)
   never mark seen, so a prefetched source still greets the reader with its new items.
+- Returning to the app ends the visit too. A home-screen web app resumes rather than
+  reloads, so `Deck.onResume` calls `Column.endVisit` (clears `fresh`, repaints) before
+  `activate` for each visible column. Already-seen items lose the bold; only arrivals
+  fetched by the resume-refresh are highlighted again. Without this, the first visit's
+  bold would persist across every resume on iOS.
 - The first ever visit to a source highlights everything: nothing has been seen yet.
 - The headline weight rises from 600 to 800 via `.is-unseen .title`, outside the motion
   media block so reduced-motion readers keep the signal.

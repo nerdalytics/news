@@ -153,6 +153,11 @@ export class Column {
 		this.paintFresh()
 	}
 
+	endVisit(): void {
+		this.fresh.clear()
+		this.paintFresh()
+	}
+
 	restyle(): void {
 		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) applyState(row)
 	}

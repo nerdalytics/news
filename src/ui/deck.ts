@@ -338,7 +338,11 @@ export class Deck {
 
 	private onResume(): void {
 		if (document.visibilityState !== 'visible') return
-		for (const id of this.visible) void this.columns.get(id)?.activate()
+		for (const id of this.visible) {
+			const column = this.columns.get(id)
+			column?.endVisit()
+			void column?.activate()
+		}
 		void this.prefetchOthers()
 	}
 }

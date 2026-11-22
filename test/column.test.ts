@@ -72,6 +72,14 @@ describe('Column novelty', () => {
 		expect(unseenUrls(column)).toEqual(['https://example.com/a'])
 	})
 
+	it('drops the highlights when the visit ends on app resume', async () => {
+		const column = await columnWith([item('https://example.com/a'), item('https://example.com/b')])
+		column.setVisible(true)
+		expect(unseenUrls(column)).toEqual(['https://example.com/a', 'https://example.com/b'])
+		column.endVisit()
+		expect(unseenUrls(column)).toEqual([])
+	})
+
 	it('keeps the visit highlights and adds arrivals when the feed refreshes', async () => {
 		vi.resetModules()
 		let current = {
