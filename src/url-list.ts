@@ -1,6 +1,7 @@
 export interface UrlList {
 	has(url: string): boolean
 	add(url: string): void
+	addAll(urls: Iterable<string>): void
 	delete(url: string): void
 	clear(): void
 	size(): number
@@ -34,6 +35,15 @@ export function createUrlList(key: string, maxEntries: number): UrlList {
 			const entries = current()
 			entries.delete(url)
 			entries.add(url)
+			urls = new Set([...entries].slice(-maxEntries))
+			save(urls)
+		},
+		addAll(added) {
+			const entries = current()
+			for (const url of added) {
+				entries.delete(url)
+				entries.add(url)
+			}
 			urls = new Set([...entries].slice(-maxEntries))
 			save(urls)
 		},
