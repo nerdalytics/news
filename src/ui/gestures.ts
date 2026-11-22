@@ -17,6 +17,19 @@ export const SWIPE_ACTIONS = [
 ] as const
 export type SwipeAction = (typeof SWIPE_ACTIONS)[number]
 
+/** The single-word name of each action, shown in the settings and behind a swipe. */
+export const SWIPE_LABELS: Record<SwipeAction, string> = {
+	block: 'Block',
+	browser: 'Browser',
+	comments: 'Comments',
+	favorite: 'Favorite',
+	hide: 'Hide',
+	next: 'Next',
+	previous: 'Previous',
+	read: 'Read',
+	unread: 'Unread',
+}
+
 /** True for the actions that move the whole column instead of a single row. */
 export function movesSource(action: SwipeAction | undefined): boolean {
 	return action === 'next' || action === 'previous'

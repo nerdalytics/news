@@ -10,7 +10,7 @@ import {
 } from '../settings'
 import { sourceById } from '../sources/index'
 import { el, enableOutsideDismiss } from './dom'
-import { SWIPE_ACTIONS, type SwipeAction, type SwipeSlot } from './gestures'
+import { SWIPE_ACTIONS, SWIPE_LABELS, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
 
 const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
@@ -73,18 +73,6 @@ const SLOT_LABELS: ReadonlyArray<readonly [slot: SwipeSlot, label: string]> = [
 	['rightLong', 'Long swipe right'],
 ]
 
-const ACTION_LABELS: Record<SwipeAction, string> = {
-	block: 'Block the site',
-	browser: 'Open in the browser',
-	comments: 'Open the comments',
-	favorite: 'Favorite the site',
-	hide: 'Hide the entry',
-	next: 'Next source',
-	previous: 'Previous source',
-	read: 'Mark as read',
-	unread: 'Mark as unread',
-}
-
 /** The value of the option that leaves a swipe without an action. */
 const NO_ACTION = ''
 
@@ -92,7 +80,7 @@ function renderSwipeSelect(slot: SwipeSlot, label: string): HTMLElement {
 	const row = el('label', 'select-row')
 	const select = el('select', 'select')
 	select.append(new Option('Nothing', NO_ACTION))
-	for (const action of SWIPE_ACTIONS) select.append(new Option(ACTION_LABELS[action], action))
+	for (const action of SWIPE_ACTIONS) select.append(new Option(SWIPE_LABELS[action], action))
 	select.value = getSettings().swipe[slot] ?? NO_ACTION
 	select.addEventListener('change', () => {
 		const swipe = { ...getSettings().swipe }

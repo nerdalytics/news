@@ -4,7 +4,7 @@ import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../
 import { sourceById } from '../sources/index'
 import { Column } from './column'
 import { el, popBadge, prefersReducedMotion, slideView, whenIdle } from './dom'
-import { navDirection, type SwipeAction } from './gestures'
+import { navDirection, SWIPE_LABELS, type SwipeAction } from './gestures'
 import { capacity, topsChanged, windowStart, windowStep } from './layout'
 import { openInBrowser } from './open'
 
@@ -24,18 +24,6 @@ interface DeckOptions {
 const COLUMN_MIN = '--column-min'
 /** Space kept on both sides of the current tab when the strip scrolls it into view. */
 const TAB_MARGIN_PX = 12
-
-const SWIPE_LABELS: Record<SwipeAction, string> = {
-	block: 'Block site',
-	browser: 'Open in browser',
-	comments: 'Comments',
-	favorite: 'Favorite site',
-	hide: 'Hide',
-	next: 'Next source',
-	previous: 'Previous source',
-	read: 'Read',
-	unread: 'Unread',
-}
 
 function savesData(): boolean {
 	const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
@@ -128,12 +116,11 @@ export class Deck {
 		return row.dataset.url !== undefined
 	}
 
-	/** The words shown behind a row while a swipe would carry out this action. */
+	/** The word shown behind a row while a swipe would carry out this action. */
 	swipeLabel(row: HTMLElement, action: SwipeAction): string {
 		const site = row.dataset.site
-		if (action === 'block' && site) return isBlocked(site) ? `Unblock ${site}` : `Block ${site}`
-		if (action === 'favorite' && site)
-			return isFavorite(site) ? `Unfavorite ${site}` : `Favorite ${site}`
+		if (action === 'block' && site) return isBlocked(site) ? 'Unblock' : 'Block'
+		if (action === 'favorite' && site) return isFavorite(site) ? 'Unfavorite' : 'Favorite'
 		return SWIPE_LABELS[action]
 	}
 
