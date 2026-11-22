@@ -1262,8 +1262,10 @@ button {
 		background-repeat: no-repeat;
 		background-size: 250% 100%;
 		pointer-events: none;
+	}
+
+	.item.is-unseen.is-flashing::before {
 		animation: flashlight calc(var(--micro) * 4) ease-in-out 2 backwards;
-		animation-delay: min(calc(var(--i) * var(--micro) / 6), var(--micro));
 	}
 
 	.is-favorite .site::before {

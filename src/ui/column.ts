@@ -115,6 +115,7 @@ export class Column {
 	private shown: Feed | undefined
 	private visible = false
 	private readonly fresh = new Set<string>()
+	private observer: IntersectionObserver | undefined
 
 	constructor(
 		readonly source: SourceMeta,
@@ -149,13 +150,15 @@ export class Column {
 		if (this.visible === visible) return
 		this.visible = visible
 		this.fresh.clear()
-		if (visible && this.shown) this.adopt(this.shown.items)
 		this.paintFresh()
+		if (visible) this.observeRows()
+		else this.observer?.disconnect()
 	}
 
 	endVisit(): void {
 		this.fresh.clear()
 		this.paintFresh()
+		if (this.visible) this.observeRows()
 	}
 
 	restyle(): void {
@@ -214,14 +217,28 @@ export class Column {
 		}
 	}
 
-	private adopt(items: readonly FeedItem[]): void {
-		for (const item of items) {
-			if (!isSeen(this.source.id, item.url)) this.fresh.add(item.url)
+	private observeRows(): void {
+		if (typeof IntersectionObserver === 'undefined') return
+		this.observer ??= new IntersectionObserver((entries) => this.onIntersect(entries))
+		this.observer.disconnect()
+		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) {
+			this.observer.observe(row)
 		}
-		markSeen(
-			this.source.id,
-			items.map((item) => item.url)
-		)
+	}
+
+	private onIntersect(entries: IntersectionObserverEntry[]): void {
+		if (!this.visible) return
+		const arrived: string[] = []
+		for (const entry of entries) {
+			if (!entry.isIntersecting) continue
+			const row = entry.target as HTMLElement
+			const url = row.dataset.url
+			if (!url || isSeen(this.source.id, url)) continue
+			this.fresh.add(url)
+			row.classList.add('is-unseen', 'is-flashing')
+			arrived.push(url)
+		}
+		if (arrived.length > 0) markSeen(this.source.id, arrived)
 	}
 
 	private paintFresh(): void {
@@ -242,8 +259,8 @@ export class Column {
 			list.append(...feed.items.map((item, index) => renderItem(item, index, this.source)))
 			this.body.replaceChildren(list)
 		}
-		if (this.visible) this.adopt(feed.items)
 		this.paintFresh()
+		if (this.visible) this.observeRows()
 		this.renderFoot()
 		this.onSettled()
 	}

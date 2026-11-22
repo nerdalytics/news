@@ -41,6 +41,7 @@ export class Deck {
 	private settled = false
 	private prefetching = false
 	private prefetchAgain = false
+	private wasHidden = false
 
 	constructor(private readonly options: DeckOptions) {
 		new ResizeObserver(() => this.onResize()).observe(options.deck)
@@ -48,9 +49,15 @@ export class Deck {
 		options.deck.addEventListener('click', (event) => this.onItemClick(event))
 		options.deck.addEventListener('auxclick', (event) => this.onItemClick(event))
 		addEventListener('hashchange', () => this.showFromHash())
-		document.addEventListener('visibilitychange', () => this.onResume())
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') this.wasHidden = true
+			else this.onResume()
+		})
 		addEventListener('pageshow', (event) => {
-			if (event.persisted) this.onResume()
+			if (event.persisted) {
+				this.wasHidden = true
+				this.onResume()
+			}
 		})
 	}
 
@@ -338,9 +345,11 @@ export class Deck {
 
 	private onResume(): void {
 		if (document.visibilityState !== 'visible') return
+		const returning = this.wasHidden
+		this.wasHidden = false
 		for (const id of this.visible) {
 			const column = this.columns.get(id)
-			column?.endVisit()
+			if (returning) column?.endVisit()
 			void column?.activate()
 		}
 		void this.prefetchOthers()
