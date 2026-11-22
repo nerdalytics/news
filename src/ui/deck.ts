@@ -238,8 +238,10 @@ export class Deck {
 	private applyLayout(): void {
 		this.visible = new Set(this.window())
 		for (const [id, column] of this.columns) {
-			column.el.hidden = !this.visible.has(id)
-			if (this.visible.has(id)) void column.activate()
+			const visible = this.visible.has(id)
+			column.el.hidden = !visible
+			column.setVisible(visible)
+			if (visible) void column.activate()
 		}
 		this.markTabs()
 	}

@@ -4,6 +4,7 @@ import { count, hostOf, timeAgo } from '../format'
 import { isHidden } from '../hidden'
 import { describeError } from '../net'
 import { isRead } from '../read'
+import { isSeen, markSeen } from '../seen'
 import { getSettings, isBlocked, isFavorite } from '../settings'
 import type { FeedItem, SourceMeta } from '../sources/types'
 import { el, icon } from './dom'
@@ -112,6 +113,8 @@ export class Column {
 	private readonly foot: HTMLElement
 	private pending: Promise<void> | undefined
 	private shown: Feed | undefined
+	private visible = false
+	private readonly fresh = new Set<string>()
 
 	constructor(
 		readonly source: SourceMeta,
@@ -140,6 +143,14 @@ export class Column {
 
 	prefetch(): Promise<void> {
 		return this.revalidate('low')
+	}
+
+	setVisible(visible: boolean): void {
+		if (this.visible === visible) return
+		this.visible = visible
+		this.fresh.clear()
+		if (visible && this.shown) this.adopt(this.shown.items)
+		this.paintFresh()
 	}
 
 	restyle(): void {
@@ -198,6 +209,22 @@ export class Column {
 		}
 	}
 
+	private adopt(items: readonly FeedItem[]): void {
+		for (const item of items) {
+			if (!isSeen(this.source.id, item.url)) this.fresh.add(item.url)
+		}
+		markSeen(
+			this.source.id,
+			items.map((item) => item.url)
+		)
+	}
+
+	private paintFresh(): void {
+		for (const row of this.el.querySelectorAll<HTMLElement>('.item[data-url]')) {
+			row.classList.toggle('is-unseen', this.fresh.has(row.dataset.url ?? ''))
+		}
+	}
+
 	private render(feed: Feed): void {
 		const entering = this.shown === undefined
 		this.shown = feed
@@ -210,6 +237,8 @@ export class Column {
 			list.append(...feed.items.map((item, index) => renderItem(item, index, this.source)))
 			this.body.replaceChildren(list)
 		}
+		if (this.visible) this.adopt(feed.items)
+		this.paintFresh()
 		this.renderFoot()
 		this.onSettled()
 	}

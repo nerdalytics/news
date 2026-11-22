@@ -432,6 +432,10 @@ button {
 	inset: 0;
 }
 
+.is-unseen .title {
+	font-weight: 800;
+}
+
 .is-read .title {
 	color: var(--text-visited);
 }
@@ -1137,6 +1141,15 @@ button {
 	}
 }
 
+@keyframes flashlight {
+	from {
+		background-position: 100% 0;
+	}
+	to {
+		background-position: 0% 0;
+	}
+}
+
 @keyframes check-pop {
 	0% {
 		scale: 0;
@@ -1233,6 +1246,24 @@ button {
 		--stagger-step: calc(var(--micro) / 6);
 		animation: row-in var(--micro) ease backwards;
 		animation-delay: min(calc(var(--i) * var(--stagger-step)), var(--micro));
+	}
+
+	.item.is-unseen::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: 8px;
+		background: linear-gradient(
+			100deg,
+			transparent 42%,
+			color-mix(in srgb, var(--brand) 16%, transparent) 50%,
+			transparent 58%
+		);
+		background-repeat: no-repeat;
+		background-size: 250% 100%;
+		pointer-events: none;
+		animation: flashlight calc(var(--micro) * 4) ease-in-out 2 backwards;
+		animation-delay: min(calc(var(--i) * var(--micro) / 6), var(--micro));
 	}
 
 	.is-favorite .site::before {
