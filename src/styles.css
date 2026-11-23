@@ -728,15 +728,7 @@ button {
 	list-style: none;
 }
 
-.sources-wrap {
-	container-type: inline-size;
-}
-
 .strip-preview {
-	position: static;
-	top: 0;
-	z-index: 2;
-	pointer-events: none;
 	background: var(--bg);
 	padding: var(--preview-pad);
 	margin-inline: calc(-1 * var(--preview-pad));
@@ -770,12 +762,6 @@ button {
 	outline: var(--preview-ring) solid var(--accent);
 	outline-offset: var(--preview-ring);
 	scale: var(--preview-scale);
-}
-
-@container (min-width: 35.75rem) {
-	.strip-preview {
-		position: sticky;
-	}
 }
 
 .src {
