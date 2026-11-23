@@ -112,6 +112,7 @@ whenIdle(() => {
 		hostedSources().filter((source) => enabled.has(source.id) && !isAvailable(source))
 	)
 })
+whenIdle(() => void loadManage())
 
 if (isFirstVisit()) void onboard()
 else if (enabledIds().length === 0) hideSplash()

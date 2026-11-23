@@ -671,10 +671,6 @@ button {
 	border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
 	box-shadow: 0 -8px 40px rgb(0 0 0 / 0.2);
 	transition:
-		translate var(--sheet-move) ease,
-		opacity var(--sheet-move) ease,
-		overlay var(--sheet-move) allow-discrete,
-		display var(--sheet-move) allow-discrete,
 		background-color var(--micro),
 		color var(--micro);
 }
@@ -688,13 +684,6 @@ button {
 .sheet:not([open]) {
 	translate: 0 24px;
 	opacity: 0;
-}
-
-@starting-style {
-	.sheet[open] {
-		translate: 0 24px;
-		opacity: 0;
-	}
 }
 
 .sheet::backdrop {
@@ -745,12 +734,8 @@ button {
 
 @container (max-width: 35.75rem) {
 	.strip-preview {
-		display: none;
+		position: static;
 	}
-}
-
-.sources-wrap:not(:has(.src + .src)) .strip-preview {
-	display: none;
 }
 
 .strip-preview {

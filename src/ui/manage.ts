@@ -287,12 +287,12 @@ export function openManageDialog(focusSource?: string): void {
 	sources?.render(listedSources())
 	dialog.showModal()
 	renderPreview()
-	if (previewWrap && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+	if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
 		const root = getComputedStyle(document.documentElement)
-		const ms = Number.parseFloat(root.getPropertyValue('--micro')) * MS_PER_S
+		const ms = Number.parseFloat(root.getPropertyValue('--sheet-move')) * MS_PER_S
 		const rise = root.getPropertyValue('--gutter').trim()
 		if (ms > 0)
-			previewWrap.animate(
+			dialog.animate(
 				[
 					{ translate: `0 ${rise}`, opacity: 0 },
 					{ translate: '0 0', opacity: 1 },
