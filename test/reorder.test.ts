@@ -141,7 +141,9 @@ describe('source list render during drag', () => {
 			Array.from(ul.querySelectorAll('.src')).map((r) => (r as HTMLElement).dataset.id ?? '')
 		const rows = Array.from(ul.querySelectorAll('.src')) as HTMLElement[]
 		const layoutTop = (row: HTMLElement): number =>
-			Array.from(ul.children).filter((c) => c.tagName === 'LI').indexOf(row) * 100
+			Array.from(ul.children)
+				.filter((c) => c.tagName === 'LI')
+				.indexOf(row) * 100
 		rows.forEach((row) => {
 			row.getBoundingClientRect = () => new DOMRect(0, layoutTop(row), 300, 100)
 			row.getAnimations = () => []
