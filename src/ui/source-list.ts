@@ -92,8 +92,8 @@ export function createSourceList(options: SourceListOptions): SourceList {
 			return
 		}
 		const radius = rowGap / 2
-		const leftX = radius
-		const rightX = w - radius
+		const leftX = radius / 2
+		const rightX = w - radius / 2
 		const parts: string[] = []
 		for (let i = 0; i < rows.length - 1; i++) {
 			const a = rows[i]!

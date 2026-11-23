@@ -721,9 +721,10 @@ button {
 .src-list {
 	position: relative;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--source-min)), 1fr));
-	gap: calc(var(--gutter) * 0.75) var(--gutter);
-	padding-inline: var(--gutter);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), max-content));
+	justify-content: space-between;
+	gap: calc(var(--gutter) * 1.25) calc(var(--gutter) * 2);
+	padding-inline: calc(var(--gutter) * 2);
 	list-style: none;
 }
 
@@ -912,7 +913,7 @@ button {
 
 .swipe-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 	gap: 0 var(--gutter);
 }
 
@@ -1048,23 +1049,16 @@ body[data-status="off"] .meta {
 	container-type: inline-size;
 }
 
-@container (min-width: 50rem) {
-	.prefs {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0 var(--gutter);
-		align-items: start;
-	}
-
-	.prefs > .pref-swipe {
-		grid-column: 1 / -1;
-	}
+.prefs {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+	gap: 0 var(--gutter);
+	align-items: start;
 }
 
-@container (max-width: 40rem) {
-	.swipe-grid {
-		grid-template-columns: 1fr;
-	}
+.prefs > .pref-swipe,
+.prefs > .pref:last-child {
+	grid-column: 1 / -1;
 }
 
 .action-body {
