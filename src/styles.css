@@ -23,6 +23,7 @@
 	--onboarding-width: 80rem;
 	--onboarding-height: 50rem;
 	--source-min: 24rem;
+	--src-min: 16rem;
 	--sheet-radius: 20px;
 	--tap: 44px;
 	--dim-blocked: 0.4;
@@ -721,10 +722,24 @@ button {
 .src-list {
 	position: relative;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--src-min)), 1fr));
 	gap: calc(var(--gutter) * 0.75) var(--gutter);
 	padding-inline: var(--gutter);
 	list-style: none;
+}
+
+.sources-wrap {
+	container-type: inline-size;
+}
+
+@container (max-width: 35.75rem) {
+	.strip-preview {
+		display: none;
+	}
+}
+
+.sources-wrap:not(:has(.src + .src)) .strip-preview {
+	display: none;
 }
 
 .strip-preview {
@@ -752,10 +767,6 @@ button {
 	gap: 8px;
 	overflow-x: auto;
 	scrollbar-width: none;
-}
-
-.strip-preview.is-hidden {
-	display: none;
 }
 
 .preview-badge {

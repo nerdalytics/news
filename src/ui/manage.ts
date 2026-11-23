@@ -206,12 +206,6 @@ let activeId: string | null = null
 
 function renderPreview(): void {
 	if (!preview) return
-	const list = sources?.nodes[0]
-	const rows = list
-		? (Array.from(list.children) as HTMLElement[]).filter((child) => child.tagName === 'LI')
-		: []
-	const multi = rows.length > 1 && rows[0]!.offsetTop === rows[1]!.offsetTop
-	previewWrap?.classList.toggle('is-hidden', !multi)
 	const badges = (sources?.read() ?? [])
 		.filter((setting) => setting.enabled)
 		.map((setting) => {
@@ -269,8 +263,6 @@ function build(): HTMLDialogElement {
 			renderPreview()
 		},
 	})
-	if (typeof ResizeObserver !== 'undefined')
-		new ResizeObserver(() => renderPreview()).observe(sources.nodes[0])
 	const prefs = el('div', 'prefs')
 	prefs.append(
 		renderThemePicker(),
@@ -295,16 +287,17 @@ export function openManageDialog(focusSource?: string): void {
 	renderPreview()
 	dialog.showModal()
 	if (previewWrap && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
-		const ms =
-			Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--micro')) *
-				1000 || 300
-		previewWrap.animate(
-			[
-				{ translate: '0 16px', opacity: 0 },
-				{ translate: '0 0', opacity: 1 },
-			],
-			{ duration: ms, easing: 'ease' }
-		)
+		const root = getComputedStyle(document.documentElement)
+		const ms = Number.parseFloat(root.getPropertyValue('--micro')) * 1000
+		const rise = root.getPropertyValue('--gutter').trim()
+		if (ms > 0)
+			previewWrap.animate(
+				[
+					{ translate: `0 ${rise}`, opacity: 0 },
+					{ translate: '0 0', opacity: 1 },
+				],
+				{ duration: ms, easing: 'ease' }
+			)
 	}
 	if (focusSource) {
 		const row = dialog.querySelector<HTMLElement>(`.src[data-id="${focusSource}"]`)
