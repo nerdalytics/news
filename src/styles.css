@@ -728,10 +728,15 @@ button {
 }
 
 .strip-preview {
-	position: relative;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: var(--bg);
 	display: flex;
 	gap: 8px;
-	padding: 0 0 12px;
+	padding: 6px;
+	margin-inline: -6px;
+	padding-bottom: 12px;
 	overflow-x: auto;
 	scrollbar-width: none;
 }
