@@ -204,6 +204,20 @@ function renderReset(): HTMLElement {
 let preview: HTMLElement | null = null
 let previewWrap: HTMLElement | null = null
 let activeId: string | null = null
+let tailWatch: ResizeObserver | undefined
+
+function measureTail(): void {
+	const list = previewWrap?.nextElementSibling
+	const scope = list?.closest<HTMLElement>('.sheet-body')
+	if (!list || !scope) return
+	const rows = (Array.from(list.children) as HTMLElement[]).filter(
+		(child) => child.tagName === 'LI'
+	)
+	const tail = rows.slice(-2)
+	const gap = tail.length === 2 ? Number.parseFloat(getComputedStyle(list).rowGap) : 0
+	const height = tail.reduce((sum, row) => sum + row.offsetHeight, 0) + gap
+	scope.style.setProperty('--tail-h', `${height}px`)
+}
 
 function renderPreview(): void {
 	if (!preview) return
@@ -264,6 +278,9 @@ function build(): HTMLDialogElement {
 			renderPreview()
 		},
 	})
+	tailWatch?.disconnect()
+	tailWatch = new ResizeObserver(measureTail)
+	tailWatch.observe(sources.nodes[0])
 	const prefs = el('div', 'prefs')
 	prefs.append(
 		renderThemePicker(),
