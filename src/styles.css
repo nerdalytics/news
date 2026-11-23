@@ -732,14 +732,8 @@ button {
 	container-type: inline-size;
 }
 
-@container (max-width: 35.75rem) {
-	.strip-preview {
-		position: static;
-	}
-}
-
 .strip-preview {
-	position: sticky;
+	position: static;
 	top: 0;
 	z-index: 2;
 	pointer-events: none;
@@ -776,6 +770,12 @@ button {
 	outline: var(--preview-ring) solid var(--accent);
 	outline-offset: var(--preview-ring);
 	scale: var(--preview-scale);
+}
+
+@container (min-width: 35.75rem) {
+	.strip-preview {
+		position: sticky;
+	}
 }
 
 .src {
