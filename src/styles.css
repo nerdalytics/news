@@ -730,9 +730,7 @@ button {
 
 .strip-preview {
 	background: var(--bg);
-	padding: var(--preview-pad);
-	margin-inline: calc(-1 * var(--preview-pad));
-	padding-bottom: calc(2 * var(--preview-pad));
+	padding-bottom: var(--preview-pad);
 }
 
 .preview-label {
@@ -747,6 +745,7 @@ button {
 	position: relative;
 	display: flex;
 	gap: var(--preview-gap);
+	padding: var(--preview-pad);
 	overflow-x: auto;
 	scrollbar-width: none;
 }
