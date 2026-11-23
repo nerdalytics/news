@@ -285,8 +285,8 @@ export function openManageDialog(focusSource?: string): void {
 	dialog?.remove()
 	dialog = build()
 	sources?.render(listedSources())
-	renderPreview()
 	dialog.showModal()
+	renderPreview()
 	if (previewWrap && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
 		const root = getComputedStyle(document.documentElement)
 		const ms = Number.parseFloat(root.getPropertyValue('--micro')) * MS_PER_S
