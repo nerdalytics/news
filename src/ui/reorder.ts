@@ -108,10 +108,15 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		}
 	}
 
+	function place(): void {
+		if (!row) return
+		row.style.transform = `translate(${pointerX - originX}px, ${positionY() - originY}px)`
+	}
+
 	function update(): void {
 		if (!row) return
 		swapWhileOver()
-		row.style.transform = `translate(${pointerX - originX}px, ${positionY() - originY}px)`
+		place()
 	}
 
 	function autoScroll(): void {
@@ -119,7 +124,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		const bounds = options.scroller.getBoundingClientRect()
 		if (pointerY < bounds.top + EDGE_PX) options.scroller.scrollTop -= SCROLL_STEP_PX
 		else if (pointerY > bounds.bottom - EDGE_PX) options.scroller.scrollTop += SCROLL_STEP_PX
-		update()
+		place()
 		frame = requestAnimationFrame(autoScroll)
 	}
 
