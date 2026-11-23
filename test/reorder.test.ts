@@ -108,7 +108,7 @@ describe('source list render during drag', () => {
 			{ id: 'github', enabled: true },
 		])
 		const ul = sourceList.nodes[0]
-		const dragged = ul.children[0] as HTMLElement
+		const dragged = ul.querySelector('.src[data-id="hn"]') as HTMLElement
 		const handle = dragged.querySelector('.handle') as HTMLElement
 		handle.setPointerCapture = () => {}
 		pointer('pointerdown', handle, 10, 50)
@@ -117,7 +117,7 @@ describe('source list render during drag', () => {
 			{ id: 'hn', enabled: true },
 			{ id: 'github', enabled: true },
 		])
-		expect(ul.children[0]).toBe(dragged)
+		expect(ul.querySelector('.src[data-id="hn"]')).toBe(dragged)
 		expect(dragged.isConnected).toBe(true)
 		expect(refresh).not.toHaveBeenCalled()
 		pointer('pointerup', ul, 0, 0)

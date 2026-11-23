@@ -50,6 +50,38 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	live.setAttribute('aria-live', 'polite')
 	let pendingRefresh = false
 
+	const flow = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+	flow.setAttribute('class', 'flow')
+	flow.setAttribute('aria-hidden', 'true')
+	const flowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+	flow.append(flowPath)
+
+	const drawFlow = (): void => {
+		const rows = Array.from(list.children).filter((row) => row !== flow) as HTMLElement[]
+		flow.setAttribute('viewBox', `0 0 ${list.clientWidth} ${list.clientHeight}`)
+		if (rows.length < 2) {
+			flowPath.setAttribute('d', '')
+			return
+		}
+		flowPath.setAttribute(
+			'd',
+			rows
+				.map(
+					(row, i) =>
+						`${i === 0 ? 'M' : 'L'}${row.offsetLeft + row.offsetWidth / 2} ${
+							row.offsetTop + row.offsetHeight / 2
+						}`
+				)
+				.join(' ')
+		)
+	}
+	let drawFrame = 0
+	const scheduleDraw = (): void => {
+		cancelAnimationFrame(drawFrame)
+		drawFrame = requestAnimationFrame(drawFlow)
+	}
+	if (typeof ResizeObserver !== 'undefined') new ResizeObserver(scheduleDraw).observe(list)
+
 	const read = (): SourceSetting[] =>
 		(Array.from(list.children) as HTMLElement[]).map((row) => ({
 			enabled: row.querySelector<HTMLInputElement>('.check')?.checked === true,
@@ -73,9 +105,13 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	})
 	enableReorder(list, {
 		onChange: () => options.onChange(read()),
-		onMove: announce,
+		onMove: (row) => {
+			announce(row)
+			scheduleDraw()
+		},
 		scroller: options.scroller,
 		onSortEnd: () => {
+			scheduleDraw()
 			if (!pendingRefresh) return
 			pendingRefresh = false
 			options.refresh?.()
@@ -94,7 +130,8 @@ export function createSourceList(options: SourceListOptions): SourceList {
 				const source = sourceById(setting.id)
 				return source ? [renderRow(source, setting.enabled)] : []
 			})
-			list.replaceChildren(...rows)
+			list.replaceChildren(flow, ...rows)
+			scheduleDraw()
 		},
 	}
 }
