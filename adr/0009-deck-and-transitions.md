@@ -31,6 +31,8 @@ usefully and animate the switch consistently.
   Hit-testing uses the layout slots captured at each swap, scroll-compensated, never the
   live rects: a pushed row mid-glide still visually covers the pointer, and hit-testing
   its animated rect swaps it back, oscillating the order and misplacing the drop.
+  A settings re-render (source availability change) is deferred while a drag is active
+  and applied on release, so the dragged row is never detached mid-gesture.
   A view-transition alternative was spiked and rejected: it defers the DOM mutation to an
   async capture callback (breaking the synchronous drag and keyboard tracking) and skips
   rapid successive transitions (9 of 10 in a measured burst), losing swaps.
