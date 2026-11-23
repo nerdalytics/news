@@ -3,6 +3,7 @@ interface ReorderOptions {
 	onMove: (row: HTMLElement) => void
 	onChange: () => void
 	onSortEnd?: () => void
+	onActive?: (id: string | null) => void
 }
 
 const EDGE_PX = 56
@@ -133,6 +134,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		slots.clear()
 		row = null
 		if (moved) options.onChange()
+		options.onActive?.(null)
 		options.onSortEnd?.()
 	}
 
@@ -161,6 +163,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 			list.classList.add('is-sorting')
 			frame = requestAnimationFrame(autoScroll)
 			row.querySelector<HTMLElement>('.handle')?.setPointerCapture(event.pointerId)
+			options.onActive?.(row.dataset.id ?? null)
 		}
 		update()
 	})

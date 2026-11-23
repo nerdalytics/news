@@ -126,7 +126,7 @@ describe('source list render during drag', () => {
 		expect(refresh).toHaveBeenCalledTimes(1)
 	})
 
-	it('swaps a row forward even with the flow svg in the list', () => {
+	it('swaps a row forward and back', () => {
 		const scroller = document.createElement('div')
 		scroller.getBoundingClientRect = () => new DOMRect(0, 0, 300, 1000)
 		document.body.append(scroller)

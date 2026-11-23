@@ -722,26 +722,30 @@ button {
 	position: relative;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-	gap: calc(var(--gutter) * 1.25) calc(var(--gutter) * 2.5);
-	padding-inline: calc(var(--gutter) * 2);
+	gap: calc(var(--gutter) * 0.75) var(--gutter);
+	padding-inline: var(--gutter);
 	list-style: none;
 }
 
-.flow {
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	overflow: visible;
-	pointer-events: none;
+.strip-preview {
+	display: flex;
+	gap: 8px;
+	padding: 0 var(--gutter) 12px;
+	overflow-x: auto;
+	scrollbar-width: none;
 }
 
-.flow path {
-	fill: none;
-	stroke: color-mix(in srgb, var(--accent) 35%, transparent);
-	stroke-width: 2;
-	stroke-linecap: round;
-	stroke-linejoin: round;
+.preview-badge {
+	flex: none;
+	width: 34px;
+	height: 34px;
+	font-size: 0.75rem;
+}
+
+.preview-badge.is-active {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	scale: 1.1;
 }
 
 .src {

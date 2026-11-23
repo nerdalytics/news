@@ -200,6 +200,27 @@ function renderReset(): HTMLElement {
 	return section
 }
 
+let preview: HTMLElement | null = null
+let activeId: string | null = null
+
+function renderPreview(): void {
+	if (!preview) return
+	const badges = listedSources()
+		.map((setting) => {
+			const source = sourceById(setting.id)
+			if (!source) return null
+			const badge = el('span', 'badge preview-badge', source.mark)
+			badge.style.setProperty('--badge-bg', source.badge[0])
+			badge.style.setProperty('--badge-fg', source.badge[1])
+			badge.dataset.id = source.id
+			if (source.id === activeId) badge.classList.add('is-active')
+			return badge
+		})
+		.filter((badge): badge is HTMLElement => badge !== null)
+	preview.replaceChildren(...badges)
+	preview.querySelector('.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+}
+
 function build(): HTMLDialogElement {
 	const sheet = el('dialog', 'sheet')
 	sheet.setAttribute('aria-labelledby', 'manage-title')
@@ -219,11 +240,21 @@ function build(): HTMLDialogElement {
 	done.addEventListener('click', () => sheet.close())
 	head.append(title, done)
 
+	preview = el('div', 'strip-preview')
+	preview.setAttribute('aria-hidden', 'true')
+
 	const body = el('div', 'sheet-body')
 	sources = createSourceList({
-		onChange: (next) => updateSettings({ sources: withHiddenSources(next) }),
+		onChange: (next) => {
+			updateSettings({ sources: withHiddenSources(next) })
+			renderPreview()
+		},
 		scroller: body,
 		refresh: () => sources?.render(listedSources()),
+		onActive: (id) => {
+			activeId = id
+			renderPreview()
+		},
 	})
 	const prefs = el('div', 'prefs')
 	prefs.append(
@@ -235,7 +266,7 @@ function build(): HTMLDialogElement {
 	)
 	body.append(...sources.nodes, prefs)
 
-	sheet.append(head, body)
+	sheet.append(head, preview, body)
 	document.body.append(sheet)
 	return sheet
 }
@@ -244,6 +275,7 @@ export function openManageDialog(focusSource?: string): void {
 	dialog?.remove()
 	dialog = build()
 	sources?.render(listedSources())
+	renderPreview()
 	dialog.showModal()
 	if (focusSource) {
 		const row = dialog.querySelector<HTMLElement>(`.src[data-id="${focusSource}"]`)
@@ -254,5 +286,8 @@ export function openManageDialog(focusSource?: string): void {
 }
 
 onAvailabilityChange(() => {
-	if (dialog?.open) sources?.render(listedSources())
+	if (dialog?.open) {
+		sources?.render(listedSources())
+		renderPreview()
+	}
 })

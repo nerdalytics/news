@@ -34,9 +34,11 @@ usefully and animate the switch consistently.
   A settings re-render (source availability change) is deferred while a drag is active
   and applied on release, so the dragged row is never detached mid-gesture.
   The drag lifts and starts swapping only after the first moved pixel, so a tap on the
-  handle is inert. The order thread reserves its wrap channels inside the list
-  (padding-inline) so the U-turns and arrowheads render within the dialog, never past
-  its edges, and the thread hides when the grid collapses to one column.
+  handle is inert. An SVG order-thread was tried and removed: drawing a 1-D order onto
+  the 2-D grid reserved space and looked strange on narrow screens. Instead the dialog
+  shows a live icon-strip preview (the enabled badges in strip order) above the grid; it
+  re-renders on every change and highlights/scrolls to the source currently being
+  reordered, so the grid-to-strip mapping is visible without explaining the grid order.
   A view-transition alternative was spiked and rejected: it defers the DOM mutation to an
   async capture callback (breaking the synchronous drag and keyboard tracking) and skips
   rapid successive transitions (9 of 10 in a measured burst), losing swaps.
