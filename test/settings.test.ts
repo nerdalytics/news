@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { parseCookies } from '../src/cookies'
 import {
+	DESC_MAX,
 	parseBlocked,
+	parseDescLines,
 	parseFavorites,
+	parseShowStatus,
 	parseSources,
 	parseSwipe,
 	parseTheme,
@@ -27,6 +30,24 @@ function source(id: string): SourceMeta {
 }
 
 const CATALOGUE = [source('a'), source('b'), source('c')]
+
+describe('display prefs', () => {
+	it('defaults description length to max and clamps to the slider range', () => {
+		expect(parseDescLines(undefined)).toBe(DESC_MAX)
+		expect(parseDescLines('junk')).toBe(DESC_MAX)
+		expect(parseDescLines('-1')).toBe(DESC_MAX)
+		expect(parseDescLines('9')).toBe(DESC_MAX)
+		expect(parseDescLines('0')).toBe(0)
+		expect(parseDescLines('2')).toBe(2)
+		expect(parseDescLines('3')).toBe(3)
+	})
+
+	it('defaults the status row to on and only off on explicit 0', () => {
+		expect(parseShowStatus(undefined)).toBe(true)
+		expect(parseShowStatus('1')).toBe(true)
+		expect(parseShowStatus('0')).toBe(false)
+	})
+})
 
 describe('parseSources', () => {
 	it('switches nothing on without a cookie', () => {

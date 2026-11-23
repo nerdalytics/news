@@ -23,13 +23,19 @@ export interface Settings {
 	swipe: SwipeSettings
 	blocked: readonly string[]
 	favorites: readonly string[]
+	descLines: number
+	showStatus: boolean
 }
+
+export const DESC_MAX = 4
 
 const COOKIE = {
 	newTab: 'thenews_newtab',
 	sources: 'thenews_sources',
 	swipe: 'thenews_swipe',
 	theme: 'thenews_theme',
+	descLines: 'thenews_desclines',
+	showStatus: 'thenews_status',
 }
 export const COOKIE_NAMES: readonly string[] = Object.values(COOKIE)
 const BLOCKED_KEY = 'thenews:blocked:v1'
@@ -66,6 +72,15 @@ export function serializeSources(sources: readonly SourceSetting[]): string {
 
 export function parseTheme(raw: string | undefined): Theme {
 	return raw === 'light' || raw === 'dark' ? raw : 'auto'
+}
+
+export function parseDescLines(raw: string | undefined): number {
+	const value = Number.parseInt(raw ?? '', 10)
+	return Number.isInteger(value) && value >= 0 && value <= DESC_MAX ? value : DESC_MAX
+}
+
+export function parseShowStatus(raw: string | undefined): boolean {
+	return raw !== '0'
 }
 
 function parseHosts(stored: unknown): string[] {
@@ -133,6 +148,8 @@ function read(): Settings {
 		sources: parseSources(readCookie(COOKIE.sources)),
 		swipe: parseSwipe(readCookie(COOKIE.swipe)),
 		theme: parseTheme(readCookie(COOKIE.theme)),
+		descLines: parseDescLines(readCookie(COOKIE.descLines)),
+		showStatus: parseShowStatus(readCookie(COOKIE.showStatus)),
 	}
 }
 
@@ -166,6 +183,8 @@ export function updateSettings(patch: Partial<Settings>): void {
 	if (patch.sources) writeCookie(COOKIE.sources, serializeSources(current.sources))
 	if (patch.theme) writeCookie(COOKIE.theme, current.theme)
 	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
+	if (patch.descLines !== undefined) writeCookie(COOKIE.descLines, String(current.descLines))
+	if (patch.showStatus !== undefined) writeCookie(COOKIE.showStatus, current.showStatus ? '1' : '0')
 	if (patch.swipe) writeCookie(COOKIE.swipe, serializeSwipe(current.swipe))
 	if (patch.blocked) writeHosts(BLOCKED_KEY, current.blocked)
 	if (patch.favorites) writeHosts(FAVORITES_KEY, current.favorites)
@@ -194,6 +213,8 @@ function sameSettings(a: Settings, b: Settings): boolean {
 	return (
 		a.theme === b.theme &&
 		a.newTab === b.newTab &&
+		a.descLines === b.descLines &&
+		a.showStatus === b.showStatus &&
 		serializeSwipe(a.swipe) === serializeSwipe(b.swipe) &&
 		a.blocked.join() === b.blocked.join() &&
 		a.favorites.join() === b.favorites.join() &&

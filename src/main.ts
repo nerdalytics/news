@@ -1,6 +1,13 @@
 import { isAvailable, onAvailabilityChange } from './availability'
 import { checkHosted } from './hosted-check'
-import { enabledIds, getSettings, isFirstVisit, type Settings, subscribe } from './settings'
+import {
+	DESC_MAX,
+	enabledIds,
+	getSettings,
+	isFirstVisit,
+	type Settings,
+	subscribe,
+} from './settings'
 import { hostedSources, sourceById } from './sources/index'
 import { autoHideBar } from './ui/bar'
 import { Deck } from './ui/deck'
@@ -79,6 +86,8 @@ function shownIds(settings: Settings): string[] {
 
 function apply(settings: Settings): void {
 	applyTheme(settings.theme)
+	document.body.dataset.desc = settings.descLines >= DESC_MAX ? 'max' : String(settings.descLines)
+	document.body.dataset.status = settings.showStatus ? 'on' : 'off'
 	deckElement.classList.toggle('has-swipe', Object.values(settings.swipe).some(Boolean))
 	deck.sync(shownIds(settings))
 	deck.setNewTab(settings.newTab)
