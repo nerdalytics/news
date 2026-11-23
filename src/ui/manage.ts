@@ -273,10 +273,10 @@ function build(): HTMLDialogElement {
 		renderReset()
 	)
 	const sourcesWrap = el('div', 'sources-wrap')
-	sourcesWrap.append(...sources.nodes)
+	sourcesWrap.append(previewWrap, ...sources.nodes)
 	body.append(sourcesWrap, prefs)
 
-	sheet.append(head, previewWrap, body)
+	sheet.append(head, body)
 	document.body.append(sheet)
 	return sheet
 }

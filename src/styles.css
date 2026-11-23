@@ -729,7 +729,10 @@ button {
 }
 
 .strip-preview {
-	flex: none;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	pointer-events: none;
 	background: var(--bg);
 	padding-bottom: var(--preview-pad);
 }
