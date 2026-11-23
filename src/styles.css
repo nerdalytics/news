@@ -24,6 +24,16 @@
 	--onboarding-height: 50rem;
 	--source-min: 24rem;
 	--src-min: 16rem;
+	--pref-min: 20rem;
+	--preview-size: 34px;
+	--preview-ring: 2px;
+	--preview-pad: 6px;
+	--preview-gap: 8px;
+	--preview-text: 0.75rem;
+	--preview-track: 0.05em;
+	--preview-scale: 1.1;
+	--item-pad: 16px;
+	--src-pad: 12px;
 	--sheet-radius: 20px;
 	--tap: 44px;
 	--dim-blocked: 0.4;
@@ -400,7 +410,7 @@ button {
 	display: grid;
 	grid-template-columns: 40px minmax(0, 1fr);
 	column-gap: 8px;
-	padding: 16px 0;
+	padding: var(--item-pad) 0;
 	transition:
 		background-color var(--micro),
 		opacity var(--micro),
@@ -748,38 +758,38 @@ button {
 	z-index: 2;
 	pointer-events: none;
 	background: var(--bg);
-	padding: 6px;
-	margin-inline: -6px;
-	padding-bottom: 12px;
+	padding: var(--preview-pad);
+	margin-inline: calc(-1 * var(--preview-pad));
+	padding-bottom: calc(2 * var(--preview-pad));
 }
 
 .preview-label {
-	margin: 0 0 6px;
+	margin: 0 0 var(--preview-pad);
 	color: var(--muted);
-	font-size: 0.75rem;
-	letter-spacing: 0.05em;
+	font-size: var(--preview-text);
+	letter-spacing: var(--preview-track);
 	text-transform: uppercase;
 }
 
 .strip-row {
 	position: relative;
 	display: flex;
-	gap: 8px;
+	gap: var(--preview-gap);
 	overflow-x: auto;
 	scrollbar-width: none;
 }
 
 .preview-badge {
 	flex: none;
-	width: 34px;
-	height: 34px;
-	font-size: 0.75rem;
+	width: var(--preview-size);
+	height: var(--preview-size);
+	font-size: var(--preview-text);
 }
 
 .preview-badge.is-active {
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
-	scale: 1.1;
+	outline: var(--preview-ring) solid var(--accent);
+	outline-offset: var(--preview-ring);
+	scale: var(--preview-scale);
 }
 
 .src {
@@ -815,7 +825,7 @@ button {
 	grid-template-columns: auto auto minmax(0, 1fr);
 	column-gap: 14px;
 	align-items: center;
-	padding: 12px 0;
+	padding: var(--src-pad) 0;
 	cursor: pointer;
 }
 
@@ -950,7 +960,7 @@ button {
 
 .swipe-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--src-min)), 1fr));
 	gap: 0 var(--gutter);
 }
 
@@ -1088,7 +1098,7 @@ body[data-status="off"] .meta {
 
 .prefs {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--pref-min)), 1fr));
 	gap: 0 var(--gutter);
 	align-items: start;
 }

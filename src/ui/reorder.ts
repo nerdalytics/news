@@ -8,6 +8,8 @@ interface ReorderOptions {
 
 const EDGE_PX = 56
 const SCROLL_STEP_PX = 10
+const GLIDE_BEATS = 2
+const DRAG_START_PX = 1
 
 function rowOf(target: EventTarget | null): HTMLElement | null {
 	const handle = (target as Element | null)?.closest('.handle')
@@ -54,7 +56,8 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		slotTop = options.scroller.scrollTop
 		slotLeft = options.scroller.scrollLeft
 		for (const child of children) slots.set(child, child.getBoundingClientRect())
-		const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 2000
+		const ms =
+			Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000 * GLIDE_BEATS
 		if (!(ms > 0)) return
 		for (const child of children) {
 			if (child === dragged) continue
@@ -162,7 +165,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		pointerX = event.clientX
 		pointerY = event.clientY
 		if (!started) {
-			if (Math.hypot(pointerX - originX, pointerY - downY) < 1) return
+			if (Math.hypot(pointerX - originX, pointerY - downY) < DRAG_START_PX) return
 			started = true
 			row.classList.add('is-dragging')
 			list.classList.add('is-sorting')
