@@ -736,6 +736,10 @@ button {
 	box-shadow: 0 6px 20px rgb(0 0 0 / 0.16);
 }
 
+.src.is-highlighted {
+	background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
 .is-sorting {
 	user-select: none;
 	-webkit-user-select: none;
@@ -1150,6 +1154,15 @@ button {
 	}
 }
 
+@keyframes src-flash {
+	from {
+		background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+	}
+	to {
+		background-color: color-mix(in srgb, var(--accent) 7%, transparent);
+	}
+}
+
 @keyframes check-pop {
 	0% {
 		scale: 0;
@@ -1282,6 +1295,10 @@ button {
 
 	.src.is-tapped .badge {
 		animation: badge-pop var(--micro) ease;
+	}
+
+	.src.is-highlighted {
+		animation: src-flash calc(var(--micro) * 3) ease-out;
 	}
 
 	.bar {

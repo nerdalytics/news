@@ -209,9 +209,9 @@ export function openManageDialog(focusSource?: string): void {
 	sources?.render(listedSources())
 	dialog.showModal()
 	if (focusSource) {
-		dialog
-			.querySelector<HTMLElement>(`.src[data-id="${focusSource}"]`)
-			?.scrollIntoView({ block: 'center' })
+		const row = dialog.querySelector<HTMLElement>(`.src[data-id="${focusSource}"]`)
+		row?.scrollIntoView({ block: 'center' })
+		row?.classList.add('is-highlighted')
 	}
 	void checkHosted()
 }
