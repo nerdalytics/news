@@ -123,17 +123,13 @@ export function createSourceList(options: SourceListOptions): SourceList {
 							{ x: rightX, y: gapY },
 							{ x: leftX, y: gapY },
 							{ x: leftX, y: bMid },
-							{ x: b.offsetLeft, y: bMid },
+							{ x: lineEnd, y: bMid },
 						],
 						radius
 					)
 				)
 			}
-			if (a.offsetTop === b.offsetTop) {
-				parts.push(
-					`M${lineEnd} ${bMid - radius / 2}L${tip} ${bMid}L${lineEnd} ${bMid + radius / 2}`
-				)
-			}
+			parts.push(`M${lineEnd} ${bMid - radius / 2}L${tip} ${bMid}L${lineEnd} ${bMid + radius / 2}`)
 		}
 		flowPath.setAttribute('d', parts.join(''))
 	}
