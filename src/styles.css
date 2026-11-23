@@ -28,7 +28,8 @@
 	--preview-size: 34px;
 	--preview-ring: 2px;
 	--preview-pad: 6px;
-	--preview-gap: 8px;
+	--gap-s: 8px;
+	--preview-gap: var(--gap-s);
 	--preview-text: 0.75rem;
 	--preview-track: 0.05em;
 	--preview-scale: 1.1;
@@ -409,7 +410,7 @@ button {
 	position: relative;
 	display: grid;
 	grid-template-columns: 40px minmax(0, 1fr);
-	column-gap: 8px;
+	column-gap: var(--gap-s);
 	padding: var(--item-pad) 0;
 	transition:
 		background-color var(--micro),
@@ -527,7 +528,7 @@ button {
 .meta {
 	display: flex;
 	align-items: center;
-	column-gap: 8px;
+	column-gap: var(--gap-s);
 	margin-top: 8px;
 	color: var(--muted);
 	font-size: 0.875rem;
@@ -733,7 +734,7 @@ button {
 	position: relative;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--src-min)), 1fr));
-	gap: calc(var(--gutter) * 0.75) var(--gutter);
+	gap: var(--gutter) var(--gutter);
 	padding-inline: var(--gutter);
 	list-style: none;
 }

@@ -164,6 +164,7 @@ function listedSources(): SourceSetting[] {
 }
 
 const CONFIRM_WINDOW_MS = 5000
+const MS_PER_S = 1000
 const RESET_LABEL = 'Start fresh'
 const CONFIRM_LABEL = 'Tap again to delete everything'
 
@@ -288,7 +289,7 @@ export function openManageDialog(focusSource?: string): void {
 	dialog.showModal()
 	if (previewWrap && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
 		const root = getComputedStyle(document.documentElement)
-		const ms = Number.parseFloat(root.getPropertyValue('--micro')) * 1000
+		const ms = Number.parseFloat(root.getPropertyValue('--micro')) * MS_PER_S
 		const rise = root.getPropertyValue('--gutter').trim()
 		if (ms > 0)
 			previewWrap.animate(
