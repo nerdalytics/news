@@ -92,8 +92,8 @@ export function createSourceList(options: SourceListOptions): SourceList {
 			return
 		}
 		const radius = rowGap / 2
-		const leftX = radius / 2
-		const rightX = w - radius / 2
+		const leftX = radius
+		const rightX = w - radius
 		const parts: string[] = []
 		for (let i = 0; i < rows.length - 1; i++) {
 			const a = rows[i]!
@@ -123,13 +123,17 @@ export function createSourceList(options: SourceListOptions): SourceList {
 							{ x: rightX, y: gapY },
 							{ x: leftX, y: gapY },
 							{ x: leftX, y: bMid },
-							{ x: lineEnd, y: bMid },
+							{ x: b.offsetLeft, y: bMid },
 						],
 						radius
 					)
 				)
 			}
-			parts.push(`M${lineEnd} ${bMid - radius / 2}L${tip} ${bMid}L${lineEnd} ${bMid + radius / 2}`)
+			if (a.offsetTop === b.offsetTop) {
+				parts.push(
+					`M${lineEnd} ${bMid - radius / 2}L${tip} ${bMid}L${lineEnd} ${bMid + radius / 2}`
+				)
+			}
 		}
 		flowPath.setAttribute('d', parts.join(''))
 	}
@@ -140,16 +144,20 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	}
 	if (typeof ResizeObserver !== 'undefined') new ResizeObserver(scheduleDraw).observe(list)
 
+	const rowsOf = (): HTMLElement[] =>
+		(Array.from(list.children) as HTMLElement[]).filter((child) => child.tagName === 'LI')
+
 	const read = (): SourceSetting[] =>
-		(Array.from(list.children) as HTMLElement[]).map((row) => ({
+		rowsOf().map((row) => ({
 			enabled: row.querySelector<HTMLInputElement>('.check')?.checked === true,
 			id: row.dataset.id ?? '',
 		}))
 
 	const announce = (row: HTMLElement): void => {
-		const position = Array.from(list.children).indexOf(row) + 1
+		const rows = rowsOf()
+		const position = rows.indexOf(row) + 1
 		const name = row.querySelector('.src-name')?.textContent ?? ''
-		live.textContent = `${name}, position ${position} of ${list.children.length}`
+		live.textContent = `${name}, position ${position} of ${rows.length}`
 	}
 
 	list.addEventListener('change', (event) => {

@@ -125,4 +125,36 @@ describe('source list render during drag', () => {
 		pointer('pointerup', ul, 0, 0)
 		expect(refresh).toHaveBeenCalledTimes(1)
 	})
+
+	it('swaps a row forward even with the flow svg in the list', () => {
+		const scroller = document.createElement('div')
+		scroller.getBoundingClientRect = () => new DOMRect(0, 0, 300, 1000)
+		document.body.append(scroller)
+		const sourceList = createSourceList({ scroller, onChange: vi.fn(), refresh: vi.fn() })
+		scroller.append(...sourceList.nodes)
+		sourceList.render([
+			{ id: 'hn', enabled: true },
+			{ id: 'github', enabled: true },
+		])
+		const ul = sourceList.nodes[0]
+		const ids = (): string[] =>
+			Array.from(ul.querySelectorAll('.src')).map((r) => (r as HTMLElement).dataset.id ?? '')
+		const rows = Array.from(ul.querySelectorAll('.src')) as HTMLElement[]
+		const layoutTop = (row: HTMLElement): number =>
+			Array.from(ul.children).filter((c) => c.tagName === 'LI').indexOf(row) * 100
+		rows.forEach((row) => {
+			row.getBoundingClientRect = () => new DOMRect(0, layoutTop(row), 300, 100)
+			row.getAnimations = () => []
+			const handle = row.querySelector('.handle') as HTMLElement
+			handle.setPointerCapture = () => {}
+		})
+		pointer('pointerdown', rows[0]!.querySelector('.handle') as Element, 150, 50)
+		pointer('pointermove', ul, 150, 150)
+		expect(ids()).toEqual(['github', 'hn'])
+		pointer('pointerup', ul, 0, 0)
+		pointer('pointerdown', rows[0]!.querySelector('.handle') as Element, 150, 150)
+		pointer('pointermove', ul, 150, 50)
+		expect(ids()).toEqual(['hn', 'github'])
+		pointer('pointerup', ul, 0, 0)
+	})
 })

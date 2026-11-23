@@ -40,8 +40,11 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		)
 	}
 
+	const rowsOf = (): HTMLElement[] =>
+		(Array.from(list.children) as HTMLElement[]).filter((child) => child.tagName === 'LI')
+
 	function glidePush(dragged: HTMLElement, mutate: () => void): void {
-		const children = Array.from(list.children) as HTMLElement[]
+		const children = rowsOf()
 		for (const child of children) {
 			if (child !== dragged) for (const animation of child.getAnimations()) animation.cancel()
 		}
@@ -50,7 +53,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		slotTop = options.scroller.scrollTop
 		slotLeft = options.scroller.scrollLeft
 		for (const child of children) slots.set(child, child.getBoundingClientRect())
-		const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000
+		const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 2000
 		if (!(ms > 0)) return
 		for (const child of children) {
 			if (child === dragged) continue
@@ -68,16 +71,16 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 	}
 
 	function rowUnderPointer(): HTMLElement | null {
-		for (const child of list.children) {
+		for (const child of rowsOf()) {
 			if (child === row) continue
-			const bounds = boundsOf(child as HTMLElement)
+			const bounds = boundsOf(child)
 			if (
 				pointerX >= bounds.left &&
 				pointerX <= bounds.right &&
 				pointerY >= bounds.top &&
 				pointerY <= bounds.bottom
 			) {
-				return child as HTMLElement
+				return child
 			}
 		}
 		return null
@@ -89,17 +92,11 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		for (let guard = list.children.length; guard > 0; guard -= 1) {
 			const hit = rowUnderPointer()
 			if (!hit) break
-			const bounds = boundsOf(hit)
 			const rect = current.getBoundingClientRect()
-			const baseTop: number = rect.top - (positionY() - originY)
-			const before: boolean =
-				Math.abs(baseTop - bounds.top) < 1
-					? pointerX < bounds.left + bounds.width / 2
-					: pointerY < bounds.top + bounds.height / 2
-			const children = Array.from(list.children)
+			const children = rowsOf()
 			const from = children.indexOf(current)
 			const hitIndex = children.indexOf(hit)
-			const ref: Element | null = before && from > hitIndex ? hit : hit.nextElementSibling
+			const ref: Element | null = from > hitIndex ? hit : hit.nextElementSibling
 			if (ref === current) break
 			glidePush(current, () => list.insertBefore(current, ref))
 			moved = true
