@@ -44,6 +44,31 @@ function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {
 	return row
 }
 
+interface Pt {
+	x: number
+	y: number
+}
+
+function rounded(pts: Pt[], r: number): string {
+	if (pts.length < 2) return ''
+	let d = `M${pts[0]!.x} ${pts[0]!.y}`
+	for (let i = 1; i < pts.length - 1; i++) {
+		const p = pts[i]!
+		const prev = pts[i - 1]!
+		const next = pts[i + 1]!
+		const inLen = Math.hypot(p.x - prev.x, p.y - prev.y)
+		const outLen = Math.hypot(next.x - p.x, next.y - p.y)
+		if (inLen === 0 || outLen === 0) continue
+		const ri = Math.min(r, inLen / 2, outLen / 2)
+		d += `L${p.x - ((p.x - prev.x) / inLen) * ri} ${p.y - ((p.y - prev.y) / inLen) * ri}`
+		d += `Q${p.x} ${p.y} ${p.x + ((next.x - p.x) / outLen) * ri} ${
+			p.y + ((next.y - p.y) / outLen) * ri
+		}`
+	}
+	const last = pts[pts.length - 1]!
+	return `${d}L${last.x} ${last.y}`
+}
+
 export function createSourceList(options: SourceListOptions): SourceList {
 	const list = el('ul', 'src-list')
 	const live = el('p', 'visually-hidden')
@@ -58,22 +83,58 @@ export function createSourceList(options: SourceListOptions): SourceList {
 
 	const drawFlow = (): void => {
 		const rows = Array.from(list.children).filter((row) => row !== flow) as HTMLElement[]
-		flow.setAttribute('viewBox', `0 0 ${list.clientWidth} ${list.clientHeight}`)
-		if (rows.length < 2) {
+		const w = list.clientWidth
+		flow.setAttribute('viewBox', `0 0 ${w} ${list.clientHeight}`)
+		const gap = Number.parseFloat(getComputedStyle(list).columnGap) || 0
+		const rowGap = Number.parseFloat(getComputedStyle(list).rowGap) || 0
+		const wrapped = rows.some((row, i) => i > 0 && row.offsetTop === rows[i - 1]!.offsetTop)
+		if (!wrapped || rows.length < 2) {
 			flowPath.setAttribute('d', '')
 			return
 		}
-		flowPath.setAttribute(
-			'd',
-			rows
-				.map(
-					(row, i) =>
-						`${i === 0 ? 'M' : 'L'}${row.offsetLeft + row.offsetWidth / 2} ${
-							row.offsetTop + row.offsetHeight / 2
-						}`
+		const outer = gap / 2
+		const radius = rowGap / 2
+		const parts: string[] = []
+		for (let i = 0; i < rows.length - 1; i++) {
+			const a = rows[i]!
+			const b = rows[i + 1]!
+			const aMid = a.offsetTop + a.offsetHeight / 2
+			const bMid = b.offsetTop + b.offsetHeight / 2
+			const aRight = a.offsetLeft + a.offsetWidth
+			const bLeft = b.offsetLeft
+			if (a.offsetTop === b.offsetTop) {
+				parts.push(
+					rounded(
+						[
+							{ x: aRight, y: aMid },
+							{ x: bLeft, y: bMid },
+						],
+						radius
+					)
 				)
-				.join(' ')
-		)
+			} else {
+				const gapY = a.offsetTop + a.offsetHeight + rowGap / 2
+				parts.push(
+					rounded(
+						[
+							{ x: aRight, y: aMid },
+							{ x: w + outer, y: aMid },
+							{ x: w + outer, y: gapY },
+							{ x: -outer, y: gapY },
+							{ x: -outer, y: bMid },
+							{ x: bLeft, y: bMid },
+						],
+						radius
+					)
+				)
+			}
+			parts.push(
+				`M${bLeft - radius} ${bMid - radius / 2}L${bLeft - 1} ${bMid}L${bLeft - radius} ${
+					bMid + radius / 2
+				}`
+			)
+		}
+		flowPath.setAttribute('d', parts.join(''))
 	}
 	let drawFrame = 0
 	const scheduleDraw = (): void => {
