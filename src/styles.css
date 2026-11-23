@@ -729,6 +729,7 @@ button {
 }
 
 .strip-preview {
+	flex: none;
 	background: var(--bg);
 	padding-bottom: var(--preview-pad);
 }
