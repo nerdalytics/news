@@ -128,7 +128,7 @@ export class Column {
 		this.el.style.setProperty('--brand-dark', source.accent[1])
 		this.body = el('div', 'col-body')
 		this.foot = el('footer', 'col-foot')
-		this.el.append(this.renderHead(), this.body, this.foot)
+		this.el.append(this.renderHead(), this.foot, this.body)
 		this.el.setAttribute('aria-labelledby', `title-${source.id}`)
 		const cached = peek(source.id)
 		if (cached) this.render(cached)

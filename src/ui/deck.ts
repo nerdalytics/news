@@ -244,6 +244,7 @@ export class Deck {
 
 	private applyLayout(): void {
 		this.visible = new Set(this.window())
+		this.options.tabs.classList.toggle('is-multi', this.visible.size > 1)
 		for (const [id, column] of this.columns) {
 			const visible = this.visible.has(id)
 			column.el.hidden = !visible

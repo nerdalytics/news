@@ -23,6 +23,18 @@ export const SWIPE_LABELS: Record<SwipeAction, string> = {
 	unread: 'Unread',
 }
 
+export const SWIPE_DESCRIPTIONS: Record<SwipeAction, string> = {
+	block: 'Block site',
+	browser: 'Open in browser',
+	comments: 'Comments',
+	favorite: 'Favorite',
+	hide: 'Hide entry',
+	next: 'Next source',
+	previous: 'Previous source',
+	read: 'Mark read',
+	unread: 'Mark unread',
+}
+
 export function movesSource(action: SwipeAction | undefined): boolean {
 	return action === 'next' || action === 'previous'
 }

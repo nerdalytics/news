@@ -101,13 +101,14 @@ export function createSourceList(options: SourceListOptions): SourceList {
 			const aMid = a.offsetTop + a.offsetHeight / 2
 			const bMid = b.offsetTop + b.offsetHeight / 2
 			const aRight = a.offsetLeft + a.offsetWidth
-			const bLeft = b.offsetLeft
+			const tip = b.offsetLeft - radius
+			const lineEnd = tip - radius
 			if (a.offsetTop === b.offsetTop) {
 				parts.push(
 					rounded(
 						[
 							{ x: aRight, y: aMid },
-							{ x: bLeft, y: bMid },
+							{ x: lineEnd, y: bMid },
 						],
 						radius
 					)
@@ -122,17 +123,13 @@ export function createSourceList(options: SourceListOptions): SourceList {
 							{ x: w + outer, y: gapY },
 							{ x: -outer, y: gapY },
 							{ x: -outer, y: bMid },
-							{ x: bLeft, y: bMid },
+							{ x: lineEnd, y: bMid },
 						],
 						radius
 					)
 				)
 			}
-			parts.push(
-				`M${bLeft - radius} ${bMid - radius / 2}L${bLeft - 1} ${bMid}L${bLeft - radius} ${
-					bMid + radius / 2
-				}`
-			)
+			parts.push(`M${lineEnd} ${bMid - radius / 2}L${tip} ${bMid}L${lineEnd} ${bMid + radius / 2}`)
 		}
 		flowPath.setAttribute('d', parts.join(''))
 	}

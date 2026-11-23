@@ -2,6 +2,7 @@ import { isAvailable, onAvailabilityChange } from '../availability'
 import { hiddenCount, showAllHidden } from '../hidden'
 import { checkHosted } from '../hosted-check'
 import {
+	DESC_MAX,
 	getSettings,
 	type SourceSetting,
 	type Theme,
@@ -10,7 +11,7 @@ import {
 } from '../settings'
 import { sourceById } from '../sources/index'
 import { el, enableOutsideDismiss } from './dom'
-import { SWIPE_ACTIONS, SWIPE_LABELS, type SwipeSlot } from './gestures'
+import { SWIPE_ACTIONS, SWIPE_DESCRIPTIONS, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
 
 const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
@@ -68,8 +69,8 @@ function renderNewTabSwitch(): HTMLElement {
 
 const SLOT_LABELS: ReadonlyArray<readonly [slot: SwipeSlot, label: string]> = [
 	['left', 'Short swipe left'],
-	['leftLong', 'Long swipe left'],
 	['right', 'Short swipe right'],
+	['leftLong', 'Long swipe left'],
 	['rightLong', 'Long swipe right'],
 ]
 
@@ -79,7 +80,7 @@ function renderSwipeSelect(slot: SwipeSlot, label: string): HTMLElement {
 	const row = el('label', 'select-row')
 	const select = el('select', 'select')
 	select.append(new Option('Nothing', NO_ACTION))
-	for (const action of SWIPE_ACTIONS) select.append(new Option(SWIPE_LABELS[action], action))
+	for (const action of SWIPE_ACTIONS) select.append(new Option(SWIPE_DESCRIPTIONS[action], action))
 	select.value = getSettings().swipe[slot] ?? NO_ACTION
 	select.addEventListener('change', () => {
 		const swipe = { ...getSettings().swipe }
@@ -112,11 +113,45 @@ function renderHiddenEntries(): HTMLElement {
 }
 
 function renderSwipeSettings(): HTMLElement {
+	const section = el('section', 'pref pref-swipe')
+	const grid = el('div', 'swipe-grid')
+	grid.append(...SLOT_LABELS.map(([slot, label]) => renderSwipeSelect(slot, label)))
+	section.append(el('h3', undefined, 'Swipe gestures'), grid, renderHiddenEntries())
+	return section
+}
+
+function descLabel(lines: number): string {
+	if (lines <= 0) return 'Off'
+	if (lines >= DESC_MAX) return 'Max'
+	return lines === 1 ? '1 line' : `${lines} lines`
+}
+
+function renderDescSlider(): HTMLElement {
+	const row = el('label', 'select-row slider-row')
+	const input = el('input', 'range')
+	input.type = 'range'
+	input.min = '0'
+	input.max = String(DESC_MAX)
+	input.step = '1'
+	input.value = String(getSettings().descLines)
+	const value = el('span', 'slider-value', descLabel(getSettings().descLines))
+	input.addEventListener('input', () => {
+		const lines = Number(input.value)
+		value.textContent = descLabel(lines)
+		updateSettings({ descLines: lines })
+	})
+	row.append(el('span', undefined, 'Description length'), input, value)
+	return row
+}
+
+function renderEntries(): HTMLElement {
 	const section = el('section', 'pref')
 	section.append(
-		el('h3', undefined, 'Swipe gestures'),
-		...SLOT_LABELS.map(([slot, label]) => renderSwipeSelect(slot, label)),
-		renderHiddenEntries()
+		el('h3', undefined, 'Entries'),
+		renderDescSlider(),
+		renderSwitch('Show status row', getSettings().showStatus, (showStatus) =>
+			updateSettings({ showStatus })
+		)
 	)
 	return section
 }
@@ -158,7 +193,7 @@ function renderReset(): HTMLElement {
 		el(
 			'p',
 			undefined,
-			'Deletes your sources, blocked sites, opened links and cached feeds from this browser. TheNews then shows the first-run screen.'
+			'TheNews saves everything in this browser, in cookies and local storage; it has no accounts and no server of its own. Start fresh deletes your sources, blocked sites, opened links and cached feeds, then shows the first-run screen.'
 		),
 		button
 	)
@@ -194,13 +229,9 @@ function build(): HTMLDialogElement {
 	prefs.append(
 		renderThemePicker(),
 		renderNewTabSwitch(),
+		renderEntries(),
 		renderSwipeSettings(),
-		renderReset(),
-		el(
-			'p',
-			'note',
-			'TheNews saves these settings in this browser, in cookies and local storage. It has no accounts and no server of its own.'
-		)
+		renderReset()
 	)
 	body.append(...sources.nodes, prefs)
 
