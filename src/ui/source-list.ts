@@ -7,6 +7,7 @@ import { enableReorder } from './reorder'
 interface SourceListOptions {
 	scroller: HTMLElement
 	onChange: (sources: SourceSetting[]) => void
+	refresh?: () => void
 }
 
 export interface SourceList {
@@ -47,6 +48,7 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	const list = el('ul', 'src-list')
 	const live = el('p', 'visually-hidden')
 	live.setAttribute('aria-live', 'polite')
+	let pendingRefresh = false
 
 	const read = (): SourceSetting[] =>
 		(Array.from(list.children) as HTMLElement[]).map((row) => ({
@@ -73,12 +75,21 @@ export function createSourceList(options: SourceListOptions): SourceList {
 		onChange: () => options.onChange(read()),
 		onMove: announce,
 		scroller: options.scroller,
+		onSortEnd: () => {
+			if (!pendingRefresh) return
+			pendingRefresh = false
+			options.refresh?.()
+		},
 	})
 
 	return {
 		nodes: [list, live],
 		read,
 		render(sources) {
+			if (list.classList.contains('is-sorting')) {
+				pendingRefresh = true
+				return
+			}
 			const rows = sources.flatMap((setting) => {
 				const source = sourceById(setting.id)
 				return source ? [renderRow(source, setting.enabled)] : []

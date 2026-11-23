@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableReorder } from '../src/ui/reorder'
+import { createSourceList } from '../src/ui/source-list'
 
 const ROW_HEIGHT = 100
 
@@ -87,5 +88,39 @@ describe('reorder', () => {
 		expect(ids()).toEqual(['b', 'a', 'c'])
 		expect(glides.get(rows[1]!)).toBe(1)
 		expect(onChange).toHaveBeenCalledTimes(1)
+	})
+})
+
+describe('source list render during drag', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	it('defers a re-render until the drag ends so the dragged row stays connected', () => {
+		const scroller = document.createElement('div')
+		scroller.getBoundingClientRect = () => new DOMRect(0, 0, 300, 1000)
+		document.body.append(scroller)
+		const refresh = vi.fn()
+		const sourceList = createSourceList({ scroller, onChange: vi.fn(), refresh })
+		scroller.append(...sourceList.nodes)
+		sourceList.render([
+			{ id: 'hn', enabled: true },
+			{ id: 'github', enabled: true },
+		])
+		const ul = sourceList.nodes[0]
+		const dragged = ul.children[0] as HTMLElement
+		const handle = dragged.querySelector('.handle') as HTMLElement
+		handle.setPointerCapture = () => {}
+		pointer('pointerdown', handle, 10, 50)
+		expect(ul.classList.contains('is-sorting')).toBe(true)
+		sourceList.render([
+			{ id: 'hn', enabled: true },
+			{ id: 'github', enabled: true },
+		])
+		expect(ul.children[0]).toBe(dragged)
+		expect(dragged.isConnected).toBe(true)
+		expect(refresh).not.toHaveBeenCalled()
+		pointer('pointerup', ul, 0, 0)
+		expect(refresh).toHaveBeenCalledTimes(1)
 	})
 })

@@ -2,6 +2,7 @@ interface ReorderOptions {
 	scroller: HTMLElement
 	onMove: (row: HTMLElement) => void
 	onChange: () => void
+	onSortEnd?: () => void
 }
 
 const EDGE_PX = 56
@@ -131,6 +132,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		slots.clear()
 		row = null
 		if (moved) options.onChange()
+		options.onSortEnd?.()
 	}
 
 	list.addEventListener('pointerdown', (event) => {

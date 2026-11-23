@@ -170,6 +170,11 @@ function build(): HTMLDialogElement {
 	sheet.setAttribute('aria-labelledby', 'manage-title')
 	sheet.setAttribute('closedby', 'any')
 	enableOutsideDismiss(sheet)
+	const clearHighlight = (): void => {
+		sheet.querySelector('.src.is-highlighted')?.classList.remove('is-highlighted')
+	}
+	sheet.addEventListener('pointerdown', clearHighlight, { once: true })
+	sheet.addEventListener('keydown', clearHighlight, { once: true })
 
 	const head = el('header', 'sheet-head')
 	const title = el('h2', undefined, 'Manage sources')
@@ -183,6 +188,7 @@ function build(): HTMLDialogElement {
 	sources = createSourceList({
 		onChange: (next) => updateSettings({ sources: withHiddenSources(next) }),
 		scroller: body,
+		refresh: () => sources?.render(listedSources()),
 	})
 	const prefs = el('div', 'prefs')
 	prefs.append(
