@@ -728,9 +728,10 @@ button {
 }
 
 .strip-preview {
+	position: relative;
 	display: flex;
 	gap: 8px;
-	padding: 0 var(--gutter) 12px;
+	padding: 0 0 12px;
 	overflow-x: auto;
 	scrollbar-width: none;
 }

@@ -205,7 +205,8 @@ let activeId: string | null = null
 
 function renderPreview(): void {
 	if (!preview) return
-	const badges = listedSources()
+	const badges = (sources?.read() ?? [])
+		.filter((setting) => setting.enabled)
 		.map((setting) => {
 			const source = sourceById(setting.id)
 			if (!source) return null
@@ -218,7 +219,9 @@ function renderPreview(): void {
 		})
 		.filter((badge): badge is HTMLElement => badge !== null)
 	preview.replaceChildren(...badges)
-	preview.querySelector('.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+	const active = preview.querySelector<HTMLElement>('.is-active')
+	if (active)
+		preview.scrollLeft = active.offsetLeft - (preview.clientWidth - active.offsetWidth) / 2
 }
 
 function build(): HTMLDialogElement {
@@ -264,9 +267,9 @@ function build(): HTMLDialogElement {
 		renderSwipeSettings(),
 		renderReset()
 	)
-	body.append(...sources.nodes, prefs)
+	body.append(preview, ...sources.nodes, prefs)
 
-	sheet.append(head, preview, body)
+	sheet.append(head, body)
 	document.body.append(sheet)
 	return sheet
 }
