@@ -12,30 +12,6 @@ function rowOf(target: EventTarget | null): HTMLElement | null {
 	return handle?.closest<HTMLElement>('li') ?? null
 }
 
-function glidePush(list: HTMLElement, dragged: HTMLElement, mutate: () => void): void {
-	const children = Array.from(list.children) as HTMLElement[]
-	for (const child of children) {
-		if (child !== dragged) for (const animation of child.getAnimations()) animation.cancel()
-	}
-	const before = new Map(children.map((child) => [child, child.getBoundingClientRect()]))
-	mutate()
-	const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000
-	if (!(ms > 0)) return
-	for (const child of children) {
-		if (child === dragged) continue
-		const old = before.get(child)
-		if (!old) continue
-		const now = child.getBoundingClientRect()
-		const dx = old.left - now.left
-		const dy = old.top - now.top
-		if (dx === 0 && dy === 0) continue
-		child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-			duration: ms,
-			easing: 'ease',
-		})
-	}
-}
-
 export function enableReorder(list: HTMLElement, options: ReorderOptions): void {
 	let row: HTMLElement | null = null
 	let pointerX = 0
@@ -44,13 +20,54 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 	let originY = 0
 	let moved = false
 	let frame = 0
+	const slots = new Map<HTMLElement, DOMRect>()
+	let slotTop = 0
+	let slotLeft = 0
 
 	const positionY = (): number => pointerY + options.scroller.scrollTop
+
+	function boundsOf(child: HTMLElement): DOMRect {
+		const slot = slots.get(child)
+		if (!slot) return child.getBoundingClientRect()
+		return new DOMRect(
+			slot.left - (options.scroller.scrollLeft - slotLeft),
+			slot.top - (options.scroller.scrollTop - slotTop),
+			slot.width,
+			slot.height
+		)
+	}
+
+	function glidePush(dragged: HTMLElement, mutate: () => void): void {
+		const children = Array.from(list.children) as HTMLElement[]
+		for (const child of children) {
+			if (child !== dragged) for (const animation of child.getAnimations()) animation.cancel()
+		}
+		const before = new Map(children.map((child) => [child, child.getBoundingClientRect()]))
+		mutate()
+		slotTop = options.scroller.scrollTop
+		slotLeft = options.scroller.scrollLeft
+		for (const child of children) slots.set(child, child.getBoundingClientRect())
+		const ms = Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000
+		if (!(ms > 0)) return
+		for (const child of children) {
+			if (child === dragged) continue
+			const old = before.get(child)
+			const now = slots.get(child)
+			if (!old || !now) continue
+			const dx = old.left - now.left
+			const dy = old.top - now.top
+			if (dx === 0 && dy === 0) continue
+			child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+				duration: ms,
+				easing: 'ease',
+			})
+		}
+	}
 
 	function rowUnderPointer(): HTMLElement | null {
 		for (const child of list.children) {
 			if (child === row) continue
-			const bounds = child.getBoundingClientRect()
+			const bounds = boundsOf(child as HTMLElement)
 			if (
 				pointerX >= bounds.left &&
 				pointerX <= bounds.right &&
@@ -69,7 +86,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		for (let guard = list.children.length; guard > 0; guard -= 1) {
 			const hit = rowUnderPointer()
 			if (!hit) break
-			const bounds = hit.getBoundingClientRect()
+			const bounds = boundsOf(hit)
 			const rect = current.getBoundingClientRect()
 			const baseTop: number = rect.top - (positionY() - originY)
 			const before: boolean =
@@ -81,7 +98,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 			const hitIndex = children.indexOf(hit)
 			const ref: Element | null = before && from > hitIndex ? hit : hit.nextElementSibling
 			if (ref === current) break
-			glidePush(list, current, () => list.insertBefore(current, ref))
+			glidePush(current, () => list.insertBefore(current, ref))
 			moved = true
 			options.onMove(current)
 			const placed = current.getBoundingClientRect()
@@ -111,6 +128,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		row.style.transform = ''
 		row.classList.remove('is-dragging')
 		list.classList.remove('is-sorting')
+		slots.clear()
 		row = null
 		if (moved) options.onChange()
 	}
@@ -152,8 +170,8 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 					: null
 		if (!sibling) return
 		event.preventDefault()
-		if (event.key === 'ArrowUp') glidePush(list, target, () => sibling.before(target))
-		else glidePush(list, target, () => sibling.after(target))
+		if (event.key === 'ArrowUp') glidePush(target, () => sibling.before(target))
+		else glidePush(target, () => sibling.after(target))
 		target.querySelector<HTMLElement>('.handle')?.focus()
 		options.onMove(target)
 		options.onChange()

@@ -28,6 +28,9 @@ usefully and animate the switch consistently.
   switches via the `--dx` glide instead, so the two paths never double-animate.
 - Drag-reorder glides the pushed rows with a FLIP animation over one `--micro` beat; the
   dragged row is excluded (it follows the pointer). Reduced motion (0s) skips the glide.
+  Hit-testing uses the layout slots captured at each swap, scroll-compensated, never the
+  live rects: a pushed row mid-glide still visually covers the pointer, and hit-testing
+  its animated rect swaps it back, oscillating the order and misplacing the drop.
   A view-transition alternative was spiked and rejected: it defers the DOM mutation to an
   async capture callback (breaking the synchronous drag and keyboard tracking) and skips
   rapid successive transitions (9 of 10 in a measured burst), losing swaps.
