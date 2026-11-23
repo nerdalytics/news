@@ -733,13 +733,40 @@ button {
 	z-index: 2;
 	pointer-events: none;
 	background: var(--bg);
-	display: flex;
-	gap: 8px;
 	padding: 6px;
 	margin-inline: -6px;
 	padding-bottom: 12px;
+}
+
+.preview-label {
+	margin: 0 0 6px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.strip-row {
+	position: relative;
+	display: flex;
+	gap: 8px;
 	overflow-x: auto;
 	scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.strip-preview {
+		transition:
+			translate var(--sheet-move) ease,
+			opacity var(--sheet-move) ease;
+	}
+
+	@starting-style {
+		.sheet[open] .strip-preview {
+			translate: 0 16px;
+			opacity: 0;
+		}
+	}
 }
 
 .preview-badge {

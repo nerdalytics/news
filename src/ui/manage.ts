@@ -243,8 +243,11 @@ function build(): HTMLDialogElement {
 	done.addEventListener('click', () => sheet.close())
 	head.append(title, done)
 
-	preview = el('div', 'strip-preview')
-	preview.setAttribute('aria-hidden', 'true')
+	const previewWrap = el('div', 'strip-preview')
+	previewWrap.setAttribute('aria-hidden', 'true')
+	previewWrap.append(el('p', 'preview-label', 'Your icon strip'))
+	preview = el('div', 'strip-row')
+	previewWrap.append(preview)
 
 	const body = el('div', 'sheet-body')
 	sources = createSourceList({
@@ -267,7 +270,9 @@ function build(): HTMLDialogElement {
 		renderSwipeSettings(),
 		renderReset()
 	)
-	body.append(preview, ...sources.nodes, prefs)
+	const sourcesWrap = el('div', 'sources-wrap')
+	sourcesWrap.append(previewWrap, ...sources.nodes)
+	body.append(sourcesWrap, prefs)
 
 	sheet.append(head, body)
 	document.body.append(sheet)
