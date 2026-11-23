@@ -723,6 +723,7 @@ button {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--source-min)), 1fr));
 	gap: calc(var(--gutter) * 0.75) var(--gutter);
+	padding-inline: var(--gutter);
 	list-style: none;
 }
 
@@ -1178,13 +1179,18 @@ body[data-status="off"] .meta {
 	}
 
 	.item:has(.title:hover) .title {
+		color: var(--accent);
 		text-decoration: underline;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 3px;
 	}
 
 	.comments:hover,
+	.comments:focus-visible,
+	.site:hover,
+	.site:focus-visible,
 	.link-btn:hover {
+		color: var(--accent);
 		text-decoration: underline;
 		text-underline-offset: 3px;
 	}

@@ -33,6 +33,10 @@ usefully and animate the switch consistently.
   its animated rect swaps it back, oscillating the order and misplacing the drop.
   A settings re-render (source availability change) is deferred while a drag is active
   and applied on release, so the dragged row is never detached mid-gesture.
+  The drag lifts and starts swapping only after the first moved pixel, so a tap on the
+  handle is inert. The order thread reserves its wrap channels inside the list
+  (padding-inline) so the U-turns and arrowheads render within the dialog, never past
+  its edges, and the thread hides when the grid collapses to one column.
   A view-transition alternative was spiked and rejected: it defers the DOM mutation to an
   async capture callback (breaking the synchronous drag and keyboard tracking) and skips
   rapid successive transitions (9 of 10 in a measured burst), losing swaps.

@@ -112,6 +112,8 @@ describe('source list render during drag', () => {
 		const handle = dragged.querySelector('.handle') as HTMLElement
 		handle.setPointerCapture = () => {}
 		pointer('pointerdown', handle, 10, 50)
+		expect(ul.classList.contains('is-sorting')).toBe(false)
+		pointer('pointermove', ul, 12, 52)
 		expect(ul.classList.contains('is-sorting')).toBe(true)
 		sourceList.render([
 			{ id: 'hn', enabled: true },

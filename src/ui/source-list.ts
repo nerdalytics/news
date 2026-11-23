@@ -85,15 +85,15 @@ export function createSourceList(options: SourceListOptions): SourceList {
 		const rows = Array.from(list.children).filter((row) => row !== flow) as HTMLElement[]
 		const w = list.clientWidth
 		flow.setAttribute('viewBox', `0 0 ${w} ${list.clientHeight}`)
-		const gap = Number.parseFloat(getComputedStyle(list).columnGap) || 0
 		const rowGap = Number.parseFloat(getComputedStyle(list).rowGap) || 0
 		const wrapped = rows.some((row, i) => i > 0 && row.offsetTop === rows[i - 1]!.offsetTop)
 		if (!wrapped || rows.length < 2) {
 			flowPath.setAttribute('d', '')
 			return
 		}
-		const outer = gap / 2
 		const radius = rowGap / 2
+		const leftX = radius / 2
+		const rightX = w - radius / 2
 		const parts: string[] = []
 		for (let i = 0; i < rows.length - 1; i++) {
 			const a = rows[i]!
@@ -119,10 +119,10 @@ export function createSourceList(options: SourceListOptions): SourceList {
 					rounded(
 						[
 							{ x: aRight, y: aMid },
-							{ x: w + outer, y: aMid },
-							{ x: w + outer, y: gapY },
-							{ x: -outer, y: gapY },
-							{ x: -outer, y: bMid },
+							{ x: rightX, y: aMid },
+							{ x: rightX, y: gapY },
+							{ x: leftX, y: gapY },
+							{ x: leftX, y: bMid },
 							{ x: lineEnd, y: bMid },
 						],
 						radius

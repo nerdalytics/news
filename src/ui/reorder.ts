@@ -20,6 +20,8 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 	let originX = 0
 	let originY = 0
 	let moved = false
+	let started = false
+	let downY = 0
 	let frame = 0
 	const slots = new Map<HTMLElement, DOMRect>()
 	let slotTop = 0
@@ -126,9 +128,11 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 	function finish(): void {
 		if (!row) return
 		cancelAnimationFrame(frame)
-		row.style.transform = ''
-		row.classList.remove('is-dragging')
-		list.classList.remove('is-sorting')
+		if (started) {
+			row.style.transform = ''
+			row.classList.remove('is-dragging')
+			list.classList.remove('is-sorting')
+		}
 		slots.clear()
 		row = null
 		if (moved) options.onChange()
@@ -141,20 +145,26 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 		event.preventDefault()
 		row = target
 		moved = false
+		started = false
 		pointerX = event.clientX
 		pointerY = event.clientY
+		downY = event.clientY
 		originX = pointerX
 		originY = positionY()
-		row.classList.add('is-dragging')
-		list.classList.add('is-sorting')
-		frame = requestAnimationFrame(autoScroll)
-		row.querySelector<HTMLElement>('.handle')?.setPointerCapture(event.pointerId)
 	})
 
 	list.addEventListener('pointermove', (event) => {
 		if (!row) return
 		pointerX = event.clientX
 		pointerY = event.clientY
+		if (!started) {
+			if (Math.hypot(pointerX - originX, pointerY - downY) < 1) return
+			started = true
+			row.classList.add('is-dragging')
+			list.classList.add('is-sorting')
+			frame = requestAnimationFrame(autoScroll)
+			row.querySelector<HTMLElement>('.handle')?.setPointerCapture(event.pointerId)
+		}
 		update()
 	})
 
