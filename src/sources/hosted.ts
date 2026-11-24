@@ -13,24 +13,32 @@ function count(value: unknown, label: unknown): FeedItem['score'] {
 	return { label, value: count.value }
 }
 
+function copyOptionalFields(item: FeedItem, entry: Record<string, unknown>): void {
+	if (typeof entry.description === 'string') item.description = entry.description
+	if (typeof entry.tag === 'string') item.tag = entry.tag
+	if (typeof entry.time === 'number') item.time = entry.time
+	if (typeof entry.rank === 'number') item.rank = entry.rank
+}
+
+function toComments(raw: unknown): FeedItem['comments'] {
+	const comments = raw as { count?: unknown; url?: unknown; label?: unknown } | undefined
+	const url = safeUrl(comments?.url)
+	if (!url || typeof comments?.count !== 'number') return undefined
+	const label = typeof comments.label === 'string' ? comments.label : 'comment'
+	return { count: comments.count, label, url }
+}
+
 function toItem(raw: unknown): FeedItem | undefined {
 	const entry = raw as Record<string, unknown>
 	const url = safeUrl(entry?.url)
 	if (!url || typeof entry.title !== 'string' || !entry.title) return undefined
 	const item: FeedItem = { id: String(entry.id ?? url), title: entry.title, url }
-	if (typeof entry.description === 'string') item.description = entry.description
-	if (typeof entry.tag === 'string') item.tag = entry.tag
-	if (typeof entry.time === 'number') item.time = entry.time
-	if (typeof entry.rank === 'number') item.rank = entry.rank
+	copyOptionalFields(item, entry)
 	const score = entry.score as { label?: unknown } | undefined
 	const parsedScore = count(score, score?.label)
 	if (parsedScore) item.score = parsedScore
-	const comments = entry.comments as { count?: unknown; url?: unknown; label?: unknown } | undefined
-	const discussion = safeUrl(comments?.url)
-	if (discussion && typeof comments?.count === 'number') {
-		const label = typeof comments.label === 'string' ? comments.label : 'comment'
-		item.comments = { count: comments.count, label, url: discussion }
-	}
+	const comments = toComments(entry.comments)
+	if (comments) item.comments = comments
 	return item
 }
 
