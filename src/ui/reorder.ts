@@ -46,6 +46,22 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 	const rowsOf = (): HTMLElement[] =>
 		(Array.from(list.children) as HTMLElement[]).filter((child) => child.tagName === 'LI')
 
+	function glide(
+		child: HTMLElement,
+		old: DOMRect | undefined,
+		now: DOMRect | undefined,
+		ms: number
+	): void {
+		if (!old || !now) return
+		const dx = old.left - now.left
+		const dy = old.top - now.top
+		if (dx === 0 && dy === 0) return
+		child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+			duration: ms,
+			easing: 'ease',
+		})
+	}
+
 	function glidePush(dragged: HTMLElement, mutate: () => void): void {
 		const children = rowsOf()
 		for (const child of children) {
@@ -60,17 +76,7 @@ export function enableReorder(list: HTMLElement, options: ReorderOptions): void 
 			Number.parseFloat(getComputedStyle(list).getPropertyValue('--micro')) * 1000 * GLIDE_BEATS
 		if (!(ms > 0)) return
 		for (const child of children) {
-			if (child === dragged) continue
-			const old = before.get(child)
-			const now = slots.get(child)
-			if (!old || !now) continue
-			const dx = old.left - now.left
-			const dy = old.top - now.top
-			if (dx === 0 && dy === 0) continue
-			child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-				duration: ms,
-				easing: 'ease',
-			})
+			if (child !== dragged) glide(child, before.get(child), slots.get(child), ms)
 		}
 	}
 
