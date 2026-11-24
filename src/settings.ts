@@ -178,16 +178,40 @@ export function subscribe(listener: Listener): void {
 	listeners.add(listener)
 }
 
+const PATCH_WRITERS: ReadonlyArray<{
+	field: keyof Settings
+	write: (settings: Settings) => void
+}> = [
+	{
+		field: 'sources',
+		write: (settings) => writeCookie(COOKIE.sources, serializeSources(settings.sources)),
+	},
+	{ field: 'theme', write: (settings) => writeCookie(COOKIE.theme, settings.theme) },
+	{
+		field: 'newTab',
+		write: (settings) => writeCookie(COOKIE.newTab, settings.newTab ? '1' : '0'),
+	},
+	{
+		field: 'descLines',
+		write: (settings) => writeCookie(COOKIE.descLines, String(settings.descLines)),
+	},
+	{
+		field: 'showStatus',
+		write: (settings) => writeCookie(COOKIE.showStatus, settings.showStatus ? '1' : '0'),
+	},
+	{
+		field: 'swipe',
+		write: (settings) => writeCookie(COOKIE.swipe, serializeSwipe(settings.swipe)),
+	},
+	{ field: 'blocked', write: (settings) => writeHosts(BLOCKED_KEY, settings.blocked) },
+	{ field: 'favorites', write: (settings) => writeHosts(FAVORITES_KEY, settings.favorites) },
+]
+
 export function updateSettings(patch: Partial<Settings>): void {
 	current = { ...current, ...patch }
-	if (patch.sources) writeCookie(COOKIE.sources, serializeSources(current.sources))
-	if (patch.theme) writeCookie(COOKIE.theme, current.theme)
-	if (patch.newTab !== undefined) writeCookie(COOKIE.newTab, current.newTab ? '1' : '0')
-	if (patch.descLines !== undefined) writeCookie(COOKIE.descLines, String(current.descLines))
-	if (patch.showStatus !== undefined) writeCookie(COOKIE.showStatus, current.showStatus ? '1' : '0')
-	if (patch.swipe) writeCookie(COOKIE.swipe, serializeSwipe(current.swipe))
-	if (patch.blocked) writeHosts(BLOCKED_KEY, current.blocked)
-	if (patch.favorites) writeHosts(FAVORITES_KEY, current.favorites)
+	for (const { field, write } of PATCH_WRITERS) {
+		if (patch[field] !== undefined) write(current)
+	}
 	emit()
 }
 
