@@ -15,6 +15,91 @@ function walk(dir, out) {
 	return out
 }
 
+function scanLineComment(src, i, line, comments) {
+	const n = src.length
+	let j = i + 2
+	while (j < n && src[j] !== '\n') j++
+	comments.push({
+		startLine: line,
+		endLine: line,
+		startOffset: i,
+		endOffset: j,
+		type: 'line',
+		text: src.slice(i, j),
+	})
+	return { i: j, line }
+}
+
+function scanBlockComment(src, i, line, comments) {
+	const n = src.length
+	const startLine = line
+	let j = i + 2
+	while (j < n && !(src[j] === '*' && src[j + 1] === '/')) {
+		if (src[j] === '\n') line++
+		j++
+	}
+	const endLine = line
+	j = j < n ? j + 2 : j
+	comments.push({
+		startLine,
+		endLine,
+		startOffset: i,
+		endOffset: j,
+		type: 'block',
+		text: src.slice(i, j),
+	})
+	return { i: j, line }
+}
+
+function scanQuoted(src, i, line) {
+	const n = src.length
+	const q = src[i]
+	let j = i + 1
+	while (j < n) {
+		if (src[j] === '\\') {
+			if (src[j + 1] === '\n') line++
+			j += 2
+			continue
+		}
+		if (src[j] === q) {
+			j++
+			break
+		}
+		if (src[j] === '\n') line++
+		j++
+	}
+	return { i: j, line }
+}
+
+function scanTemplate(src, i, line, comments) {
+	const n = src.length
+	let j = i + 1
+	while (j < n) {
+		if (src[j] === '\\') {
+			if (src[j + 1] === '\n') line++
+			j += 2
+			continue
+		}
+		if (src[j] === '`') {
+			j++
+			break
+		}
+		if (src[j] === '\n') {
+			line++
+			j++
+			continue
+		}
+		if (src[j] === '$' && src[j + 1] === '{') {
+			const r = scan(src, j + 2, line, comments, true)
+			j = r.i
+			line = r.line
+			continue
+		}
+		j++
+	}
+	return { i: j, line }
+}
+
 function scan(src, i, line, comments, stopBrace) {
 	const n = src.length
 	let depth = 0
@@ -26,71 +111,27 @@ function scan(src, i, line, comments, stopBrace) {
 			continue
 		}
 		if (c === '/' && src[i + 1] === '/') {
-			const startLine = line
-			let j = i + 2
-			while (j < n && src[j] !== '\n') j++
-			comments.push({ startLine, endLine: startLine, startOffset: i, endOffset: j, type: 'line', text: src.slice(i, j) })
-			i = j
+			const r = scanLineComment(src, i, line, comments)
+			i = r.i
+			line = r.line
 			continue
 		}
 		if (c === '/' && src[i + 1] === '*') {
-			const startLine = line
-			let j = i + 2
-			while (j < n && !(src[j] === '*' && src[j + 1] === '/')) {
-				if (src[j] === '\n') line++
-				j++
-			}
-			const endLine = line
-			j = j < n ? j + 2 : j
-			comments.push({ startLine, endLine, startOffset: i, endOffset: j, type: 'block', text: src.slice(i, j) })
-			i = j
+			const r = scanBlockComment(src, i, line, comments)
+			i = r.i
+			line = r.line
 			continue
 		}
 		if (c === "'" || c === '"') {
-			const q = c
-			let j = i + 1
-			while (j < n) {
-				if (src[j] === '\\') {
-					if (src[j + 1] === '\n') line++
-					j += 2
-					continue
-				}
-				if (src[j] === q) {
-					j++
-					break
-				}
-				if (src[j] === '\n') line++
-				j++
-			}
-			i = j
+			const r = scanQuoted(src, i, line)
+			i = r.i
+			line = r.line
 			continue
 		}
 		if (c === '`') {
-			let j = i + 1
-			while (j < n) {
-				if (src[j] === '\\') {
-					if (src[j + 1] === '\n') line++
-					j += 2
-					continue
-				}
-				if (src[j] === '`') {
-					j++
-					break
-				}
-				if (src[j] === '\n') {
-					line++
-					j++
-					continue
-				}
-				if (src[j] === '$' && src[j + 1] === '{') {
-					const r = scan(src, j + 2, line, comments, true)
-					j = r.i
-					line = r.line
-					continue
-				}
-				j++
-			}
-			i = j
+			const r = scanTemplate(src, i, line, comments)
+			i = r.i
+			line = r.line
 			continue
 		}
 		if (stopBrace) {
@@ -105,6 +146,21 @@ function scan(src, i, line, comments, stopBrace) {
 	return { i, line }
 }
 
+function scanCssQuoted(src, i, line) {
+	const n = src.length
+	const q = src[i]
+	let j = i + 1
+	while (j < n && src[j] !== q) {
+		if (src[j] === '\\') {
+			j += 2
+			continue
+		}
+		if (src[j] === '\n') line++
+		j++
+	}
+	return { i: j < n ? j + 1 : j, line }
+}
+
 function scanCss(src, comments) {
 	const n = src.length
 	let i = 0
@@ -117,30 +173,15 @@ function scanCss(src, comments) {
 			continue
 		}
 		if (c === '/' && src[i + 1] === '*') {
-			const startLine = line
-			let j = i + 2
-			while (j < n && !(src[j] === '*' && src[j + 1] === '/')) {
-				if (src[j] === '\n') line++
-				j++
-			}
-			const endLine = line
-			j = j < n ? j + 2 : j
-			comments.push({ startLine, endLine, startOffset: i, endOffset: j, type: 'block', text: src.slice(i, j) })
-			i = j
+			const r = scanBlockComment(src, i, line, comments)
+			i = r.i
+			line = r.line
 			continue
 		}
 		if (c === "'" || c === '"') {
-			const q = c
-			let j = i + 1
-			while (j < n && src[j] !== q) {
-				if (src[j] === '\\') {
-					j += 2
-					continue
-				}
-				if (src[j] === '\n') line++
-				j++
-			}
-			i = j < n ? j + 1 : j
+			const r = scanCssQuoted(src, i, line)
+			i = r.i
+			line = r.line
 			continue
 		}
 		i++
