@@ -111,14 +111,32 @@ export class Deck {
 		const { site, url } = row.dataset
 		if (!url) return
 		const comments = row.querySelector<HTMLAnchorElement>('a.comments')?.href
-		if (action === 'read') markRead(url)
-		else if (action === 'unread') markUnread(url)
-		else if (action === 'hide') hide(url)
-		else if (action === 'block' && site) setBlocked(site, !isBlocked(site))
-		else if (action === 'favorite' && site) setFavorite(site, !isFavorite(site))
-		else if (action === 'comments' && comments) this.navigate(comments)
-		else if (action === 'browser') openInBrowser(url)
+		this.rowAction(action, url, site, comments)
 		this.restyle()
+	}
+
+	private rowAction(
+		action: SwipeAction,
+		url: string,
+		site: string | undefined,
+		comments: string | undefined
+	): void {
+		const actions: Partial<Record<SwipeAction, () => void>> = {
+			read: () => markRead(url),
+			unread: () => markUnread(url),
+			hide: () => hide(url),
+			block: () => {
+				if (site) setBlocked(site, !isBlocked(site))
+			},
+			favorite: () => {
+				if (site) setFavorite(site, !isFavorite(site))
+			},
+			comments: () => {
+				if (comments) this.navigate(comments)
+			},
+			browser: () => openInBrowser(url),
+		}
+		actions[action]?.()
 	}
 
 	private step(delta: 1 | -1): void {
