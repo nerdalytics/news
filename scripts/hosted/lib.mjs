@@ -28,6 +28,13 @@ export async function getText(url, init) {
 	return (await request(url, init)).text()
 }
 
+export async function fetchFeed(endpoint) {
+	const feed = await getText(endpoint, {
+		headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9' },
+	})
+	return parseFeed(feed)
+}
+
 function isHttpUrl(value) {
 	try {
 		const { protocol } = new URL(value)

@@ -26,14 +26,19 @@ describe('hosted feed probes', () => {
 	it.each(PROBES)(
 		'%s fetches its endpoint as a feed and parses the items',
 		async (id, endpoint) => {
-			const fetchMock = vi.fn(async () => ({ ok: true, text: async () => RSS }))
+			const fetchMock = vi.fn(
+				async (_url: string, _init: { headers?: Record<string, string> }) => ({
+					ok: true,
+					text: async () => RSS,
+				})
+			)
 			vi.stubGlobal('fetch', fetchMock)
 			const { default: fetchItems } = await import(`../scripts/hosted/sources/${id}.mjs`)
 			const items = await fetchItems()
 			expect(fetchMock).toHaveBeenCalledTimes(1)
-			const [url, init] = fetchMock.mock.calls[0] ?? []
-			expect(url).toBe(endpoint)
-			expect(init.headers).toMatchObject({ Accept: FEED_ACCEPT })
+			const call = fetchMock.mock.calls[0]
+			expect(call?.[0]).toBe(endpoint)
+			expect(call?.[1]?.headers).toMatchObject({ Accept: FEED_ACCEPT })
 			expect(items).toEqual([
 				{ id: 'https://example.com/1', title: 'One', url: 'https://example.com/1' },
 			])

@@ -4,6 +4,11 @@ import { createSourceList } from '../src/ui/source-list'
 
 const ROW_HEIGHT = 100
 
+const TWO_SOURCES = [
+	{ id: 'hn', enabled: true },
+	{ id: 'github', enabled: true },
+]
+
 function pointer(type: string, target: Element, x: number, y: number): void {
 	const Ctor = typeof PointerEvent === 'undefined' ? MouseEvent : PointerEvent
 	target.dispatchEvent(new Ctor(type, { bubbles: true, button: 0, clientX: x, clientY: y }))
@@ -103,10 +108,7 @@ describe('source list render during drag', () => {
 		const refresh = vi.fn()
 		const sourceList = createSourceList({ scroller, onChange: vi.fn(), refresh })
 		scroller.append(...sourceList.nodes)
-		sourceList.render([
-			{ id: 'hn', enabled: true },
-			{ id: 'github', enabled: true },
-		])
+		sourceList.render(TWO_SOURCES)
 		const ul = sourceList.nodes[0]
 		const dragged = ul.querySelector('.src[data-id="hn"]') as HTMLElement
 		const handle = dragged.querySelector('.handle') as HTMLElement
@@ -115,10 +117,7 @@ describe('source list render during drag', () => {
 		expect(ul.classList.contains('is-sorting')).toBe(false)
 		pointer('pointermove', ul, 12, 52)
 		expect(ul.classList.contains('is-sorting')).toBe(true)
-		sourceList.render([
-			{ id: 'hn', enabled: true },
-			{ id: 'github', enabled: true },
-		])
+		sourceList.render(TWO_SOURCES)
 		expect(ul.querySelector('.src[data-id="hn"]')).toBe(dragged)
 		expect(dragged.isConnected).toBe(true)
 		expect(refresh).not.toHaveBeenCalled()
@@ -132,10 +131,7 @@ describe('source list render during drag', () => {
 		document.body.append(scroller)
 		const sourceList = createSourceList({ scroller, onChange: vi.fn(), refresh: vi.fn() })
 		scroller.append(...sourceList.nodes)
-		sourceList.render([
-			{ id: 'hn', enabled: true },
-			{ id: 'github', enabled: true },
-		])
+		sourceList.render(TWO_SOURCES)
 		const ul = sourceList.nodes[0]
 		const ids = (): string[] =>
 			Array.from(ul.querySelectorAll('.src')).map((r) => (r as HTMLElement).dataset.id ?? '')
