@@ -18,7 +18,8 @@ export interface SourceList {
 }
 
 function describe(source: SourceMeta): string {
-	return source.comments ? `${source.tagline} · comments` : source.tagline
+	const marks = source.comments ? ['comments', source.fetch] : [source.fetch]
+	return `${source.tagline} · ${marks.join(' · ')}`
 }
 
 function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {

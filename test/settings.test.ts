@@ -20,6 +20,7 @@ function source(id: string): SourceMeta {
 		accent: ['#000', '#fff'],
 		badge: ['#000', '#fff'],
 		comments: false,
+		fetch: 'browser',
 		home: 'https://example.com/',
 		id,
 		mark: id,
@@ -200,5 +201,13 @@ describe('catalogue', () => {
 		const ids = SOURCES.map((entry) => entry.id)
 		expect(ids).toContain('hn')
 		expect(ids).toContain('github')
+	})
+
+	it('labels each source with how it is fetched', () => {
+		const api = new Set(['lobsters', 'producthunt', 'ghadvisories', 'cisakev', 'hibp'])
+		for (const source of SOURCES) {
+			const expected = !source.hosted ? 'browser' : api.has(source.id) ? 'api' : 'rss'
+			expect(source.fetch).toBe(expected)
+		}
 	})
 })

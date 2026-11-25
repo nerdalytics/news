@@ -286,6 +286,28 @@ describe('source list and preview', () => {
 		setChecked(row('github').querySelector<HTMLInputElement>('.check') as HTMLInputElement, true)
 		expect(badges()).toEqual(['hn', 'github'])
 	})
+
+	it('hints how each source is fetched beside the comments mark', () => {
+		setGeneratedAt('lobsters', Date.now())
+		setGeneratedAt('techcrunch', Date.now())
+		updateSettings({
+			sources: [
+				{ id: 'hn', enabled: true },
+				{ id: 'lobsters', enabled: true },
+				{ id: 'techcrunch', enabled: true },
+			],
+		})
+		openManageDialog()
+		expect(row('hn').querySelector('.src-tag')?.textContent).toBe(
+			'Top stories · comments · browser'
+		)
+		expect(row('lobsters').querySelector('.src-tag')?.textContent).toBe(
+			'Hottest stories · comments · api'
+		)
+		expect(row('techcrunch').querySelector('.src-tag')?.textContent).toBe(
+			'Latest startup and tech news · rss'
+		)
+	})
 })
 
 describe('availability changes', () => {

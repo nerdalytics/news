@@ -29,6 +29,8 @@ export interface SourceAdapter {
 	fetch(ctx: FetchContext): Promise<FeedItem[]>
 }
 
+export type FetchType = 'browser' | 'rss' | 'api'
+
 export interface SourceMeta {
 	id: string
 	name: string
@@ -38,6 +40,7 @@ export interface SourceMeta {
 	accent: readonly [light: string, dark: string]
 	home: string
 	comments: boolean
+	fetch: FetchType
 	hosted?: boolean
 	ttl: number
 }
