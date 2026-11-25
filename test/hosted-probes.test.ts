@@ -11,6 +11,17 @@ const PROBES = [
 	['siteinspire', 'https://www.siteinspire.com/websites/feed'],
 	['techcrunch', 'https://techcrunch.com/feed/'],
 	['wired', 'https://www.wired.com/feed/rss'],
+	['thehackernews', 'https://feeds.feedburner.com/TheHackersNews'],
+	['bleepingcomputer', 'https://www.bleepingcomputer.com/feed/'],
+	['krebs', 'https://krebsonsecurity.com/feed/'],
+	['securityweek', 'https://www.securityweek.com/feed/'],
+	['darkreading', 'https://www.darkreading.com/rss.xml'],
+	['theregister', 'https://www.theregister.com/security/headlines.atom'],
+	['schneier', 'https://www.schneier.com/feed/atom'],
+	['troyhunt', 'https://www.troyhunt.com/rss/'],
+	['grahamcluley', 'https://www.grahamcluley.com/feed/'],
+	['sans', 'https://isc.sans.edu/rssfeed_full.xml'],
+	['portswigger', 'https://portswigger.net/research/rss'],
 ] as const
 
 const FEED_ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9'
