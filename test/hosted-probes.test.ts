@@ -54,6 +54,8 @@ const PROBES = [
 	['bishopfox', 'https://bishopfox.com/blog/rss.xml'],
 	['doyensec', 'https://blog.doyensec.com/atom.xml'],
 	['rustsec', 'https://rustsec.org/feed.xml'],
+	['heise', 'https://www.heise.de/security/rss/news-atom.xml'],
+	['golem', 'https://rss.golem.de/rss.php?feed=RSS2.0'],
 ] as const
 
 const FEED_ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9'
