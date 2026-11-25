@@ -31,6 +31,9 @@ shape the implementation; these were verified against the live services.
   its real rank. Lobsters text posts have no link, so the discussion is the entry.
 - Product Hunt entries open the product's own site; the comment count opens the Product
   Hunt discussion.
+- BetaList titles embed a one-line description after an en-dash (`Name – description`);
+  the probe splits on the en-dash, taking the first part as the title and the rest as the
+  description, and strips `utm_` tracking parameters from the link.
 
 ## Consequences
 

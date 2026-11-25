@@ -17,7 +17,6 @@ function withoutTracking(link) {
 
 function toItem(entry) {
 	const link = /<link[^>]*rel="alternate"[^>]*href="([^"]+)"/.exec(entry)
-	// Titles have the form "Name – one line description".
 	const [name, ...rest] = tag(entry, 'title').split(' – ')
 	return {
 		description: rest.join(' – ') || undefined,

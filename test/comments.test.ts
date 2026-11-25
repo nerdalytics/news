@@ -83,6 +83,40 @@ describe('scan via extract (.ts)', () => {
 	})
 })
 
+describe('regex literals (.ts)', () => {
+	it('does not let quotes inside a regex hide a following comment', () => {
+		const comments = extractFrom(
+			'const a = /rel="x"[^>]*href="([^"]+)"/.exec(s)\n/** real */\n',
+			'.ts'
+		)
+		expect(comments.map((c) => c.text)).toEqual(['/** real */'])
+	})
+
+	it('treats a regex after return as a regex, not division', () => {
+		const comments = extractFrom('function f() { return /a"b/.test(s) }\n// real\n', '.ts')
+		expect(comments.map((c) => c.text)).toEqual(['// real'])
+	})
+
+	it('does not count comment markers inside a regex', () => {
+		expect(extractFrom('const a = /"//"/.test(s)\n', '.ts')).toEqual([])
+	})
+
+	it('keeps division as division', () => {
+		const comments = extractFrom('const a = b / c / d\n// real\n', '.ts')
+		expect(comments.map((c) => c.text)).toEqual(['// real'])
+	})
+
+	it('keeps member-access division as division', () => {
+		const comments = extractFrom('const a = b.c / d\n// real\n', '.ts')
+		expect(comments.map((c) => c.text)).toEqual(['// real'])
+	})
+
+	it('handles a slash inside a character class and regex flags', () => {
+		const comments = extractFrom('const a = /[/]/gi.test(s)\n// real\n', '.ts')
+		expect(comments.map((c) => c.text)).toEqual(['// real'])
+	})
+})
+
 describe('scanCss via extract (.css)', () => {
 	it('counts block comments but not line markers', () => {
 		const comments = extractFrom('a { color: red; } // not\n/* real */\n', '.css')

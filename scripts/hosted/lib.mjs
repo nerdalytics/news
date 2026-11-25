@@ -86,16 +86,10 @@ function atomLink(block) {
 	return decodeXml((alternate ?? any)?.[1] ?? '')
 }
 
-/** Reduces an HTML excerpt to plain text. */
 function stripHtml(text) {
 	return text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-/**
- * Parses an RSS 2.0 or Atom feed into entries. Titles and excerpts arrive as
- * HTML or CDATA, so they are decoded and stripped to plain text. Entries
- * without a title or a link are dropped; `validate` still applies the limit.
- */
 export function parseFeed(xml) {
 	const items = []
 	for (const block of xml.split(/<item[\s>]|<entry[\s>]/).slice(1)) {

@@ -100,40 +100,119 @@ function scanTemplate(src, i, line, comments) {
 	return { i: j, line }
 }
 
+const REGEX_KEYWORDS = new Set([
+	'return',
+	'typeof',
+	'case',
+	'in',
+	'of',
+	'new',
+	'delete',
+	'void',
+	'instanceof',
+	'do',
+	'else',
+	'yield',
+	'await',
+	'throw',
+	'var',
+	'let',
+	'const',
+])
+
+function scanRegex(src, i) {
+	const n = src.length
+	let j = i + 1
+	let inClass = false
+	while (j < n) {
+		const c = src[j]
+		if (c === '\n') return 0
+		if (c === '\\') {
+			if (src[j + 1] === '\n') return 0
+			j += 2
+			continue
+		}
+		if (c === '[') inClass = true
+		else if (c === ']') inClass = false
+		else if (c === '/' && !inClass) {
+			j++
+			while (j < n && /[A-Za-z]/.test(src[j])) j++
+			return j
+		}
+		j++
+	}
+	return 0
+}
+
 function scan(src, i, line, comments, stopBrace) {
 	const n = src.length
 	let depth = 0
+	let prev = 'op'
+	let word = ''
+	const endWord = () => {
+		if (word) {
+			prev = REGEX_KEYWORDS.has(word) ? 'op' : 'value'
+			word = ''
+		}
+	}
 	while (i < n) {
 		const c = src[i]
 		if (c === '\n') {
+			endWord()
 			line++
 			i++
 			continue
 		}
+		if (c === ' ' || c === '\t' || c === '\r') {
+			endWord()
+			i++
+			continue
+		}
 		if (c === '/' && src[i + 1] === '/') {
+			endWord()
 			const r = scanLineComment(src, i, line, comments)
 			i = r.i
 			line = r.line
 			continue
 		}
 		if (c === '/' && src[i + 1] === '*') {
+			endWord()
 			const r = scanBlockComment(src, i, line, comments)
 			i = r.i
 			line = r.line
 			continue
 		}
+		if (c === '/' && prev === 'op') {
+			endWord()
+			const end = scanRegex(src, i)
+			if (end) {
+				i = end
+				prev = 'value'
+				continue
+			}
+		}
 		if (c === "'" || c === '"') {
+			endWord()
 			const r = scanQuoted(src, i, line)
 			i = r.i
 			line = r.line
+			prev = 'value'
 			continue
 		}
 		if (c === '`') {
+			endWord()
 			const r = scanTemplate(src, i, line, comments)
 			i = r.i
 			line = r.line
+			prev = 'value'
 			continue
 		}
+		if (/[A-Za-z0-9_$]/.test(c)) {
+			word += c
+			i++
+			continue
+		}
+		endWord()
 		if (stopBrace) {
 			if (c === '{') depth++
 			else if (c === '}') {
@@ -141,6 +220,7 @@ function scan(src, i, line, comments, stopBrace) {
 				depth--
 			}
 		}
+		if (c !== '.') prev = c === ')' || c === ']' ? 'value' : 'op'
 		i++
 	}
 	return { i, line }
