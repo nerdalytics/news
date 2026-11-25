@@ -53,6 +53,7 @@ const PROBES = [
 	['binarly', 'https://binarly.io/blog/rss.xml'],
 	['bishopfox', 'https://bishopfox.com/blog/rss.xml'],
 	['doyensec', 'https://blog.doyensec.com/atom.xml'],
+	['rustsec', 'https://rustsec.org/feed.xml'],
 ] as const
 
 const FEED_ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9'
