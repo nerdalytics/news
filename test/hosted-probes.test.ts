@@ -16,7 +16,6 @@ const PROBES = [
 	['krebs', 'https://krebsonsecurity.com/feed/'],
 	['securityweek', 'https://www.securityweek.com/feed/'],
 	['darkreading', 'https://www.darkreading.com/rss.xml'],
-	['theregister', 'https://www.theregister.com/security/headlines.atom'],
 	['schneier', 'https://www.schneier.com/feed/atom'],
 	['troyhunt', 'https://www.troyhunt.com/rss/'],
 	['grahamcluley', 'https://www.grahamcluley.com/feed/'],
