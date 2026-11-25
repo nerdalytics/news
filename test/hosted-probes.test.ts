@@ -22,6 +22,19 @@ const PROBES = [
 	['grahamcluley', 'https://www.grahamcluley.com/feed/'],
 	['sans', 'https://isc.sans.edu/rssfeed_full.xml'],
 	['portswigger', 'https://portswigger.net/research/rss'],
+	['cisa', 'https://www.cisa.gov/cybersecurity-advisories/all.xml'],
+	['talos', 'https://blog.talosintelligence.com/rss/'],
+	['projectzero', 'https://googleprojectzero.blogspot.com/feeds/posts/default'],
+	['mssecurity', 'https://www.microsoft.com/security/blog/feed/'],
+	['cloudflare', 'https://blog.cloudflare.com/rss/'],
+	['trailofbits', 'https://blog.trailofbits.com/feed/'],
+	['githubsecurity', 'https://github.blog/security/feed/'],
+	['unit42', 'https://unit42.paloaltonetworks.com/feed/'],
+	['sentinellabs', 'https://www.sentinelone.com/labs/feed/'],
+	['huntress', 'https://www.huntress.com/blog/rss.xml'],
+	['awssecurity', 'https://aws.amazon.com/blogs/security/feed/'],
+	['detectify', 'https://blog.detectify.com/feed/'],
+	['hackthebox', 'https://www.hackthebox.com/blog/rss.xml'],
 ] as const
 
 const FEED_ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9'
