@@ -2,7 +2,7 @@ import { hide } from '../hidden'
 import { markRead, markUnread } from '../read'
 import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
 import { sourceById } from '../sources/index'
-import { recordRead } from '../temperature'
+import { HEAT, recordHeat, recordRead } from '../temperature'
 import { Column } from './column'
 import { el, popBadge, prefersReducedMotion, slideView, whenIdle } from './dom'
 import { navDirection, SWIPE_LABELS, type SwipeAction } from './gestures'
@@ -35,6 +35,8 @@ export class Deck {
 	private readonly tabs = new Map<string, HTMLAnchorElement>()
 	private visible = new Set<string>()
 	private readonly scrollTops = new Map<string, number>()
+	private readonly scrollDistance = new Map<string, number>()
+	private lastScrollY = 0
 	private readonly lastSeenTop = new Map<string, string>()
 	private order: string[] = []
 	private current: string | undefined
@@ -50,6 +52,7 @@ export class Deck {
 		options.deck.addEventListener('click', (event) => this.onItemClick(event))
 		options.deck.addEventListener('auxclick', (event) => this.onItemClick(event))
 		addEventListener('hashchange', () => this.showFromHash())
+		addEventListener('scroll', () => this.onScroll())
 		document.addEventListener('visibilitychange', () => {
 			if (document.visibilityState === 'hidden') this.wasHidden = true
 			else this.onResume()
@@ -124,31 +127,40 @@ export class Deck {
 		comments: string | undefined,
 		sourceId: string | undefined
 	): void {
-		const heat = (): void => {
-			if (sourceId) recordRead(sourceId)
+		const heat = (amount: number): void => {
+			if (sourceId) recordHeat(sourceId, amount)
 		}
 		const actions: Partial<Record<SwipeAction, () => void>> = {
 			read: () => {
 				markRead(url)
-				heat()
+				heat(HEAT.read)
 			},
 			unread: () => markUnread(url),
-			hide: () => hide(url),
+			hide: () => {
+				hide(url)
+				heat(HEAT.hide)
+			},
 			block: () => {
-				if (site) setBlocked(site, !isBlocked(site))
+				if (site) {
+					setBlocked(site, !isBlocked(site))
+					heat(isBlocked(site) ? HEAT.block : -HEAT.block)
+				}
 			},
 			favorite: () => {
-				if (site) setFavorite(site, !isFavorite(site))
+				if (site) {
+					setFavorite(site, !isFavorite(site))
+					heat(isFavorite(site) ? HEAT.favorite : -HEAT.favorite)
+				}
 			},
 			comments: () => {
 				if (comments) {
 					this.navigate(comments)
-					heat()
+					heat(HEAT.read)
 				}
 			},
 			browser: () => {
 				openInBrowser(url)
-				heat()
+				heat(HEAT.read)
 			},
 		}
 		actions[action]?.()
@@ -162,6 +174,24 @@ export class Deck {
 		if (!target) return
 		this.show(target)
 		this.writeHash(target)
+	}
+
+	private onScroll(): void {
+		const id = this.current
+		const column = id ? this.columns.get(id) : undefined
+		if (!id || !column) return
+		const y = scrollY
+		const delta = Math.abs(y - this.lastScrollY)
+		this.lastScrollY = y
+		if (delta === 0) return
+		const height = column.el.scrollHeight
+		if (height <= 0) return
+		const distance = (this.scrollDistance.get(id) ?? 0) + delta
+		this.scrollDistance.set(id, distance)
+		const span = 2 * height
+		const rise =
+			(Math.min(1, distance / span) - Math.min(1, (distance - delta) / span)) * HEAT.scrollFull
+		if (rise > 0) recordHeat(id, rise)
 	}
 
 	private navigate(url: string): void {
@@ -308,13 +338,19 @@ export class Deck {
 		const to = this.order.indexOf(id)
 		const update = (): void => {
 			const previous = this.window()[0]
-			if (previous) this.scrollTops.set(previous, scrollY)
+			if (previous) {
+				this.scrollTops.set(previous, scrollY)
+				if ((this.scrollDistance.get(previous) ?? 0) === 0) recordHeat(previous, HEAT.swipePast)
+				this.scrollDistance.delete(previous)
+			}
 			this.current = id
 			this.applyLayout()
 			const first = this.window()[0]
 			const top = this.columns.get(id)?.topItemId()
 			const seen = this.lastSeenTop.get(id)
 			const target = topsChanged(top, seen) ? 0 : (first && this.scrollTops.get(first)) || 0
+			this.lastScrollY = target
+			this.scrollDistance.delete(id)
 			scrollTo({ behavior: 'instant', top: target })
 			if (top !== undefined) this.lastSeenTop.set(id, top)
 			this.options.onJump()

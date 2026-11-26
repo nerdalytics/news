@@ -9,7 +9,7 @@ import {
 	setFavorite,
 	updateSettings,
 } from '../src/settings'
-import { temperature } from '../src/temperature'
+import { recordRead, temperature } from '../src/temperature'
 import { Deck } from '../src/ui/deck'
 import { SWIPE_LABELS } from '../src/ui/gestures'
 import { openInBrowser } from '../src/ui/open'
@@ -342,5 +342,57 @@ describe('read heat', () => {
 		host.append(comments)
 		comments.click()
 		expect(temperature('hn', 'all')).toBe(2)
+	})
+})
+
+describe('engagement heat', () => {
+	function host(deckEl: HTMLElement): HTMLElement {
+		return deckEl.querySelector<HTMLElement>('#source-hn') as HTMLElement
+	}
+	function attach(deckEl: HTMLElement, dataset: Record<string, string>): HTMLElement {
+		const node = row(dataset)
+		host(deckEl).append(node)
+		return node
+	}
+
+	it('warms the source on favorite', () => {
+		const { deck, deckEl } = makeDeck()
+		deck.sync(['hn'])
+		deck.swipe(attach(deckEl, { url: 'https://a.example/', site: 'a.example' }), 'favorite')
+		expect(temperature('hn', 'all')).toBeCloseTo(0.5)
+	})
+
+	it('cools on block and cools more on hide', () => {
+		recordRead('hn')
+		recordRead('hn')
+		const { deck, deckEl } = makeDeck()
+		deck.sync(['hn'])
+		deck.swipe(attach(deckEl, { url: 'https://b.example/', site: 'b.example' }), 'block')
+		expect(temperature('hn', 'all')).toBeCloseTo(1.5)
+		deck.swipe(attach(deckEl, { url: 'https://c.example/' }), 'hide')
+		expect(temperature('hn', 'all')).toBeCloseTo(0.75)
+	})
+
+	it('warms continuously while scrolling, capped at a full scroll', () => {
+		const { deck, deckEl } = makeDeck()
+		deck.sync(['hn'])
+		Object.defineProperty(host(deckEl), 'scrollHeight', { value: 100, configurable: true })
+		vi.stubGlobal('scrollY', 100)
+		window.dispatchEvent(new Event('scroll'))
+		expect(temperature('hn', 'all')).toBeCloseTo(0.5)
+		vi.stubGlobal('scrollY', 200)
+		window.dispatchEvent(new Event('scroll'))
+		expect(temperature('hn', 'all')).toBeCloseTo(1)
+		vi.stubGlobal('scrollY', 300)
+		window.dispatchEvent(new Event('scroll'))
+		expect(temperature('hn', 'all')).toBeCloseTo(1)
+	})
+
+	it('cools a source swiped past without scrolling', () => {
+		recordRead('hn')
+		const { deck } = makeDeck()
+		deck.sync(['hn', 'github'])
+		deck.swipe(row({ url: 'https://x.example/' }), 'next')
+		expect(temperature('hn', 'all')).toBeCloseTo(0.9)
 	})
 })
