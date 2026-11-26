@@ -802,7 +802,7 @@ button {
 .src-main {
 	display: grid;
 	grid-column: 1 / 4;
-	grid-template-columns: auto auto minmax(0, 1fr);
+	grid-template-columns: auto auto minmax(0, 1fr) auto;
 	column-gap: 14px;
 	align-items: center;
 	padding: var(--src-pad) 0;
@@ -835,6 +835,28 @@ button {
 	stroke: currentColor;
 	stroke-width: 1;
 	opacity: 0.45;
+}
+
+.src-thermo {
+	display: grid;
+	place-items: center;
+	color: var(--muted);
+}
+
+.temp-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 var(--src-pad) 12px;
+}
+
+.temp-label {
+	font-weight: 600;
+}
+
+.temp-window {
+	flex: 1;
+	min-width: 0;
 }
 
 .check {

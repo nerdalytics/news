@@ -5,6 +5,7 @@ import { checkHosted } from '../src/hosted-check'
 import { startFresh } from '../src/reset'
 import { DESC_MAX, getSettings, updateSettings } from '../src/settings'
 import { SOURCES } from '../src/sources/index'
+import { recordRead } from '../src/temperature'
 import { SWIPE_ACTIONS } from '../src/ui/gestures'
 import { openManageDialog } from '../src/ui/manage'
 
@@ -325,5 +326,40 @@ describe('availability changes', () => {
 		expect(sheet().querySelector(`.src[data-id="${hosted.id}"]`)).not.toBeNull()
 		setGeneratedAt(hosted.id, undefined)
 		expect(sheet().querySelector(`.src[data-id="${hosted.id}"]`)).toBeNull()
+	})
+})
+
+describe('temperature', () => {
+	it('shows a thermometer gauge on each source row', () => {
+		openManageDialog()
+		expect(row('hn').querySelector('.src-thermo .thermo')).not.toBeNull()
+	})
+
+	it('offers the seven temperature windows', () => {
+		openManageDialog()
+		const select = sheet().querySelector<HTMLSelectElement>('.temp-window')
+		expect(select?.options.length).toBe(7)
+		expect(select?.value).toBe('day')
+	})
+
+	it('sorts sources hottest first and persists the order', () => {
+		recordRead('github')
+		recordRead('github')
+		recordRead('hn')
+		openManageDialog()
+		sheet().querySelector<HTMLButtonElement>('.temp-sort')?.click()
+		expect(getSettings().sources.map((source) => source.id)).toEqual(['github', 'hn'])
+		expect(
+			Array.from(sheet().querySelectorAll<HTMLElement>('.src')).map((node) => node.dataset.id)
+		).toEqual(['github', 'hn'])
+	})
+
+	it('re-renders gauges when the window changes', () => {
+		recordRead('hn')
+		openManageDialog()
+		const select = sheet().querySelector<HTMLSelectElement>('.temp-window') as HTMLSelectElement
+		select.value = 'all'
+		select.dispatchEvent(new Event('change', { bubbles: true }))
+		expect(row('hn').querySelector('.src-thermo .thermo')).not.toBeNull()
 	})
 })

@@ -10,6 +10,7 @@ import {
 	withHiddenSources,
 } from '../settings'
 import { sourceById } from '../sources/index'
+import { temperature, WINDOW_LABELS, WINDOWS, type Window } from '../temperature'
 import { el, enableOutsideDismiss } from './dom'
 import { SWIPE_ACTIONS, SWIPE_DESCRIPTIONS, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
@@ -22,6 +23,7 @@ const THEMES: ReadonlyArray<readonly [value: Theme, label: string]> = [
 
 let dialog: HTMLDialogElement | undefined
 let sources: SourceList | undefined
+let activeWindow: Window = 'day'
 
 function renderThemePicker(): HTMLElement {
 	const group = el('fieldset', 'pref')
@@ -240,6 +242,29 @@ function renderPreview(): void {
 		preview.scrollLeft = active.offsetLeft - (preview.clientWidth - active.offsetWidth) / 2
 }
 
+function renderTemperatureBar(): HTMLElement {
+	const bar = el('div', 'temp-bar')
+	const select = el('select', 'select temp-window')
+	for (const window of WINDOWS) select.append(new Option(WINDOW_LABELS[window], window))
+	select.value = activeWindow
+	select.addEventListener('change', () => {
+		activeWindow = select.value as Window
+		sources?.render(listedSources(), activeWindow)
+	})
+	const sort = el('button', 'link-btn temp-sort', 'Sort by temperature')
+	sort.type = 'button'
+	sort.addEventListener('click', () => {
+		const sorted = [...listedSources()].sort(
+			(a, b) => temperature(b.id, activeWindow) - temperature(a.id, activeWindow)
+		)
+		updateSettings({ sources: withHiddenSources(sorted) })
+		sources?.render(listedSources(), activeWindow)
+		renderPreview()
+	})
+	bar.append(el('span', 'temp-label', 'Temperature'), select, sort)
+	return bar
+}
+
 function build(): HTMLDialogElement {
 	const sheet = el('dialog', 'sheet')
 	sheet.setAttribute('aria-labelledby', 'manage-title')
@@ -272,7 +297,7 @@ function build(): HTMLDialogElement {
 			renderPreview()
 		},
 		scroller: body,
-		refresh: () => sources?.render(listedSources()),
+		refresh: () => sources?.render(listedSources(), activeWindow),
 		onActive: (id) => {
 			activeId = id
 			renderPreview()
@@ -290,7 +315,7 @@ function build(): HTMLDialogElement {
 		renderReset()
 	)
 	const sourcesWrap = el('div', 'sources-wrap')
-	sourcesWrap.append(previewWrap, ...sources.nodes)
+	sourcesWrap.append(renderTemperatureBar(), previewWrap, ...sources.nodes)
 	body.append(sourcesWrap, prefs)
 
 	sheet.append(head, body)
@@ -301,7 +326,7 @@ function build(): HTMLDialogElement {
 export function openManageDialog(focusSource?: string): void {
 	dialog?.remove()
 	dialog = build()
-	sources?.render(listedSources())
+	sources?.render(listedSources(), activeWindow)
 	dialog.showModal()
 	renderPreview()
 	if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
@@ -327,7 +352,7 @@ export function openManageDialog(focusSource?: string): void {
 
 onAvailabilityChange(() => {
 	if (dialog?.open) {
-		sources?.render(listedSources())
+		sources?.render(listedSources(), activeWindow)
 		renderPreview()
 	}
 })

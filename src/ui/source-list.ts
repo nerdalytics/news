@@ -1,8 +1,10 @@
 import type { SourceSetting } from '../settings'
 import { sourceById } from '../sources/index'
 import type { SourceMeta } from '../sources/types'
+import { temperature, type Window } from '../temperature'
 import { el, icon, popBadge } from './dom'
 import { enableReorder } from './reorder'
+import { thermo } from './thermo'
 
 interface SourceListOptions {
 	scroller: HTMLElement
@@ -13,7 +15,7 @@ interface SourceListOptions {
 
 export interface SourceList {
 	nodes: [HTMLUListElement, HTMLElement]
-	render(sources: readonly SourceSetting[]): void
+	render(sources: readonly SourceSetting[], window?: Window): void
 	read(): SourceSetting[]
 }
 
@@ -22,7 +24,7 @@ function describe(source: SourceMeta): string {
 	return `${source.tagline} · ${marks.join(' · ')}`
 }
 
-function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {
+function renderRow(source: SourceMeta, enabled: boolean, fraction: number): HTMLLIElement {
 	const row = el('li', 'src')
 	row.dataset.id = source.id
 
@@ -35,7 +37,9 @@ function renderRow(source: SourceMeta, enabled: boolean): HTMLLIElement {
 	badge.style.setProperty('--badge-fg', source.badge[1])
 	const text = el('span', 'src-text')
 	text.append(el('span', 'src-name', source.name), el('span', 'src-tag', describe(source)))
-	main.append(check, badge, text)
+	const gauge = el('span', 'src-thermo')
+	gauge.append(thermo(fraction))
+	main.append(check, badge, text, gauge)
 
 	const handle = el('button', 'handle')
 	handle.type = 'button'
@@ -96,14 +100,18 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	return {
 		nodes: [list, live],
 		read,
-		render(sources) {
+		render(sources, window = 'day') {
 			if (list.classList.contains('is-sorting')) {
 				pendingRefresh = true
 				return
 			}
+			const temps = new Map(sources.map((setting) => [setting.id, temperature(setting.id, window)]))
+			const max = Math.max(0, ...temps.values())
 			const rows = sources.flatMap((setting) => {
 				const source = sourceById(setting.id)
-				return source ? [renderRow(source, setting.enabled)] : []
+				if (!source) return []
+				const fraction = max > 0 ? (temps.get(setting.id) ?? 0) / max : 0
+				return [renderRow(source, setting.enabled, fraction)]
 			})
 			list.replaceChildren(...rows)
 		},
