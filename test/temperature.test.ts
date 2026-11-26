@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { recordRead, sortByTemperature, temperature, WINDOWS } from '../src/temperature'
+import {
+	HEAT,
+	recordHeat,
+	recordRead,
+	sortByTemperature,
+	temperature,
+	WINDOWS,
+} from '../src/temperature'
 
 const HOUR = 3_600_000
 
@@ -56,5 +63,36 @@ describe('temperature', () => {
 
 	it('exposes seven windows', () => {
 		expect(WINDOWS).toHaveLength(7)
+	})
+})
+
+describe('recordHeat', () => {
+	it('cools with a negative amount', () => {
+		recordRead('hn', 0)
+		recordHeat('hn', -0.5, 0)
+		expect(temperature('hn', 'day', 0)).toBe(0.5)
+	})
+
+	it('never drops below ambient zero', () => {
+		recordHeat('hn', -5, 0)
+		expect(temperature('hn', 'day', 0)).toBe(0)
+		recordRead('hn', 0)
+		recordHeat('hn', -5, 0)
+		expect(temperature('hn', 'day', 0)).toBe(0)
+	})
+
+	it('accepts fractional heat', () => {
+		recordHeat('hn', 0.25, 0)
+		recordHeat('hn', 0.25, 0)
+		expect(temperature('hn', 'day', 0)).toBe(0.5)
+	})
+
+	it('ignores a zero amount', () => {
+		recordHeat('hn', 0, 0)
+		expect(temperature('hn', 'day', 0)).toBe(0)
+	})
+
+	it('hide cools more than block', () => {
+		expect(HEAT.hide).toBeLessThan(HEAT.block)
 	})
 })

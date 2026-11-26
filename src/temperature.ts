@@ -63,14 +63,32 @@ function decay(value: number, elapsed: number, window: Window): number {
 	return value * 2 ** (-Math.max(0, elapsed) / HALF_LIFE[window])
 }
 
-export function recordRead(sourceId: string, now: number = Date.now()): void {
+export const HEAT = {
+	read: 1,
+	scrollFull: 1,
+	swipePast: -0.1,
+	enable: 1,
+	disable: -1,
+	favorite: 0.5,
+	block: -0.5,
+	hide: -0.75,
+} as const
+
+export function recordHeat(sourceId: string, amount: number, now: number = Date.now()): void {
+	if (amount === 0) return
 	const store = load()
 	const heat = store[sourceId] ?? { at: now, v: WINDOWS.map(() => 0) }
 	store[sourceId] = {
 		at: now,
-		v: WINDOWS.map((window, i) => decay(heat.v[i] ?? 0, now - heat.at, window) + 1),
+		v: WINDOWS.map((window, i) =>
+			Math.max(0, decay(heat.v[i] ?? 0, now - heat.at, window) + amount)
+		),
 	}
 	save(store)
+}
+
+export function recordRead(sourceId: string, now: number = Date.now()): void {
+	recordHeat(sourceId, HEAT.read, now)
 }
 
 export function temperature(sourceId: string, window: Window, now: number = Date.now()): number {
