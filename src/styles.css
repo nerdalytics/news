@@ -824,6 +824,19 @@ button {
 	font-size: 0.8125rem;
 }
 
+.thermo {
+	display: block;
+	height: 30px;
+	width: auto;
+}
+
+.thermo-glass {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1;
+	opacity: 0.45;
+}
+
 .check {
 	display: grid;
 	place-content: center;
