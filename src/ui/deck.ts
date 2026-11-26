@@ -14,7 +14,7 @@ interface DeckOptions {
 	tabs: HTMLElement
 	onFirstSettled: () => void
 	onManage: (sourceId?: string) => void
-	onSite: (site: string) => void
+	onSite: (site: string, sourceId?: string) => void
 	onJump: () => void
 }
 
@@ -203,7 +203,7 @@ export class Deck {
 		const target = event.target as Element
 		const site = target.closest<HTMLElement>('.site')?.dataset.site
 		if (site) {
-			this.options.onSite(site)
+			this.options.onSite(site, this.current)
 			return
 		}
 		const link = target.closest<HTMLAnchorElement>('a.title, a.comments')

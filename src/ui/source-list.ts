@@ -1,7 +1,7 @@
 import type { SourceSetting } from '../settings'
 import { sourceById } from '../sources/index'
 import type { SourceMeta } from '../sources/types'
-import { temperature, type Window } from '../temperature'
+import { HEAT, recordHeat, temperature, type Window } from '../temperature'
 import { el, icon, popBadge } from './dom'
 import { enableReorder } from './reorder'
 import { thermo } from './thermo'
@@ -75,6 +75,11 @@ export function createSourceList(options: SourceListOptions): SourceList {
 	list.addEventListener('change', (event) => {
 		const row = (event.target as Element).closest<HTMLElement>('.src')
 		if (row) popBadge(row)
+		const input = event.target
+		const id = row?.dataset.id
+		if (id && input instanceof HTMLInputElement) {
+			recordHeat(id, input.checked ? HEAT.enable : HEAT.disable)
+		}
 		options.onChange(read())
 	})
 	list.addEventListener('animationend', (event) => {

@@ -1,8 +1,10 @@
 import { isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
+import { HEAT, recordHeat } from '../temperature'
 import { el, enableOutsideDismiss } from './dom'
 
 let dialog: HTMLDialogElement | undefined
 let site = ''
+let sourceId: string | undefined
 
 function render(): void {
 	if (!dialog) return
@@ -23,12 +25,14 @@ function render(): void {
 	favToggle.type = 'button'
 	favToggle.addEventListener('click', () => {
 		setFavorite(site, !favorite)
+		if (sourceId) recordHeat(sourceId, isFavorite(site) ? HEAT.favorite : -HEAT.favorite)
 		dialog?.close()
 	})
 	const blockToggle = el('button', 'secondary-btn', blocked ? `Unblock ${site}` : `Block ${site}`)
 	blockToggle.type = 'button'
 	blockToggle.addEventListener('click', () => {
 		setBlocked(site, !blocked)
+		if (sourceId) recordHeat(sourceId, isBlocked(site) ? HEAT.block : -HEAT.block)
 		dialog?.close()
 	})
 	const cancel = el('button', 'link-btn', 'Cancel')
@@ -48,8 +52,9 @@ function build(): HTMLDialogElement {
 	return sheet
 }
 
-export function openSiteDialog(host: string): void {
+export function openSiteDialog(host: string, source?: string): void {
 	site = host
+	sourceId = source
 	dialog ??= build()
 	render()
 	if (!dialog.open) dialog.showModal()

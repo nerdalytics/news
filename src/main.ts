@@ -51,9 +51,9 @@ async function openManage(sourceId?: string): Promise<void> {
 
 if (new URLSearchParams(location.search).has('debug')) void import('./debug')
 
-async function openSite(site: string): Promise<void> {
+async function openSite(site: string, sourceId?: string): Promise<void> {
 	const { openSiteDialog } = await import('./ui/site-dialog')
-	openSiteDialog(site)
+	openSiteDialog(site, sourceId)
 }
 
 const deckElement = required<HTMLElement>('#deck')
@@ -64,7 +64,7 @@ const deck = new Deck({
 	onFirstSettled: hideSplash,
 	onJump: () => bar.reset(),
 	onManage: (sourceId) => void openManage(sourceId),
-	onSite: (site) => void openSite(site),
+	onSite: (site, sourceId) => void openSite(site, sourceId),
 	tabs: required<HTMLElement>('#tabs'),
 })
 

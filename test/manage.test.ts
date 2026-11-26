@@ -5,7 +5,7 @@ import { checkHosted } from '../src/hosted-check'
 import { startFresh } from '../src/reset'
 import { DESC_MAX, getSettings, updateSettings } from '../src/settings'
 import { SOURCES } from '../src/sources/index'
-import { recordRead } from '../src/temperature'
+import { recordRead, temperature } from '../src/temperature'
 import { SWIPE_ACTIONS } from '../src/ui/gestures'
 import { openManageDialog } from '../src/ui/manage'
 
@@ -361,5 +361,14 @@ describe('temperature', () => {
 		select.value = 'all'
 		select.dispatchEvent(new Event('change', { bubbles: true }))
 		expect(row('hn').querySelector('.src-thermo .thermo')).not.toBeNull()
+	})
+
+	it('warms on enable and cools on disable', () => {
+		openManageDialog()
+		const check = row('hn').querySelector<HTMLInputElement>('.check') as HTMLInputElement
+		setChecked(check, false)
+		expect(temperature('hn', 'all')).toBe(0)
+		setChecked(check, true)
+		expect(temperature('hn', 'all')).toBe(1)
 	})
 })
