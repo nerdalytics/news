@@ -2,6 +2,7 @@ import { hide } from '../hidden'
 import { markRead, markUnread } from '../read'
 import { getSettings, isBlocked, isFavorite, setBlocked, setFavorite } from '../settings'
 import { sourceById } from '../sources/index'
+import { recordRead } from '../temperature'
 import { Column } from './column'
 import { el, popBadge, prefersReducedMotion, slideView, whenIdle } from './dom'
 import { navDirection, SWIPE_LABELS, type SwipeAction } from './gestures'
@@ -111,7 +112,8 @@ export class Deck {
 		const { site, url } = row.dataset
 		if (!url) return
 		const comments = row.querySelector<HTMLAnchorElement>('a.comments')?.href
-		this.rowAction(action, url, site, comments)
+		const sourceId = row.closest<HTMLElement>('[id^="source-"]')?.id.replace('source-', '')
+		this.rowAction(action, url, site, comments, sourceId)
 		this.restyle()
 	}
 
@@ -119,10 +121,17 @@ export class Deck {
 		action: SwipeAction,
 		url: string,
 		site: string | undefined,
-		comments: string | undefined
+		comments: string | undefined,
+		sourceId: string | undefined
 	): void {
+		const heat = (): void => {
+			if (sourceId) recordRead(sourceId)
+		}
 		const actions: Partial<Record<SwipeAction, () => void>> = {
-			read: () => markRead(url),
+			read: () => {
+				markRead(url)
+				heat()
+			},
 			unread: () => markUnread(url),
 			hide: () => hide(url),
 			block: () => {
@@ -132,9 +141,15 @@ export class Deck {
 				if (site) setFavorite(site, !isFavorite(site))
 			},
 			comments: () => {
-				if (comments) this.navigate(comments)
+				if (comments) {
+					this.navigate(comments)
+					heat()
+				}
 			},
-			browser: () => openInBrowser(url),
+			browser: () => {
+				openInBrowser(url)
+				heat()
+			},
 		}
 		actions[action]?.()
 	}
@@ -161,10 +176,14 @@ export class Deck {
 			this.options.onSite(site)
 			return
 		}
-		const title = target.closest<HTMLAnchorElement>('a.title')
-		if (!title || event.button > 1) return
-		markRead(title.href)
-		this.restyle()
+		const link = target.closest<HTMLAnchorElement>('a.title, a.comments')
+		if (!link || event.button > 1) return
+		const sourceId = target.closest<HTMLElement>('[id^="source-"]')?.id.replace('source-', '')
+		if (sourceId) recordRead(sourceId)
+		if (link.classList.contains('title')) {
+			markRead(link.href)
+			this.restyle()
+		}
 	}
 
 	showFromHash(): void {

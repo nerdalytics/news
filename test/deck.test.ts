@@ -9,6 +9,7 @@ import {
 	setFavorite,
 	updateSettings,
 } from '../src/settings'
+import { temperature } from '../src/temperature'
 import { Deck } from '../src/ui/deck'
 import { SWIPE_LABELS } from '../src/ui/gestures'
 import { openInBrowser } from '../src/ui/open'
@@ -299,5 +300,47 @@ describe('sync, tabs and hash', () => {
 		deck.setNewTab(true)
 		expect(deckEl.querySelector<HTMLElement>('#source-hn')?.dataset.newTab).toBe('true')
 		expect(deckEl.querySelector<HTMLElement>('#source-github')?.dataset.newTab).toBe('true')
+	})
+})
+
+describe('read heat', () => {
+	function column(deckEl: HTMLElement): HTMLElement {
+		return deckEl.querySelector<HTMLElement>('#source-hn') as HTMLElement
+	}
+
+	it('records heat for swipe read, comments and browser but not unread', () => {
+		updateSettings({ newTab: true })
+		const { deck, deckEl } = makeDeck()
+		deck.sync(['hn'])
+		const host = column(deckEl)
+		const attach = (comments?: string): HTMLElement => {
+			const node = row({ url: 'https://heat.example/' }, comments)
+			host.append(node)
+			return node
+		}
+		deck.swipe(attach(), 'read')
+		deck.swipe(attach('https://comments.example/'), 'comments')
+		deck.swipe(attach(), 'browser')
+		deck.swipe(attach(), 'unread')
+		expect(temperature('hn', 'all')).toBe(3)
+	})
+
+	it('records heat on title and comments link clicks', () => {
+		const { deck, deckEl } = makeDeck()
+		deck.sync(['hn'])
+		const host = column(deckEl)
+		const title = document.createElement('a')
+		title.className = 'title'
+		title.href = 'https://title.example/'
+		host.append(title)
+		title.click()
+		expect(isRead('https://title.example/')).toBe(true)
+		expect(temperature('hn', 'all')).toBe(1)
+		const comments = document.createElement('a')
+		comments.className = 'comments'
+		comments.href = 'https://comments.example/'
+		host.append(comments)
+		comments.click()
+		expect(temperature('hn', 'all')).toBe(2)
 	})
 })
