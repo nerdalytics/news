@@ -859,6 +859,12 @@ button {
 	min-width: 0;
 }
 
+.bulk-bar {
+	display: flex;
+	gap: 12px;
+	padding: 0 var(--src-pad) 12px;
+}
+
 .check {
 	display: grid;
 	place-content: center;

@@ -10,7 +10,7 @@ import {
 	withHiddenSources,
 } from '../settings'
 import { sourceById } from '../sources/index'
-import { temperature, WINDOW_LABELS, WINDOWS, type Window } from '../temperature'
+import { HEAT, recordHeat, temperature, WINDOW_LABELS, WINDOWS, type Window } from '../temperature'
 import { el, enableOutsideDismiss } from './dom'
 import { SWIPE_ACTIONS, SWIPE_DESCRIPTIONS, type SwipeSlot } from './gestures'
 import { createSourceList, type SourceList } from './source-list'
@@ -265,6 +265,56 @@ function renderTemperatureBar(): HTMLElement {
 	return bar
 }
 
+function allEnabled(): boolean {
+	const listed = listedSources()
+	return listed.length > 0 && listed.every((setting) => setting.enabled)
+}
+
+function updateBulkToggle(): void {
+	const button = dialog?.querySelector<HTMLButtonElement>('.bulk-toggle')
+	if (button) button.textContent = allEnabled() ? 'Disable all' : 'Enable all'
+}
+
+function renderBulkBar(): HTMLElement {
+	const bar = el('div', 'bulk-bar')
+	const toggle = el('button', 'link-btn bulk-toggle', allEnabled() ? 'Disable all' : 'Enable all')
+	toggle.type = 'button'
+	toggle.addEventListener('click', () => {
+		const enable = !allEnabled()
+		const next = listedSources().map((setting) => {
+			if (setting.enabled !== enable) {
+				recordHeat(setting.id, enable ? HEAT.enable : HEAT.disable)
+			}
+			return { ...setting, enabled: enable }
+		})
+		updateSettings({ sources: withHiddenSources(next) })
+		sources?.render(listedSources(), activeWindow)
+		renderPreview()
+		updateBulkToggle()
+	})
+	const shuffle = el('button', 'link-btn bulk-shuffle', 'Shuffle enabled')
+	shuffle.type = 'button'
+	shuffle.addEventListener('click', () => {
+		const listed = listedSources()
+		const enabled = listed.filter((setting) => setting.enabled)
+		const disabled = listed.filter((setting) => !setting.enabled)
+		for (let i = enabled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1))
+			const a = enabled[i]
+			const b = enabled[j]
+			if (a && b) {
+				enabled[i] = b
+				enabled[j] = a
+			}
+		}
+		updateSettings({ sources: withHiddenSources([...enabled, ...disabled]) })
+		sources?.render(listedSources(), activeWindow)
+		renderPreview()
+	})
+	bar.append(toggle, shuffle)
+	return bar
+}
+
 function build(): HTMLDialogElement {
 	const sheet = el('dialog', 'sheet')
 	sheet.setAttribute('aria-labelledby', 'manage-title')
@@ -315,7 +365,7 @@ function build(): HTMLDialogElement {
 		renderReset()
 	)
 	const sourcesWrap = el('div', 'sources-wrap')
-	sourcesWrap.append(renderTemperatureBar(), previewWrap, ...sources.nodes)
+	sourcesWrap.append(renderTemperatureBar(), renderBulkBar(), previewWrap, ...sources.nodes)
 	body.append(sourcesWrap, prefs)
 
 	sheet.append(head, body)
@@ -329,6 +379,7 @@ export function openManageDialog(focusSource?: string): void {
 	sources?.render(listedSources(), activeWindow)
 	dialog.showModal()
 	renderPreview()
+	updateBulkToggle()
 	if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
 		const root = getComputedStyle(document.documentElement)
 		const ms = Number.parseFloat(root.getPropertyValue('--sheet-move')) * MS_PER_S
@@ -354,5 +405,6 @@ onAvailabilityChange(() => {
 	if (dialog?.open) {
 		sources?.render(listedSources(), activeWindow)
 		renderPreview()
+		updateBulkToggle()
 	}
 })

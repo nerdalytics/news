@@ -372,3 +372,59 @@ describe('temperature', () => {
 		expect(temperature('hn', 'all')).toBe(1)
 	})
 })
+
+describe('bulk actions', () => {
+	function bulkToggle(): HTMLButtonElement {
+		return sheet().querySelector<HTMLButtonElement>('.bulk-toggle') as HTMLButtonElement
+	}
+
+	it('enables all sources and warms only the newly enabled', () => {
+		openManageDialog()
+		bulkToggle().click()
+		expect(
+			getSettings()
+				.sources.filter((source) => source.enabled)
+				.map((source) => source.id)
+		).toEqual(['hn', 'github'])
+		expect(temperature('github', 'all')).toBe(1)
+		expect(temperature('hn', 'all')).toBe(0)
+	})
+
+	it('disables all sources and cools them', () => {
+		updateSettings({
+			sources: [
+				{ id: 'hn', enabled: true },
+				{ id: 'github', enabled: true },
+			],
+		})
+		openManageDialog()
+		bulkToggle().click()
+		expect(getSettings().sources.every((source) => !source.enabled)).toBe(true)
+		expect(temperature('hn', 'all')).toBe(0)
+		expect(temperature('github', 'all')).toBe(0)
+	})
+
+	it('labels the toggle by state', () => {
+		openManageDialog()
+		expect(bulkToggle().textContent).toBe('Enable all')
+		bulkToggle().click()
+		expect(bulkToggle().textContent).toBe('Disable all')
+	})
+
+	it('shuffles enabled sources keeping the same set', () => {
+		updateSettings({
+			sources: [
+				{ id: 'hn', enabled: true },
+				{ id: 'github', enabled: true },
+				{ id: 'devto', enabled: true },
+			],
+		})
+		const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+		openManageDialog()
+		sheet().querySelector<HTMLButtonElement>('.bulk-shuffle')?.click()
+		random.mockRestore()
+		const ids = getSettings().sources.map((source) => source.id)
+		expect([...ids].sort()).toEqual(['devto', 'github', 'hn'])
+		expect(ids).not.toEqual(['hn', 'github', 'devto'])
+	})
+})
